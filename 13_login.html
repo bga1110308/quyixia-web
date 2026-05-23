@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登入 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+--gold:#EF9F27;--gold-dark:#BA7517;--gold-deeper:#633806;--gold-pale:#FAEEDA;
+--cream:#fdf6ec;--green:#4a8c6a;--green-light:#d4ede1;--green-pale:#eaf5ef;
+--alert:#c9762f;
+--line:#06c755;--google:#4285f4;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,var(--gold-pale) 0%,#fdf6ec 50%,var(--green-pale) 100%);color:#2a1f10;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;}
+
+.home-fab{position:fixed;top:14px;left:14px;width:42px;height:42px;border-radius:50%;background:#fff;border:1.5px solid #c9a96e;color:var(--gold-deeper);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 2px 8px rgba(99,56,6,0.1);transition:all 0.15s;text-decoration:none;}
+.home-fab:hover{background:var(--gold);color:#fff;border-color:var(--gold);transform:scale(1.05);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.login-card{background:#fff;border-radius:16px;padding:2rem 1.75rem 1.5rem;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(99,56,6,0.1);border:0.5px solid #e8d8be;}
+
+.brand{text-align:center;margin-bottom:1.25rem;}
+.brand-logo{display:inline-flex;align-items:center;justify-content:center;width:54px;height:54px;background:var(--gold-dark);border-radius:14px;color:#fff;font-size:0.9rem;font-weight:500;letter-spacing:-0.5px;margin-bottom:0.75rem;}
+.brand-title{font-size:1.35rem;font-weight:500;color:var(--gold-deeper);letter-spacing:-0.5px;}
+.brand-en{font-size:0.65rem;color:var(--gold-dark);letter-spacing:3px;margin-top:2px;}
+
+.welcome{text-align:center;margin-bottom:1.5rem;}
+.welcome-title{font-size:1.05rem;font-weight:500;color:var(--gold-deeper);margin-bottom:4px;}
+.welcome-sub{font-size:0.78rem;color:#7a5c3a;}
+
+/* 主要登入按鈕 */
+.social-row{display:flex;flex-direction:column;gap:10px;margin-bottom:1.25rem;}
+.social-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:0.85rem 1rem;border-radius:10px;font-size:0.92rem;font-weight:500;cursor:pointer;font-family:inherit;text-decoration:none;border:none;transition:all 0.15s;}
+.social-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.social-btn svg{width:1.25em;height:1.25em;}
+
+.btn-line{background:var(--line);color:#fff;}
+.btn-line:hover{background:#05a847;}
+
+.btn-google{background:#fff;color:#3c4043;border:1px solid #dadce0;}
+.btn-google:hover{background:#f7f8f8;border-color:#c9a96e;}
+
+.btn-email{background:#fff;color:var(--gold-deeper);border:1px solid #c9a96e;}
+.btn-email:hover{background:var(--gold-pale);}
+
+.btn-disabled{background:#f5f0e3;color:#a89878;border:1px dashed #c9a96e;cursor:not-allowed;position:relative;}
+.btn-disabled:hover{transform:none;box-shadow:none;}
+.btn-disabled .lock-tag{position:absolute;right:12px;font-size:0.65rem;background:#9a7a50;color:#fff;padding:2px 6px;border-radius:99px;}
+
+.divider{display:flex;align-items:center;gap:10px;margin:1rem 0;color:#b89a60;font-size:0.72rem;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#e8d8be;}
+
+/* Email 登入區（預設隱藏）*/
+.email-section{display:none;border-top:0.5px solid #e8d8be;padding-top:1rem;margin-top:0.5rem;}
+.email-section.show{display:block;}
+.field{margin-bottom:0.85rem;}
+.field-label{display:block;font-size:0.78rem;color:#5a3e1b;margin-bottom:5px;font-weight:500;}
+.field-input{width:100%;border:1px solid #c9a96e;border-radius:8px;padding:0.7rem 0.85rem;font-size:0.92rem;font-family:inherit;color:#2a1f10;background:#fff;}
+.field-input:focus{outline:none;border-color:var(--gold-dark);background:var(--gold-pale);}
+.field-hint{font-size:0.7rem;color:#9a7a50;margin-top:4px;}
+
+.email-send-btn{width:100%;background:var(--gold);color:#fff;border:none;padding:0.85rem;border-radius:10px;font-size:0.92rem;font-weight:500;cursor:pointer;font-family:inherit;margin-top:0.25rem;}
+.email-send-btn:hover{background:var(--gold-dark);}
+
+.back-link-row{text-align:center;font-size:0.78rem;color:#9a7a50;margin-top:0.85rem;}
+.back-link-row a{color:var(--gold-dark);cursor:pointer;text-decoration:underline;}
+
+.signup-row{text-align:center;font-size:0.85rem;color:#7a5c3a;padding-top:0.85rem;border-top:0.5px solid #e8d8be;margin-top:0.85rem;}
+.signup-row a{color:var(--gold-dark);text-decoration:none;font-weight:500;margin-left:4px;}
+
+.hint-banner{background:var(--cream);border:0.5px solid #e8d8be;border-radius:10px;padding:0.75rem 0.85rem;margin-bottom:1.25rem;font-size:0.74rem;color:#5a3e1b;line-height:1.65;display:flex;gap:7px;align-items:flex-start;}
+.hint-banner svg{width:14px;height:14px;color:var(--gold-dark);flex-shrink:0;margin-top:2px;fill:currentColor;}
+.hint-banner strong{color:var(--gold-deeper);}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></symbol>
+</defs>
+</svg>
+
+<a href="01_homepage.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="login-card">
+  <div class="brand">
+    <div class="brand-logo">去一下</div>
+    <div class="brand-title">歡迎回來</div>
+    <div class="brand-en">QU YI XIA</div>
+  </div>
+
+  <div class="welcome">
+    <div class="welcome-title">登入你的帳號</div>
+    <div class="welcome-sub">繼續預約服務或查看訂單</div>
+  </div>
+
+  <div class="hint-banner">
+    <svg><use href="#i-info"/></svg>
+    <div><strong>建議用 LINE 登入</strong>方便客服聯繫你、追蹤訂單，也最快</div>
+  </div>
+
+  <!-- 預設顯示三大社交登入 -->
+  <div class="social-row" id="social-row">
+    <button class="social-btn btn-line" onclick="loginWith('LINE')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.81 4.27 8.84 10.035 9.608.391.084.923.258 1.058.592.122.303.08.778.039 1.085 0 0-.141.846-.171 1.027-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967h-.001c1.739-1.907 2.572-3.843 2.572-5.992zM7.586 13.55h-2.386c-.346 0-.628-.282-.628-.628V8.144c0-.346.282-.628.628-.628.346 0 .628.282.628.628v4.151h1.758c.346 0 .628.282.628.628s-.282.627-.628.627zm2.13-.628c0 .346-.282.628-.628.628-.346 0-.627-.282-.627-.628V8.144c0-.346.281-.628.627-.628.346 0 .628.282.628.628v4.778zm5.766 0c0 .27-.174.51-.43.593-.066.022-.135.034-.198.034-.196 0-.382-.094-.503-.254l-2.443-3.322v2.949c0 .346-.281.628-.626.628-.346 0-.628-.282-.628-.628V8.144c0-.27.174-.51.43-.593.063-.022.134-.033.197-.033.196 0 .382.094.503.254l2.443 3.323V8.144c0-.346.282-.628.628-.628.346 0 .627.282.627.628v4.778zm3.876-3.018h-1.758v.91h1.758c.346 0 .628.282.628.628s-.282.628-.628.628h-1.758v.911h1.758c.346 0 .628.282.628.628 0 .346-.282.627-.628.627h-2.386c-.346 0-.628-.282-.628-.628V8.144c0-.346.282-.628.628-.628h2.386c.346 0 .628.282.628.628s-.282.627-.628.627z"/></svg>
+      用 LINE 登入
+    </button>
+
+    <button class="social-btn btn-google" onclick="loginWith('Google')">
+      <svg viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      用 Google 登入
+    </button>
+
+    <button class="social-btn btn-email" onclick="toggleEmail()">
+      <svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-mail"/></svg>
+      用 Email 登入
+    </button>
+
+    <!-- 手機驗證：未啟用，給後台開啟用 -->
+    <button class="social-btn btn-disabled" disabled title="此功能尚未開放">
+      <svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-phone"/></svg>
+      用手機號碼登入
+      <span class="lock-tag">未開放</span>
+    </button>
+  </div>
+
+  <!-- Email 登入區（點 Email 後展開） -->
+  <div class="email-section" id="email-section">
+    <div class="field">
+      <label class="field-label">Email</label>
+      <input type="email" class="field-input" id="email-input" placeholder="your@email.com">
+      <div class="field-hint">我們會寄送登入連結到你的信箱</div>
+    </div>
+    <button class="email-send-btn" onclick="sendEmailLink()">寄送登入連結</button>
+    <div class="back-link-row">
+      <a onclick="toggleEmail()">← 改用其他方式登入</a>
+    </div>
+  </div>
+
+  <div class="signup-row">
+    第一次來？<a href="01_homepage.html">回首頁開始預約服務</a>
+  </div>
+</div>
+
+<script>
+function loginWith(provider) {
+  /* 真實上線：呼叫 Supabase Auth 的 OAuth */
+  /* supabase.auth.signInWithOAuth({ provider: 'line' / 'google' }) */
+  alert('用 ' + provider + ' 登入流程：\n\n1. 跳到 ' + provider + ' 授權頁\n2. 同意授權\n3. 自動跳回網站、自動登入\n\n（demo 模擬中，假設登入成功）');
+  setTimeout(function(){
+    window.location.href = '11_client_home.html';
+  }, 500);
+}
+
+function toggleEmail() {
+  var sec = document.getElementById('email-section');
+  var social = document.getElementById('social-row');
+  if (sec.classList.contains('show')) {
+    sec.classList.remove('show');
+    social.style.display = 'flex';
+  } else {
+    sec.classList.add('show');
+    social.style.display = 'none';
+    setTimeout(function(){ document.getElementById('email-input').focus(); }, 100);
+  }
+}
+
+function sendEmailLink() {
+  var email = document.getElementById('email-input').value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    alert('請輸入正確的 Email 格式');
+    return;
+  }
+  /* 真實上線：supabase.auth.signInWithOtp({ email }) */
+  alert('登入連結已寄送至：\n' + email + '\n\n請開啟信箱點連結完成登入');
+}
+</script>
+</body>
+</html>

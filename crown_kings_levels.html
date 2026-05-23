@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>皇冠王者五級展示 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+--gold:#EF9F27;--gold-dark:#BA7517;--gold-deeper:#633806;--gold-pale:#FAEEDA;
+--cream:#fdf6ec;--green:#4a8c6a;--green-pale:#eaf5ef;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,#fdf6ec 0%,#fff 50%,var(--gold-pale) 100%);color:#2a1f10;min-height:100vh;padding:2rem 1.5rem;}
+
+.wrap{max-width:1200px;margin:0 auto;}
+
+.page-title{text-align:center;margin-bottom:2.5rem;}
+.page-title h1{font-size:1.65rem;font-weight:500;color:var(--gold-deeper);margin-bottom:8px;}
+.page-title p{font-size:0.88rem;color:#7a5c3a;line-height:1.7;}
+
+/* 一般等級概要表 */
+.summary-bar{background:#fff;border:0.5px solid #e8d8be;border-radius:12px;padding:1rem 1.25rem;margin-bottom:2rem;font-size:0.8rem;color:#5a3e1b;line-height:1.85;}
+.summary-bar strong{color:var(--gold-deeper);}
+
+/* 五級王者 */
+.kings-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;margin-bottom:2rem;}
+.king-card{background:#fff;border:0.5px solid #e8d8be;border-radius:14px;padding:2.5rem 0.85rem 1.25rem;text-align:center;position:relative;}
+.king-tag{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--gold);color:#fff;font-size:0.65rem;font-weight:500;padding:3px 10px;border-radius:99px;white-space:nowrap;}
+.king-stage{display:flex;align-items:center;justify-content:center;min-height:170px;margin-bottom:1.25rem;position:relative;}
+.king-name{font-size:0.92rem;font-weight:500;color:var(--gold-deeper);margin-bottom:4px;}
+.king-range{font-size:0.72rem;color:#9a7a50;margin-bottom:0.6rem;}
+.king-effects{font-size:0.68rem;color:#7a5c3a;line-height:1.65;border-top:0.5px dashed #e8d8be;padding-top:0.7rem;text-align:left;}
+.king-effects .e{display:block;padding:1px 0;}
+.king-effects .e.new{color:var(--gold-dark);font-weight:500;}
+.king-effects .e.new::before{content:'+ ';color:var(--gold);}
+
+/* 共用皇冠基底 */
+.crown{position:relative;width:75px;height:75px;border-radius:50%;background:radial-gradient(circle, #fff 20%, #ffe9b8 70%, #ffd970 100%);border:3px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;}
+.crown svg.crown-svg{width:36px;height:36px;fill:var(--gold);position:relative;z-index:2;
+  filter:
+    drop-shadow(0 0 10px rgba(239,159,39,1))
+    drop-shadow(0 0 20px rgba(239,159,39,0.7))
+    drop-shadow(0 0 30px rgba(239,159,39,0.4));
+}
+.crown .crown-count{position:absolute;top:-5px;right:-5px;min-width:24px;height:24px;border-radius:99px;background:linear-gradient(135deg,#FFD700 0%,var(--gold) 50%,var(--gold-dark) 100%);color:#fff;font-size:0.72rem;font-weight:500;display:flex;align-items:center;justify-content:center;padding:0 7px;border:3px solid #fff;z-index:3;box-shadow:0 0 8px rgba(255,215,0,0.7);}
+
+/* ============ 王者 I：只有放大縮小 ============ */
+.crown.k1 svg.crown-svg{animation:cPulse 1.2s ease-in-out infinite;}
+
+/* ============ 王者 II：+ 浮動 ============ */
+.crown.k2 svg.crown-svg{animation:cPulse 1.2s ease-in-out infinite;}
+.crown.k2{animation:cFloat 2.5s ease-in-out infinite;}
+
+/* ============ 王者 III：+ 顏色閃爍 ============ */
+.crown.k3 svg.crown-svg{animation:cPulse 1.2s ease-in-out infinite, cColorShift 3s ease-in-out infinite;}
+.crown.k3{animation:cFloat 2.5s ease-in-out infinite;}
+
+/* ============ 王者 IV：+ 四層光暈呼吸 ============ */
+.crown.k4 svg.crown-svg{animation:cPulse 1.2s ease-in-out infinite, cColorShift 3s ease-in-out infinite;}
+.crown.k4{animation:cGlow 1.5s ease-in-out infinite, cFloat 2.5s ease-in-out infinite;}
+
+/* ============ 王者 V（完全體）：+ 順時針 + 逆時針 + badge 脈動 ============ */
+.crown.k5 svg.crown-svg{animation:cPulse 1.2s ease-in-out infinite, cColorShift 3s ease-in-out infinite;}
+.crown.k5{animation:cGlow 1.5s ease-in-out infinite, cFloat 2.5s ease-in-out infinite;}
+.crown.k5::before{
+  content:'';position:absolute;inset:-22px;border-radius:50%;z-index:-1;pointer-events:none;filter:blur(3px);
+  background:conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(255,255,255,0.4) 5deg,
+    rgba(255,215,0,0.35) 15deg,
+    transparent 30deg,
+    transparent 80deg,
+    rgba(255,215,0,0.35) 95deg,
+    rgba(255,255,255,0.4) 105deg,
+    transparent 115deg,
+    transparent 170deg,
+    rgba(255,255,255,0.4) 185deg,
+    rgba(255,215,0,0.35) 195deg,
+    transparent 210deg,
+    transparent 260deg,
+    rgba(255,215,0,0.35) 275deg,
+    rgba(255,255,255,0.4) 285deg,
+    transparent 295deg,
+    transparent 360deg
+  );
+  animation:cRotate 3s linear infinite;
+}
+.crown.k5::after{
+  content:'';position:absolute;inset:-30px;border-radius:50%;z-index:-2;pointer-events:none;opacity:0.7;filter:blur(1px);
+  background:repeating-conic-gradient(
+    from 0deg,
+    transparent 0deg, transparent 28deg,
+    rgba(255,215,0,0.6) 30deg, transparent 32deg,
+    transparent 58deg,
+    rgba(255,215,0,0.4) 60deg, transparent 62deg
+  );
+  animation:cRotateRev 6s linear infinite;
+}
+.crown.k5 .crown-count{animation:cBadge 1.5s ease-in-out infinite;}
+
+/* keyframes */
+@keyframes cPulse{0%,100%{transform:scale(1);}50%{transform:scale(1.18);}}
+@keyframes cFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+@keyframes cColorShift{0%,100%{fill:var(--gold);}50%{fill:#FFD700;}}
+@keyframes cGlow{
+  0%,100%{
+    box-shadow:
+      0 0 0 6px rgba(239,159,39,0.4),
+      0 0 0 10px rgba(239,159,39,0.25),
+      0 0 0 18px rgba(239,159,39,0.15),
+      0 0 0 28px rgba(239,159,39,0.08),
+      0 0 50px rgba(239,159,39,0.7);
+  }
+  50%{
+    box-shadow:
+      0 0 0 8px rgba(239,159,39,0.5),
+      0 0 0 14px rgba(239,159,39,0.3),
+      0 0 0 24px rgba(239,159,39,0.18),
+      0 0 0 36px rgba(239,159,39,0.05),
+      0 0 70px rgba(239,159,39,0.9);
+  }
+}
+@keyframes cRotate{to{transform:rotate(360deg);}}
+@keyframes cRotateRev{to{transform:rotate(-360deg);}}
+@keyframes cBadge{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
+
+.back-link{display:inline-block;margin-top:1rem;font-size:0.85rem;color:var(--gold-dark);text-decoration:none;}
+.back-link:hover{color:var(--gold-deeper);}
+.back-link+.back-link{margin-left:1rem;}
+
+@media(max-width:960px){.kings-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:520px){.kings-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="page-title">
+  <h1>皇冠王者 · 五級累加效果</h1>
+  <p>都叫「皇冠王者」，但根據推薦人數加上不同特效<br>越多推薦人數，皇冠越浮誇</p>
+</div>
+
+<div class="summary-bar">
+  <strong>提醒</strong>：原本 lv0-lv3（0-9 人）規則不變。<br>
+  從 <strong>10 人開始進入王者</strong>，每 5 人加一個效果，<strong>30+ 完全體</strong>同時擁有 7 種特效。
+</div>
+
+<div class="kings-grid">
+
+  <!-- 王者 I -->
+  <div class="king-card">
+    <div class="king-tag">王者 I</div>
+    <div class="king-stage">
+      <a class="crown k1">
+        <svg class="crown-svg" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></svg>
+        <span class="crown-count">12</span>
+      </a>
+    </div>
+    <div class="king-name">皇冠王者</div>
+    <div class="king-range">10-14 人</div>
+    <div class="king-effects">
+      <span class="e new">放大縮小</span>
+    </div>
+  </div>
+
+  <!-- 王者 II -->
+  <div class="king-card">
+    <div class="king-tag">王者 II</div>
+    <div class="king-stage">
+      <a class="crown k2">
+        <svg class="crown-svg" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></svg>
+        <span class="crown-count">17</span>
+      </a>
+    </div>
+    <div class="king-name">皇冠王者</div>
+    <div class="king-range">15-19 人</div>
+    <div class="king-effects">
+      <span class="e">放大縮小</span>
+      <span class="e new">浮動</span>
+    </div>
+  </div>
+
+  <!-- 王者 III -->
+  <div class="king-card">
+    <div class="king-tag">王者 III</div>
+    <div class="king-stage">
+      <a class="crown k3">
+        <svg class="crown-svg" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></svg>
+        <span class="crown-count">22</span>
+      </a>
+    </div>
+    <div class="king-name">皇冠王者</div>
+    <div class="king-range">20-24 人</div>
+    <div class="king-effects">
+      <span class="e">放大縮小</span>
+      <span class="e">浮動</span>
+      <span class="e new">顏色閃爍</span>
+    </div>
+  </div>
+
+  <!-- 王者 IV -->
+  <div class="king-card">
+    <div class="king-tag">王者 IV</div>
+    <div class="king-stage">
+      <a class="crown k4">
+        <svg class="crown-svg" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></svg>
+        <span class="crown-count">27</span>
+      </a>
+    </div>
+    <div class="king-name">皇冠王者</div>
+    <div class="king-range">25-29 人</div>
+    <div class="king-effects">
+      <span class="e">放大縮小</span>
+      <span class="e">浮動</span>
+      <span class="e">顏色閃爍</span>
+      <span class="e new">四層光暈呼吸</span>
+    </div>
+  </div>
+
+  <!-- 王者 V 完全體 -->
+  <div class="king-card">
+    <div class="king-tag">王者 V · 完全體</div>
+    <div class="king-stage">
+      <a class="crown k5">
+        <svg class="crown-svg" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></svg>
+        <span class="crown-count">35</span>
+      </a>
+    </div>
+    <div class="king-name">皇冠王者</div>
+    <div class="king-range">30 人以上</div>
+    <div class="king-effects">
+      <span class="e">放大縮小</span>
+      <span class="e">浮動</span>
+      <span class="e">顏色閃爍</span>
+      <span class="e">四層光暈呼吸</span>
+      <span class="e new">順時針光環</span>
+      <span class="e new">逆時針放射</span>
+      <span class="e new">Badge 脈動</span>
+    </div>
+  </div>
+
+</div>
+
+<a class="back-link" href="crown_levels_demo.html">← 看 0-9 人的等級展示</a>
+<a class="back-link" href="11_client_home.html">看 11 案家主頁</a>
+<a class="back-link" href="12_staff_home.html">看 12 順咖主頁</a>
+
+</div>
+</body>
+</html>

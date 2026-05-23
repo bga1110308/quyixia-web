@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>帳號認證 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+--gold:#EF9F27;--gold-dark:#BA7517;--gold-deeper:#633806;--gold-pale:#FAEEDA;
+--cream:#fdf6ec;--green:#4a8c6a;--green-light:#d4ede1;--green-pale:#eaf5ef;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--cream);}
+.page-header{background:var(--gold-pale);padding:2rem 2rem 1.5rem;border-bottom:2px solid var(--gold);text-align:center;}
+.page-title{font-size:1.3rem;font-weight:500;color:var(--gold-deeper);}
+.page-sub{font-size:0.85rem;color:#7a5c3a;margin-top:6px;line-height:1.7;}
+.tab-bar{display:flex;border-bottom:2px solid #e8d8be;background:#fff;}
+.tab{flex:1;padding:0.9rem;text-align:center;font-size:0.85rem;color:#9a7a50;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s;}
+.tab.active{color:var(--gold-deeper);font-weight:500;border-bottom-color:var(--gold-dark);}
+.wrap{padding:1.5rem 2rem;max-width:540px;margin:0 auto;}
+.card{background:#fff;border:0.5px solid #e8d8be;border-radius:12px;padding:1.25rem;margin-bottom:1rem;}
+.sec-title{font-size:0.88rem;font-weight:500;color:var(--gold-deeper);margin-bottom:1rem;display:flex;align-items:center;gap:6px;}
+.sec-title::before{content:'';display:block;width:3px;height:14px;background:var(--gold-dark);border-radius:2px;}
+.field{margin-bottom:0.9rem;}
+.field label{display:block;font-size:0.8rem;color:#7a5c3a;margin-bottom:4px;}
+.field input{width:100%;padding:0.6rem 0.75rem;border:1.5px solid #c9a96e;border-radius:8px;font-size:0.85rem;background:#ffffff!important;color:var(--gold-deeper);font-family:inherit;}
+.input-btn-row{display:flex;gap:8px;}
+.input-btn-row input{flex:1;}
+.send-btn{background:#fff!important;color:var(--gold-deeper)!important;border:1.5px solid var(--gold-dark)!important;padding:0 1rem;border-radius:8px;font-size:0.8rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.15s;flex-shrink:0;}
+.send-btn:hover{background:var(--gold)!important;color:#fff!important;}
+.send-btn:disabled{background:#f0e8d8!important;color:#9a7a50!important;border-color:#e0d0b8!important;cursor:not-allowed;}
+.verify-status{display:flex;align-items:center;gap:6px;font-size:0.78rem;margin-top:5px;}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.status-dot.verified{background:#2ecc71;}
+.status-dot.unverified{background:#e67e22;}
+.status-dot.pending{background:#3498db;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+.otp-row{display:flex;gap:8px;justify-content:center;margin:0.75rem 0;}
+.otp-input{width:44px;height:52px;border:1.5px solid #c9a96e;border-radius:8px;text-align:center;font-size:1.3rem;font-weight:500;color:var(--gold-deeper);background:#fff!important;transition:border-color 0.15s;}
+.otp-input:focus{outline:none;border-color:var(--gold-dark);}
+.otp-input.filled{border-color:var(--gold-dark);background:var(--gold-pale)!important;}
+.otp-input.error{border-color:#e74c3c;}
+.verify-btn{width:100%;background:var(--gold)!important;color:#fff!important;border:2px solid var(--gold)!important;padding:0.85rem;border-radius:8px;font-size:0.95rem;font-weight:500;cursor:pointer;transition:all 0.15s;margin-top:0.5rem;}
+.verify-btn:hover{background:#ffffff!important;color:var(--gold-deeper)!important;border-color:var(--gold-dark)!important;}
+.verify-btn:disabled{background:#e8d8be!important;color:#9a7a50!important;border-color:#e8d8be!important;cursor:not-allowed;}
+.success-box{text-align:center;padding:1.5rem 1rem;}
+.success-icon{font-size:3rem;margin-bottom:0.75rem;display:block;}
+.success-title{font-size:1rem;font-weight:500;color:var(--green);margin-bottom:4px;}
+.success-sub{font-size:0.82rem;color:#3d6b52;line-height:1.7;}
+.resend-row{text-align:center;margin-top:8px;}
+.resend-link{font-size:0.78rem;color:var(--gold-dark);cursor:pointer;text-decoration:underline;}
+.countdown{font-size:0.78rem;color:#9a7a50;}
+.error-msg{font-size:0.75rem;color:#e74c3c;margin-top:4px;display:none;}
+.hint{font-size:0.75rem;color:#9a7a50;margin-top:6px;line-height:1.6;}
+.verified-card{background:var(--green-pale);border:1px solid var(--green-light);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:12px;}
+.verified-icon{font-size:1.5rem;flex-shrink:0;}
+.verified-info{flex:1;}
+.verified-label{font-size:0.78rem;color:var(--green);font-weight:500;}
+.verified-value{font-size:0.88rem;color:var(--gold-deeper);margin-top:2px;}
+.verified-badge{font-size:0.7rem;background:var(--green);color:#fff;padding:2px 8px;border-radius:99px;}
+.preview-card{background:#fff;border:0.5px solid #e8d8be;border-radius:12px;padding:1rem;display:flex;align-items:flex-start;gap:12px;}
+.p-avatar{width:52px;height:52px;border-radius:50%;background:var(--gold-pale);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:500;font-size:1rem;color:var(--gold-deeper);flex-shrink:0;}
+.p-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+.p-badge{font-size:0.65rem;padding:2px 8px;border-radius:99px;font-weight:500;}
+.p-badge.email{background:#e8f4fd;color:#2980b9;border:0.5px solid #aed6f1;}
+.p-badge.phone{background:var(--green-pale);color:var(--green);border:0.5px solid var(--green-light);}
+.p-badge.vip{background:var(--green);color:var(--gold);}
+.p-badge.unverified{background:#fef9e7;color:#e67e22;border:0.5px solid #fad7a0;}
+.p-rating{font-size:0.78rem;color:var(--gold-dark);margin-top:4px;}
+.info-card{font-size:0.82rem;color:#7a5c3a;line-height:1.9;}
+.info-card div{margin-bottom:4px;}
+
+/* SVG 通用尺寸規則 */
+.ico{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
+
+/* success icon SVG */
+.success-icon-svg{width:56px;height:56px;color:var(--green);margin:0 auto 0.75rem;display:block;}
+.success-icon-svg svg{width:56px;height:56px;fill:currentColor;display:block;}
+
+/* verified icon SVG */
+.verified-icon-svg{width:28px;height:28px;flex-shrink:0;color:var(--gold-dark);}
+.verified-icon-svg svg{width:28px;height:28px;fill:currentColor;display:block;}
+
+/* info-card 內 SVG */
+.info-card svg{width:1em;height:1em;fill:currentColor;vertical-align:-0.15em;margin-right:2px;}
+
+/* p-badge SVG */
+.p-badge svg{width:0.85em;height:0.85em;fill:currentColor;vertical-align:-0.15em;margin-right:2px;}
+
+/* 認證進度條 */
+.progress-bar{background:#fff;border-bottom:0.5px solid #e8d8be;padding:1rem 2rem;display:flex;align-items:center;gap:14px;}
+.progress-bar-info{flex:1;min-width:0;}
+.progress-bar-label{font-size:0.78rem;color:#7a5c3a;margin-bottom:5px;display:flex;align-items:center;gap:5px;justify-content:space-between;}
+.progress-bar-label .num{color:var(--gold-deeper);font-weight:500;}
+.progress-bar-track{height:8px;background:#f0e4ce;border-radius:99px;overflow:hidden;}
+.progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-dark));border-radius:99px;transition:width 0.4s;}
+.progress-bar-hint{font-size:0.72rem;color:#9a7a50;margin-top:5px;line-height:1.5;}
+
+/* 證件上傳卡 */
+.cert-card{background:#fff;border:1.5px dashed #c9a96e;border-radius:10px;padding:1rem 1.1rem;margin-bottom:0.65rem;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all 0.15s;position:relative;}
+.cert-card:hover{border-color:var(--gold-dark);background:var(--gold-pale);}
+.cert-card.uploaded{border-style:solid;border-color:var(--green);background:var(--green-pale);}
+.cert-card.pending{border-style:solid;border-color:#3498db;background:#e8f4fd;}
+.cert-icon-wrap{width:38px;height:38px;border-radius:10px;background:var(--gold-pale);color:var(--gold-dark);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cert-icon-wrap svg{width:20px;height:20px;fill:currentColor;}
+.cert-card.uploaded .cert-icon-wrap{background:var(--green-light);color:var(--green);}
+.cert-card.pending .cert-icon-wrap{background:#d4eaf9;color:#3498db;}
+.cert-info{flex:1;min-width:0;}
+.cert-name{font-size:0.9rem;font-weight:500;color:var(--gold-deeper);margin-bottom:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.cert-name .req-tag{font-size:0.6rem;background:#fcebeb;color:#a32d2d;padding:1px 6px;border-radius:99px;font-weight:500;}
+.cert-name .opt-tag{font-size:0.6rem;background:var(--cream);color:#9a7a50;padding:1px 6px;border-radius:99px;font-weight:500;}
+.cert-desc{font-size:0.72rem;color:#9a7a50;line-height:1.5;}
+.cert-unlock{font-size:0.68rem;color:var(--gold-dark);background:var(--gold-pale);padding:2px 7px;border-radius:99px;margin-top:4px;display:inline-flex;align-items:center;gap:3px;font-weight:500;}
+.cert-unlock svg{width:0.85em;height:0.85em;fill:currentColor;}
+.cert-status-tag{font-size:0.7rem;padding:3px 9px;border-radius:99px;font-weight:500;flex-shrink:0;display:inline-flex;align-items:center;gap:3px;}
+.cert-status-tag svg{width:0.85em;height:0.85em;fill:currentColor;}
+.cs-uploaded{background:var(--green);color:#fff;}
+.cs-pending{background:#3498db;color:#fff;}
+.cs-empty{background:#fff;color:#9a7a50;border:1px solid #c9a96e;}
+
+/* 隱私說明 */
+.privacy-note{background:var(--green-pale);border:1px solid var(--green-light);border-radius:8px;padding:0.85rem 1rem;font-size:0.78rem;color:#3d6b52;line-height:1.7;display:flex;align-items:flex-start;gap:10px;margin-bottom:1rem;}
+.privacy-note .ico-l{width:20px;height:20px;color:var(--green);flex-shrink:0;margin-top:1px;display:inline-block;}
+.privacy-note .ico-l svg{width:20px;height:20px;fill:currentColor;display:block;}
+.privacy-note strong{color:var(--green);font-weight:500;}
+
+/* p-badge 新增 cna senior 顏色 */
+.p-badge.cna{background:#fff3e0;color:#e65100;border:0.5px solid #ffcc80;}
+.p-badge.senior{background:#fce4ec;color:#ad1457;border:0.5px solid #f8bbd0;}
+.home-fab{position:fixed;top:14px;left:14px;width:42px;height:42px;border-radius:50%;background:#fff;border:1.5px solid #c9a96e;color:var(--gold-deeper);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 2px 8px rgba(99,56,6,0.1);transition:all 0.15s;text-decoration:none;}.home-fab:hover{background:var(--gold);color:#fff;border-color:var(--gold);transform:scale(1.05);}.home-fab svg{width:18px;height:18px;fill:currentColor;}</style>
+</head>
+<body>
+<a href="01_homepage.html" class="home-fab" title="回首頁"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+
+<!-- 內嵌 SVG 圖示，全部寫死不依賴外部 CDN -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm3 11c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-1.5 16L6 12.5l1.4-1.4 3.1 3.1 6.1-6.1L18 9.5l-7.5 7.5z"/></symbol>
+  <symbol id="i-heart-cross" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path d="M11 6h2v3h3v2h-3v3h-2v-3H8V9h3z" fill="#ffffff"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM8 12c1.1 0 2 .9 2 2H6c0-1.1.9-2 2-2zm0-1c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm10 5h-6v-1h6v1zm0-3h-6v-1h6v1zm0-3h-6V9h6v1z"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 11H7v-2h3.5V6h2v7z"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-1.5c-1.66 0-3-1.34-3-3h2c0 .55.45 1 1 1h2c.55 0 1-.45 1-1 0-.45-.3-.84-.74-.96l-3.18-.91C9.86 11.32 9 10.22 9 9c0-1.66 1.34-3 3-3V4.5h2V6c1.66 0 3 1.34 3 3h-2c0-.55-.45-1-1-1h-2c-.55 0-1 .45-1 1 0 .45.3.84.74.96l3.18.91C16.14 11.18 17 12.28 17 13.5c0 1.66-1.34 3-3 3V18z"/></symbol>
+</defs>
+</svg>
+
+<div class="page-header">
+  <div class="page-title">帳號認證</div>
+  <div class="page-sub">完成信箱與手機認證，提升信任度<br>認證標章會顯示在你的檔案與任務單上</div>
+</div>
+
+<div class="progress-bar">
+  <div class="progress-bar-info">
+    <div class="progress-bar-label">
+      <span>整體認證進度</span>
+      <span><span class="num" id="progress-done">0</span> / 6 項</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-fill" style="width:0%;"></div>
+    </div>
+    <div class="progress-bar-hint">完成越多認證，能接的任務越多、單價越高</div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab(0,this)">信箱認證</div>
+  <div class="tab" onclick="switchTab(1,this)">手機認證</div>
+  <div class="tab" onclick="switchTab(2,this)">證件上傳</div>
+  <div class="tab" onclick="switchTab(3,this)">認證狀態</div>
+</div>
+
+<!-- Tab 0：信箱認證 -->
+<div class="wrap" id="tab0">
+  <div class="card">
+    <div class="sec-title">信箱認證</div>
+    <div id="email-step1">
+      <div class="field">
+        <label>電子信箱</label>
+        <div class="input-btn-row">
+          <input type="email" id="email-input" placeholder="example@gmail.com">
+          <button class="send-btn" onclick="sendEmailOTP()">傳送驗證碼</button>
+        </div>
+        <div class="verify-status">
+          <div class="status-dot unverified"></div>
+          <span style="color:#e67e22;">尚未驗證</span>
+        </div>
+      </div>
+      <div class="hint">驗證碼將寄送至此信箱，請確認信箱正確後再傳送</div>
+    </div>
+    <div id="email-step2" style="display:none;">
+      <div style="text-align:center;margin-bottom:0.75rem;">
+        <div style="font-size:0.85rem;color:#7a5c3a;">驗證碼已寄送至</div>
+        <div style="font-size:0.9rem;font-weight:500;color:var(--gold-deeper);" id="email-show"></div>
+        <div class="verify-status" style="justify-content:center;margin-top:4px;">
+          <div class="status-dot pending"></div>
+          <span style="color:#3498db;">等待驗證中</span>
+        </div>
+      </div>
+      <div class="otp-row">
+        <input class="otp-input" maxlength="1" id="e0" oninput="otpNext(this,'e1','','email')">
+        <input class="otp-input" maxlength="1" id="e1" oninput="otpNext(this,'e2','e0','email')">
+        <input class="otp-input" maxlength="1" id="e2" oninput="otpNext(this,'e3','e1','email')">
+        <input class="otp-input" maxlength="1" id="e3" oninput="otpNext(this,'e4','e2','email')">
+        <input class="otp-input" maxlength="1" id="e4" oninput="otpNext(this,'e5','e3','email')">
+        <input class="otp-input" maxlength="1" id="e5" oninput="otpNext(this,'','e4','email')">
+      </div>
+      <div class="error-msg" id="email-error">驗證碼錯誤，請重新輸入</div>
+      <button class="verify-btn" id="email-verify-btn" onclick="verifyEmail()" disabled>確認驗證</button>
+      <div class="resend-row">
+        <span class="countdown" id="email-countdown">60 秒後可重新傳送</span>
+        <span class="resend-link" id="email-resend" style="display:none;" onclick="resendEmail()">重新傳送</span>
+      </div>
+    </div>
+    <div id="email-step3" style="display:none;">
+      <div class="success-box">
+        <span class="success-icon-svg"><svg><use href="#i-check-circle"/></svg></span>
+        <div class="success-title">信箱認證完成！</div>
+        <div class="success-sub">你的信箱認證標章已顯示於檔案上<br>客戶可以看到你的認證狀態</div>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:8px;">收不到信？請檢查垃圾郵件匣，或等候 60 秒後重新傳送</div>
+  </div>
+  <div class="card">
+    <div class="sec-title">信箱認證有什麼用？</div>
+    <div class="info-card">
+      <div><svg style="color:#2980b9;"><use href="#i-mail"/></svg> 檔案上顯示「<span style="color:#2980b9;font-weight:500;">信箱已驗證</span>」藍色標章</div>
+      <div><svg style="color:var(--gold-dark);"><use href="#i-bell"/></svg> 系統可以透過信箱發送任務通知給你</div>
+      <div><svg style="color:var(--gold-dark);"><use href="#i-lock"/></svg> 忘記密碼時可以透過信箱重設</div>
+      <div><svg style="color:var(--green);"><use href="#i-check"/></svg> 提升客戶或順咖對你的信任感</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab 1：手機認證 -->
+<div class="wrap" id="tab1" style="display:none;">
+  <div class="card">
+    <div class="sec-title">手機認證</div>
+    <div id="phone-step1">
+      <div class="field">
+        <label>手機號碼</label>
+        <div class="input-btn-row">
+          <input type="tel" id="phone-input" placeholder="09XX-XXX-XXX">
+          <button class="send-btn" onclick="sendPhoneOTP()">傳送簡訊</button>
+        </div>
+        <div class="verify-status">
+          <div class="status-dot unverified"></div>
+          <span style="color:#e67e22;">尚未驗證</span>
+        </div>
+      </div>
+      <div class="hint">簡訊驗證碼將傳送至此號碼</div>
+    </div>
+    <div id="phone-step2" style="display:none;">
+      <div style="text-align:center;margin-bottom:0.75rem;">
+        <div style="font-size:0.85rem;color:#7a5c3a;">驗證碼已傳送至</div>
+        <div style="font-size:0.9rem;font-weight:500;color:var(--gold-deeper);" id="phone-show"></div>
+        <div class="verify-status" style="justify-content:center;margin-top:4px;">
+          <div class="status-dot pending"></div>
+          <span style="color:#3498db;">等待驗證中</span>
+        </div>
+      </div>
+      <div class="otp-row">
+        <input class="otp-input" maxlength="1" id="p0" oninput="otpNext(this,'p1','','phone')">
+        <input class="otp-input" maxlength="1" id="p1" oninput="otpNext(this,'p2','p0','phone')">
+        <input class="otp-input" maxlength="1" id="p2" oninput="otpNext(this,'p3','p1','phone')">
+        <input class="otp-input" maxlength="1" id="p3" oninput="otpNext(this,'p4','p2','phone')">
+        <input class="otp-input" maxlength="1" id="p4" oninput="otpNext(this,'p5','p3','phone')">
+        <input class="otp-input" maxlength="1" id="p5" oninput="otpNext(this,'','p4','phone')">
+      </div>
+      <div class="error-msg" id="phone-error">驗證碼錯誤，請重新輸入</div>
+      <button class="verify-btn" id="phone-verify-btn" onclick="verifyPhone()" disabled>確認驗證</button>
+      <div class="resend-row">
+        <span class="countdown" id="phone-countdown">60 秒後可重新傳送</span>
+        <span class="resend-link" id="phone-resend" style="display:none;" onclick="resendPhone()">重新傳送</span>
+      </div>
+    </div>
+    <div id="phone-step3" style="display:none;">
+      <div class="success-box">
+        <span class="success-icon-svg"><svg><use href="#i-check-circle"/></svg></span>
+        <div class="success-title">手機認證完成！</div>
+        <div class="success-sub">你的手機認證標章已顯示於檔案上<br>系統可透過簡訊即時通知你</div>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:8px;">簡訊可能延遲 1–2 分鐘，請耐心等候</div>
+  </div>
+  <div class="card">
+    <div class="sec-title">手機認證有什麼用？</div>
+    <div class="info-card">
+      <div><svg style="color:var(--green);"><use href="#i-phone"/></svg> 檔案上顯示「<span style="color:var(--green);font-weight:500;">手機已驗證</span>」綠色標章</div>
+      <div><svg style="color:var(--gold-dark);"><use href="#i-bell"/></svg> 任務有新進度時，簡訊即時通知你</div>
+      <div><svg style="color:#2980b9;"><use href="#i-shield"/></svg> 防止假帳號，讓平台更安全</div>
+      <div><svg style="color:var(--green);"><use href="#i-check"/></svg> 順咖或客戶更願意選擇有認證的對象</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab 2：證件上傳 -->
+<div class="wrap" id="tab2" style="display:none;">
+  <div class="privacy-note">
+    <span class="ico-l"><svg><use href="#i-lock"/></svg></span>
+    <div><strong>你的證件不會公開給客戶</strong>所有證件僅供平台審核，客戶只會看到對應的徽章（例：「實名認證」「良民」「照服員」），看不到證件本身。審核完成後文件加密儲存。</div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">必要證件</div>
+
+    <div class="cert-card" id="cert-id" onclick="uploadCert(this,'id',true)">
+      <div class="cert-icon-wrap"><svg><use href="#i-id"/></svg></div>
+      <div class="cert-info">
+        <div class="cert-name">身分證 <span class="req-tag">必填</span></div>
+        <div class="cert-desc">身分證正反面，用於實名認證</div>
+        <div class="cert-unlock"><svg><use href="#i-check"/></svg>解鎖「實名認證」徽章</div>
+      </div>
+      <span class="cert-status-tag cs-empty"><svg><use href="#i-upload"/></svg>上傳</span>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="sec-title">進階證件（上傳越多，能接的任務越多）</div>
+
+    <div class="cert-card" id="cert-safe" onclick="uploadCert(this,'safe',false)">
+      <div class="cert-icon-wrap"><svg><use href="#i-shield"/></svg></div>
+      <div class="cert-info">
+        <div class="cert-name">良民證 <span class="opt-tag">選填</span></div>
+        <div class="cert-desc">警察局核發，近 6 個月內</div>
+        <div class="cert-unlock"><svg><use href="#i-check"/></svg>解鎖長輩、兒童相關任務</div>
+      </div>
+      <span class="cert-status-tag cs-empty"><svg><use href="#i-upload"/></svg>上傳</span>
+    </div>
+
+    <div class="cert-card" id="cert-cpr" onclick="uploadCert(this,'cpr',false)">
+      <div class="cert-icon-wrap"><svg><use href="#i-heart-cross"/></svg></div>
+      <div class="cert-info">
+        <div class="cert-name">CPR / AED 急救證 <span class="opt-tag">選填</span></div>
+        <div class="cert-desc">急救認證證書，影本即可</div>
+        <div class="cert-unlock"><svg><use href="#i-check"/></svg>解鎖「急救通過」徽章</div>
+      </div>
+      <span class="cert-status-tag cs-empty"><svg><use href="#i-upload"/></svg>上傳</span>
+    </div>
+
+    <div class="cert-card" id="cert-cna" onclick="uploadCert(this,'cna',false)">
+      <div class="cert-icon-wrap"><svg><use href="#i-star"/></svg></div>
+      <div class="cert-info">
+        <div class="cert-name">照服員單一級證 <span class="opt-tag">選填</span></div>
+        <div class="cert-desc">勞動部核發</div>
+        <div class="cert-unlock"><svg><use href="#i-coin"/></svg>解鎖照服員池高單價任務（單價 +67%）</div>
+      </div>
+      <span class="cert-status-tag cs-empty"><svg><use href="#i-upload"/></svg>上傳</span>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="sec-title">審核流程</div>
+    <div class="info-card">
+      <div><svg style="color:var(--gold-dark);"><use href="#i-upload"/></svg> 上傳證件後 24 小時內審核完成</div>
+      <div><svg style="color:#3498db;"><use href="#i-clock"/></svg> 審核期間狀態顯示「審核中」</div>
+      <div><svg style="color:var(--green);"><use href="#i-check"/></svg> 通過後對應徽章自動顯示於檔案上</div>
+      <div><svg style="color:#e67e22;"><use href="#i-warn"/></svg> 如資料不清或不符，會通知重新上傳</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab 2：認證狀態 (原 Tab2 內容會在後面接續) -->
+<div class="wrap" id="tab3" style="display:none;">
+  <div class="verified-card">
+    <div class="verified-icon-svg" style="color:#2980b9;"><svg><use href="#i-mail"/></svg></div>
+    <div class="verified-info">
+      <div class="verified-label">電子信箱</div>
+      <div class="verified-value" id="email-status-value">尚未驗證</div>
+    </div>
+    <span class="verified-badge" id="email-status-badge" style="background:#e67e22;">未驗證</span>
+  </div>
+  <div class="verified-card">
+    <div class="verified-icon-svg" style="color:var(--green);"><svg><use href="#i-phone"/></svg></div>
+    <div class="verified-info">
+      <div class="verified-label">手機號碼</div>
+      <div class="verified-value" id="phone-status-value">尚未驗證</div>
+    </div>
+    <span class="verified-badge" id="phone-status-badge" style="background:#e67e22;">未驗證</span>
+  </div>
+  <div class="verified-card">
+    <div class="verified-icon-svg" style="color:var(--gold-dark);"><svg><use href="#i-id"/></svg></div>
+    <div class="verified-info">
+      <div class="verified-label">身分證</div>
+      <div class="verified-value" id="id-status-value">尚未上傳</div>
+    </div>
+    <span class="verified-badge" id="id-status-badge" style="background:#e67e22;">未驗證</span>
+  </div>
+  <div class="verified-card">
+    <div class="verified-icon-svg" style="color:var(--green);"><svg><use href="#i-shield"/></svg></div>
+    <div class="verified-info">
+      <div class="verified-label">良民證</div>
+      <div class="verified-value" id="safe-status-value">尚未上傳</div>
+    </div>
+    <span class="verified-badge" id="safe-status-badge" style="background:#e67e22;">未驗證</span>
+  </div>
+  <div class="card" style="margin-top:0.5rem;">
+    <div class="sec-title">認證標章預覽</div>
+    <div style="font-size:0.78rem;color:#9a7a50;margin-bottom:0.75rem;">完成認證後，你的卡片上會這樣顯示：</div>
+    <div class="preview-card">
+      <div class="p-avatar">芳</div>
+      <div style="flex:1;">
+        <div style="font-weight:500;font-size:0.95rem;color:var(--gold-deeper);">小芳</div>
+        <div class="p-badges">
+          <span class="p-badge vip">VIP</span>
+          <span class="p-badge email" id="preview-email-badge" style="display:none;"><svg><use href="#i-mail"/></svg>信箱已驗證</span>
+          <span class="p-badge phone" id="preview-phone-badge" style="display:none;"><svg><use href="#i-phone"/></svg>手機已驗證</span>
+          <span class="p-badge phone" id="preview-id-badge" style="display:none;background:#e3f2fd;color:#1976d2;border-color:#bbdefb;"><svg><use href="#i-check"/></svg>實名</span>
+          <span class="p-badge phone" id="preview-safe-badge" style="display:none;"><svg><use href="#i-shield"/></svg>良民</span>
+          <span class="p-badge unverified" id="preview-unverified"><svg><use href="#i-warn"/></svg>尚未完成認證</span>
+        </div>
+        <div class="p-rating">★ 4.9 · 已完成 23 件</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:1rem;text-align:center;">
+    <button onclick="window.location.href='12_staff_home.html'" style="background:var(--green);color:#fff;border:none;padding:0.85rem 2rem;border-radius:10px;font-size:0.92rem;font-weight:500;cursor:pointer;font-family:inherit;">
+      完成認證，進入順咖主頁 →
+    </button>
+  </div>
+</div>
+
+<script>
+var emailVerified = false, phoneVerified = false;
+var emailOTP = '', phoneOTP = '';
+var certStatus = {id:'empty', safe:'empty', cpr:'empty', cna:'empty'};
+
+function switchTab(n, el) {
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  ['tab0','tab1','tab2','tab3'].forEach(function(id, i){
+    var elx = document.getElementById(id);
+    if (elx) elx.style.display = i === n ? 'block' : 'none';
+  });
+  if (n === 3) updateStatusTab();
+}
+
+function updateProgress() {
+  var done = 0;
+  if (emailVerified) done++;
+  if (phoneVerified) done++;
+  Object.keys(certStatus).forEach(function(k){
+    if (certStatus[k] === 'uploaded') done++;
+  });
+  document.getElementById('progress-done').textContent = done;
+  document.getElementById('progress-fill').style.width = (done / 6 * 100) + '%';
+}
+
+function uploadCert(card, key, isRequired) {
+  var statusTag = card.querySelector('.cert-status-tag');
+  if (certStatus[key] === 'empty') {
+    certStatus[key] = 'pending';
+    card.classList.add('pending');
+    statusTag.className = 'cert-status-tag cs-pending';
+    statusTag.innerHTML = '<svg><use href="#i-clock"/></svg>審核中';
+    // 模擬審核完成（2 秒後）
+    setTimeout(function(){
+      certStatus[key] = 'uploaded';
+      card.classList.remove('pending');
+      card.classList.add('uploaded');
+      statusTag.className = 'cert-status-tag cs-uploaded';
+      statusTag.innerHTML = '<svg><use href="#i-check"/></svg>已通過';
+      updateProgress();
+    }, 2000);
+    updateProgress();
+  } else if (certStatus[key] === 'uploaded') {
+    if (confirm('已通過審核的證件要重新上傳嗎？')) {
+      certStatus[key] = 'empty';
+      card.classList.remove('uploaded','pending');
+      statusTag.className = 'cert-status-tag cs-empty';
+      statusTag.innerHTML = '<svg><use href="#i-upload"/></svg>上傳';
+      updateProgress();
+    }
+  }
+}
+
+function sendEmailOTP() {
+  var val = document.getElementById('email-input').value.trim();
+  if (!val || !val.includes('@')) { alert('請輸入正確的信箱地址'); return; }
+  emailOTP = Math.floor(100000 + Math.random() * 900000).toString();
+  document.getElementById('email-show').textContent = val;
+  document.getElementById('email-step1').style.display = 'none';
+  document.getElementById('email-step2').style.display = 'block';
+  startCountdown('email-countdown', 'email-resend', 60);
+  alert('【模擬】驗證碼為：' + emailOTP + '（實際上線後會寄信）');
+}
+function resendEmail() {
+  emailOTP = Math.floor(100000 + Math.random() * 900000).toString();
+  startCountdown('email-countdown', 'email-resend', 60);
+  alert('【模擬】新驗證碼為：' + emailOTP);
+}
+function verifyEmail() {
+  var entered = ['e0','e1','e2','e3','e4','e5'].map(function(id){ return document.getElementById(id).value; }).join('');
+  if (entered === emailOTP) {
+    emailVerified = true;
+    document.getElementById('email-step2').style.display = 'none';
+    document.getElementById('email-step3').style.display = 'block';
+    updateStatusTab();
+    updateProgress();
+  } else {
+    document.getElementById('email-error').style.display = 'block';
+    ['e0','e1','e2','e3','e4','e5'].forEach(function(id){ document.getElementById(id).classList.add('error'); });
+    setTimeout(function(){
+      document.getElementById('email-error').style.display = 'none';
+      ['e0','e1','e2','e3','e4','e5'].forEach(function(id){
+        var el = document.getElementById(id); el.classList.remove('error','filled'); el.value = '';
+      });
+      document.getElementById('email-verify-btn').disabled = true;
+      document.getElementById('e0').focus();
+    }, 1500);
+  }
+}
+
+function sendPhoneOTP() {
+  var val = document.getElementById('phone-input').value.trim();
+  if (!val || val.length < 10) { alert('請輸入正確的手機號碼'); return; }
+  phoneOTP = Math.floor(100000 + Math.random() * 900000).toString();
+  document.getElementById('phone-show').textContent = val;
+  document.getElementById('phone-step1').style.display = 'none';
+  document.getElementById('phone-step2').style.display = 'block';
+  startCountdown('phone-countdown', 'phone-resend', 60);
+  alert('【模擬】簡訊驗證碼為：' + phoneOTP + '（實際上線後會發簡訊）');
+}
+function resendPhone() {
+  phoneOTP = Math.floor(100000 + Math.random() * 900000).toString();
+  startCountdown('phone-countdown', 'phone-resend', 60);
+  alert('【模擬】新驗證碼為：' + phoneOTP);
+}
+function verifyPhone() {
+  var entered = ['p0','p1','p2','p3','p4','p5'].map(function(id){ return document.getElementById(id).value; }).join('');
+  if (entered === phoneOTP) {
+    phoneVerified = true;
+    document.getElementById('phone-step2').style.display = 'none';
+    document.getElementById('phone-step3').style.display = 'block';
+    updateStatusTab();
+    updateProgress();
+  } else {
+    document.getElementById('phone-error').style.display = 'block';
+    ['p0','p1','p2','p3','p4','p5'].forEach(function(id){ document.getElementById(id).classList.add('error'); });
+    setTimeout(function(){
+      document.getElementById('phone-error').style.display = 'none';
+      ['p0','p1','p2','p3','p4','p5'].forEach(function(id){
+        var el = document.getElementById(id); el.classList.remove('error','filled'); el.value = '';
+      });
+      document.getElementById('phone-verify-btn').disabled = true;
+      document.getElementById('p0').focus();
+    }, 1500);
+  }
+}
+
+function otpNext(el, nextId, prevId, type) {
+  el.classList.toggle('filled', el.value.length > 0);
+  if (el.value.length === 1 && nextId) { var n = document.getElementById(nextId); if(n) n.focus(); }
+  var prefix = type === 'email' ? 'e' : 'p';
+  var btnId = type + '-verify-btn';
+  var all = [0,1,2,3,4,5].map(function(i){ return document.getElementById(prefix+i).value; });
+  document.getElementById(btnId).disabled = all.some(function(v){ return v === ''; });
+}
+
+function startCountdown(countdownId, resendId, sec) {
+  var el = document.getElementById(countdownId);
+  var re = document.getElementById(resendId);
+  el.style.display = 'inline'; re.style.display = 'none';
+  var t = sec;
+  var timer = setInterval(function(){
+    t--;
+    el.textContent = t + ' 秒後可重新傳送';
+    if (t <= 0) { clearInterval(timer); el.style.display = 'none'; re.style.display = 'inline'; }
+  }, 1000);
+}
+
+function updateStatusTab() {
+  var emailVal = document.getElementById('email-input').value || '尚未驗證';
+  var phoneVal = document.getElementById('phone-input').value || '尚未驗證';
+  document.getElementById('email-status-value').textContent = emailVerified ? emailVal : '尚未驗證';
+  document.getElementById('email-status-badge').textContent = emailVerified ? '已驗證 ✓' : '未驗證';
+  document.getElementById('email-status-badge').style.background = emailVerified ? 'var(--green)' : '#e67e22';
+  document.getElementById('phone-status-value').textContent = phoneVerified ? phoneVal : '尚未驗證';
+  document.getElementById('phone-status-badge').textContent = phoneVerified ? '已驗證 ✓' : '未驗證';
+  document.getElementById('phone-status-badge').style.background = phoneVerified ? 'var(--green)' : '#e67e22';
+
+  // 證件狀態
+  var idEl = document.getElementById('id-status-value');
+  var idBadge = document.getElementById('id-status-badge');
+  if (idEl) {
+    idEl.textContent = certStatus.id === 'uploaded' ? '已通過審核' : (certStatus.id === 'pending' ? '審核中' : '尚未上傳');
+    idBadge.textContent = certStatus.id === 'uploaded' ? '已驗證 ✓' : (certStatus.id === 'pending' ? '審核中' : '未驗證');
+    idBadge.style.background = certStatus.id === 'uploaded' ? 'var(--green)' : (certStatus.id === 'pending' ? '#3498db' : '#e67e22');
+  }
+  var safeEl = document.getElementById('safe-status-value');
+  var safeBadge = document.getElementById('safe-status-badge');
+  if (safeEl) {
+    safeEl.textContent = certStatus.safe === 'uploaded' ? '已通過審核' : (certStatus.safe === 'pending' ? '審核中' : '尚未上傳');
+    safeBadge.textContent = certStatus.safe === 'uploaded' ? '已驗證 ✓' : (certStatus.safe === 'pending' ? '審核中' : '未驗證');
+    safeBadge.style.background = certStatus.safe === 'uploaded' ? 'var(--green)' : (certStatus.safe === 'pending' ? '#3498db' : '#e67e22');
+  }
+
+  // 預覽徽章
+  document.getElementById('preview-email-badge').style.display = emailVerified ? 'inline-flex' : 'none';
+  document.getElementById('preview-phone-badge').style.display = phoneVerified ? 'inline-flex' : 'none';
+  var idBadgePrev = document.getElementById('preview-id-badge');
+  if (idBadgePrev) idBadgePrev.style.display = certStatus.id === 'uploaded' ? 'inline-flex' : 'none';
+  var safeBadgePrev = document.getElementById('preview-safe-badge');
+  if (safeBadgePrev) safeBadgePrev.style.display = certStatus.safe === 'uploaded' ? 'inline-flex' : 'none';
+
+  var anyVerified = emailVerified || phoneVerified || certStatus.id === 'uploaded' || certStatus.safe === 'uploaded';
+  document.getElementById('preview-unverified').style.display = anyVerified ? 'none' : 'inline-flex';
+
+  updateProgress();
+}
+</script>
+</body>
+</html>
