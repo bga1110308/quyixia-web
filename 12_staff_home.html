@@ -137,6 +137,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* 上線開關 */
 .status-row{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:12px;padding:0.85rem 1rem;margin-top:0.85rem;}
+.rate-row{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#fff 0%,var(--gold-pale) 100%);border:0.5px solid #e8d8be;border-radius:12px;padding:0.75rem 1rem;margin-top:0.65rem;}
+.rate-row-left{display:flex;align-items:center;gap:8px;}
+.rate-row-left svg{width:1.1em;height:1.1em;fill:var(--gold-dark);}
+.rate-row-label{font-size:0.78rem;color:#7a5c3a;}
+.rate-row-value{font-size:1.05rem;font-weight:500;color:var(--gold-deeper);}
+.rate-row-value .unit{font-size:0.72rem;color:#9a7a50;margin-left:2px;}
+.rate-edit-link{font-size:0.72rem;color:var(--gold-dark);text-decoration:none;padding:3px 9px;border-radius:99px;background:rgba(255,255,255,0.7);border:0.5px solid #e8d8be;}
+.rate-edit-link:hover{background:#fff;}
 .online-info{display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--gold-deeper);}
 .dot{width:9px;height:9px;border-radius:50%;background:#bababa;}
 .dot.on{background:#2ecc71;box-shadow:0 0 0 3px rgba(46,204,113,0.2);}
@@ -291,6 +299,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-1.5 16L6 12.5l1.4-1.4 3.1 3.1 6.1-6.1L18 9.5l-7.5 7.5z"/></symbol>
+  <symbol id="i-heart-cross" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35zM11 10V7h2v3h3v2h-3v3h-2v-3H8v-2h3z"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></symbol>
   <symbol id="i-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41C19.1 7.78 20 9.79 20 12s-.9 4.22-2.34 5.66l1.41 1.41C20.88 17.26 22 14.76 22 12s-1.12-5.26-2.93-7.07z"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 11H7v-2h3.5V6h2v7z"/></symbol>
@@ -329,6 +338,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="h-badges">
           <span class="bm b-verified"><svg><use href="#i-check"/></svg>實名</span>
           <span class="bm b-safe"><svg><use href="#i-shield"/></svg>良民</span>
+          <span class="bm b-cpr"><svg><use href="#i-heart-cross"/></svg>急救</span>
           <span class="bm b-cna"><svg><use href="#i-star"/></svg>照服員</span>
           <span class="bm b-senior"><svg><use href="#i-crown"/></svg>資深</span>
         </div>
@@ -338,7 +348,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span class="crown-count" id="crown-count">8</span>
         <span class="crown-tooltip">已推薦 8 人 · 點看等級</span>
       </a>
-      <button class="edit-btn" onclick="alert('編輯個人資料')"><svg><use href="#i-edit"/></svg>編輯</button>
+      <button class="edit-btn" onclick="window.location.href='15_edit_profile.html?role=staff'"><svg><use href="#i-edit"/></svg>編輯</button>
     </div>
 
     <!-- 上線開關 -->
@@ -348,6 +358,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <span id="online-label">目前上線 · 開放接單</span>
       </div>
       <div class="toggle on" id="online-toggle" onclick="toggleOnline()"></div>
+    </div>
+
+    <!-- 期望時薪 -->
+    <div class="rate-row">
+      <div class="rate-row-left">
+        <svg><use href="#i-money"/></svg>
+        <span class="rate-row-label">你的期望時薪</span>
+        <span class="rate-row-value">NT$ <span id="my-rate">350</span><span class="unit">/小時</span></span>
+      </div>
+      <a class="rate-edit-link" href="15_edit_profile.html?role=staff">調整</a>
     </div>
 
     <!-- 身份切換器 -->

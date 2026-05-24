@@ -82,6 +82,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .b-senior{background:#fce4ec;color:#ad1457;}
 .mini-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:8px;}
 .mtag{font-size:0.66rem;background:var(--gold-pale);color:var(--gold-deeper);padding:2px 8px;border-radius:99px;border:0.5px solid #c9a96e;}
+.rate-pill{display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:0.82rem;font-weight:500;color:var(--gold-deeper);background:linear-gradient(135deg,#fff 0%,var(--gold-pale) 100%);border:1px solid #e8d8be;padding:4px 12px;border-radius:99px;}
+.rate-pill svg{width:0.95em;height:0.95em;fill:var(--gold-dark);}
+.rate-pill .unit{font-size:0.7rem;color:#9a7a50;font-weight:400;margin-left:1px;}
 .card-meta{display:flex;justify-content:center;gap:8px;margin-top:8px;font-size:0.7rem;color:#9a7a50;}
 .card-meta span{display:inline-flex;align-items:center;gap:3px;}
 .card-meta svg{width:0.95em;height:0.95em;fill:currentColor;}
@@ -140,6 +143,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M19 8c-1.66 0-3 1.34-3 3 0 1.31.84 2.41 2 2.83V15c0 2.21-1.79 4-4 4s-4-1.79-4-4v-.18c2.84-.48 5-2.94 5-5.92V3h-4v2h2v4c0 2.21-1.79 4-4 4S4 11.21 4 9V5h2V3H2v6c0 2.98 2.16 5.44 5 5.92V15c0 3.31 2.69 6 6 6s6-2.69 6-6v-1.17c1.16-.42 2-1.52 2-2.83 0-1.66-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 11H7v-2h3.5V6h2v7z"/></symbol>
+  <symbol id="i-money" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.51 4.51 0 0 1 9.5 14z"/></symbol>
 </defs>
 </svg>
@@ -225,18 +229,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script>
 /* 順咖資料庫，pool=care 表示照服員，其餘為一般 */
 var staffList = [
-  {name:'小芳', avatar:'芳', rating:4.9, done:23, online:true, new:false, pool:'care', cats:['companion','elder','clean'], tags:['陪伴','陪看醫生','備餐'], badges:['verified','safe','senior','cna']},
-  {name:'阿凱', avatar:'凱', rating:4.8, done:17, online:true, new:false, pool:'general', cats:['pet','errand','game'], tags:['遛狗','代排隊','陪打遊戲'], badges:['verified','safe']},
-  {name:'小雯', avatar:'雯', rating:5.0, done:31, online:true, new:false, pool:'care', cats:['clean','companion','elder'], tags:['打掃','陪逛街','陪吃飯'], badges:['verified','safe','cpr','cna']},
-  {name:'大明', avatar:'明', rating:4.7, done:14, online:false, new:false, pool:'care', cats:['elder','companion'], tags:['就醫陪同','備餐','服藥提醒'], badges:['verified','safe','cna']},
-  {name:'小玲', avatar:'玲', rating:4.9, done:28, online:true, new:false, pool:'general', cats:['pet','clean'], tags:['寵物','打掃','到府陪伴'], badges:['verified','safe','cpr']},
-  {name:'阿翔', avatar:'翔', rating:4.6, done:9, online:false, new:false, pool:'general', cats:['errand','game'], tags:['搶票','代排','陪打遊戲'], badges:['verified']},
-  {name:'小慧', avatar:'慧', rating:4.95, done:42, online:true, new:false, pool:'care', cats:['elder','clean','companion'], tags:['長輩陪伴','備餐','打掃'], badges:['verified','safe','cpr','cna','senior']},
-  {name:'阿傑', avatar:'傑', rating:4.5, done:6, online:true, new:true, pool:'general', cats:['errand','pet'], tags:['代購','遛狗','代取件'], badges:['verified','safe']},
-  {name:'May', avatar:'M', rating:4.85, done:19, online:false, new:false, pool:'general', cats:['companion','kid'], tags:['陪伴聊天','陪逛街','接送小孩'], badges:['verified','safe','cpr']},
-  {name:'阿德', avatar:'德', rating:4.7, done:12, online:true, new:false, pool:'general', cats:['kid','errand'], tags:['放學接送','陪寫功課','代購'], badges:['verified','safe']},
-  {name:'小婷', avatar:'婷', rating:4.95, done:35, online:true, new:false, pool:'care', cats:['elder','companion'], tags:['失智陪伴','備餐','就醫'], badges:['verified','safe','cpr','cna','senior']},
-  {name:'阿宏', avatar:'宏', rating:4.4, done:4, online:false, new:true, pool:'general', cats:['errand','clean'], tags:['代排','搬運','打掃'], badges:['verified']}
+  {name:'小芳', avatar:'芳', rating:4.9, done:23, online:true, new:false, pool:'care', cats:['companion','elder','clean'], tags:['陪伴','陪看醫生','備餐'], badges:['verified','safe','senior','cna'], hourlyRate:380},
+  {name:'阿凱', avatar:'凱', rating:4.8, done:17, online:true, new:false, pool:'general', cats:['pet','errand','game'], tags:['遛狗','代排隊','陪打遊戲'], badges:['verified','safe'], hourlyRate:280},
+  {name:'小雯', avatar:'雯', rating:5.0, done:31, online:true, new:false, pool:'care', cats:['clean','companion','elder'], tags:['打掃','陪逛街','陪吃飯'], badges:['verified','safe','cpr','cna'], hourlyRate:420},
+  {name:'大明', avatar:'明', rating:4.7, done:14, online:false, new:false, pool:'care', cats:['elder','companion'], tags:['就醫陪同','備餐','服藥提醒'], badges:['verified','safe','cna'], hourlyRate:360},
+  {name:'小玲', avatar:'玲', rating:4.9, done:28, online:true, new:false, pool:'general', cats:['pet','clean'], tags:['寵物','打掃','到府陪伴'], badges:['verified','safe','cpr'], hourlyRate:300},
+  {name:'阿翔', avatar:'翔', rating:4.6, done:9, online:false, new:false, pool:'general', cats:['errand','game'], tags:['搶票','代排','陪打遊戲'], badges:['verified'], hourlyRate:250},
+  {name:'小慧', avatar:'慧', rating:4.95, done:42, online:true, new:false, pool:'care', cats:['elder','clean','companion'], tags:['長輩陪伴','備餐','打掃'], badges:['verified','safe','cpr','cna','senior'], hourlyRate:500},
+  {name:'阿傑', avatar:'傑', rating:4.5, done:6, online:true, new:true, pool:'general', cats:['errand','pet'], tags:['代購','遛狗','代取件'], badges:['verified','safe'], hourlyRate:240},
+  {name:'May', avatar:'M', rating:4.85, done:19, online:false, new:false, pool:'general', cats:['companion','kid'], tags:['陪伴聊天','陪逛街','接送小孩'], badges:['verified','safe','cpr'], hourlyRate:320},
+  {name:'阿德', avatar:'德', rating:4.7, done:12, online:true, new:false, pool:'general', cats:['kid','errand'], tags:['放學接送','陪寫功課','代購'], badges:['verified','safe'], hourlyRate:280},
+  {name:'小婷', avatar:'婷', rating:4.95, done:35, online:true, new:false, pool:'care', cats:['elder','companion'], tags:['失智陪伴','備餐','就醫'], badges:['verified','safe','cpr','cna','senior'], hourlyRate:450},
+  {name:'阿宏', avatar:'宏', rating:4.4, done:4, online:false, new:true, pool:'general', cats:['errand','clean'], tags:['代排','搬運','打掃'], badges:['verified'], hourlyRate:220}
 ];
 
 var currentPool = 'all';
@@ -326,6 +330,7 @@ function renderStaff() {
       '<div class="staff-done">已完成 '+s.done+' 件</div>' +
       '<div class="badge-row">'+badges+'</div>' +
       '<div class="mini-tags">'+tags+'</div>' +
+      '<div class="rate-pill"><svg><use href="#i-money"/></svg>期望時薪 NT$ '+s.hourlyRate+'<span class="unit">/小時</span></div>' +
       '<button class="card-cta">指定她下單</button>' +
     '</div>';
   }).join('');
