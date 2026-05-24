@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>順咖介紹 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+--gold:#EF9F27;--gold-dark:#BA7517;--gold-deeper:#633806;--gold-pale:#FAEEDA;
+--cream:#fdf6ec;--green:#4a8c6a;--green-light:#d4ede1;--green-pale:#eaf5ef;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fdf6ec;}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
+
+/* Header */
+.page-header{background:var(--gold-pale);padding:2rem 2rem 1.5rem;border-bottom:2px solid var(--gold);text-align:center;}
+.page-title{font-size:1.4rem;font-weight:500;color:var(--gold-deeper);}
+.page-sub{font-size:0.85rem;color:#7a5c3a;margin-top:6px;line-height:1.7;}
+.total-count{display:inline-flex;align-items:center;gap:5px;margin-top:0.75rem;font-size:0.8rem;color:var(--gold-dark);background:#ffffff;padding:0.35rem 0.85rem;border-radius:99px;border:0.5px solid #e8d8be;}
+.total-count .dot{width:6px;height:6px;border-radius:50%;background:#2ecc71;animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* Pool tabs */
+.pool-tabs{display:flex;background:#ffffff;border-bottom:0.5px solid #e8d8be;padding:0 1rem;gap:0.5rem;overflow-x:auto;}
+.p-tab{padding:1rem 1.25rem;font-size:0.88rem;color:#9a7a50;font-weight:500;cursor:pointer;border-bottom:2.5px solid transparent;transition:all 0.15s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;}
+.p-tab:hover{color:var(--gold-deeper);}
+.p-tab.on{color:var(--gold-deeper);border-bottom-color:var(--gold-dark);}
+.p-tab .ico{width:16px;height:16px;}
+.p-tab .count{font-size:0.7rem;background:var(--gold-pale);color:var(--gold-deeper);padding:1px 7px;border-radius:99px;font-weight:500;}
+.p-tab.on .count{background:var(--gold-dark);color:#ffffff;}
+
+/* Filter bar */
+.filter-bar{background:#ffffff;padding:1rem 1.5rem;border-bottom:0.5px solid #e8d8be;}
+.filter-section{margin-bottom:0.9rem;}
+.filter-section:last-child{margin-bottom:0;}
+.filter-label{font-size:0.72rem;color:#9a7a50;margin-bottom:6px;letter-spacing:0.5px;font-weight:500;}
+.badge-filters{display:flex;gap:6px;flex-wrap:wrap;}
+.bf{display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;padding:5px 11px;border-radius:99px;cursor:pointer;border:1.5px solid transparent;transition:all 0.15s;font-weight:500;}
+.bf svg{width:0.9em;height:0.9em;fill:currentColor;}
+.bf-verified{background:#e3f2fd;color:#1976d2;border-color:#bbdefb;}
+.bf-safe{background:#e8f5e9;color:#2e7d32;border-color:#c8e6c9;}
+.bf-cpr{background:#ffebee;color:#c62828;border-color:#ffcdd2;}
+.bf-cna{background:#fff3e0;color:#e65100;border-color:#ffe0b2;}
+.bf-senior{background:#fce4ec;color:#ad1457;border-color:#f8bbd0;}
+.bf.on{box-shadow:0 0 0 2px rgba(186,117,23,0.25);transform:translateY(-1px);}
+.bf:hover{transform:translateY(-1px);}
+
+.cat-filters{display:flex;gap:6px;flex-wrap:wrap;}
+.cf{font-size:0.78rem;padding:5px 12px;border-radius:99px;background:#ffffff;color:var(--gold-deeper);border:1.5px solid #c9a96e;cursor:pointer;transition:all 0.15s;font-weight:500;}
+.cf:hover{background:var(--gold-pale);}
+.cf.on{background:var(--gold-dark);color:#ffffff;border-color:var(--gold-dark);}
+
+.sort-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.sort-group{display:flex;gap:6px;align-items:center;}
+.sort-group .lbl{font-size:0.75rem;color:#9a7a50;}
+.sort-sel{padding:5px 9px;border:1.5px solid #c9a96e;border-radius:8px;font-size:0.78rem;background:#ffffff;color:var(--gold-deeper);font-family:inherit;}
+.result-count{font-size:0.78rem;color:#9a7a50;}
+.result-count strong{color:var(--gold-deeper);font-weight:500;}
+
+/* Staff grid */
+.staff-wrap{padding:1.25rem 1.5rem 3rem;max-width:1100px;margin:0 auto;}
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.staff-card{background:#ffffff;border:0.5px solid #e8d8be;border-radius:14px;padding:1.1rem 1rem;text-align:center;transition:all 0.18s;cursor:pointer;position:relative;}
+.staff-card:hover{transform:translateY(-3px);border-color:var(--gold-dark);box-shadow:0 6px 18px rgba(99,56,6,0.08);}
+.online-mark{position:absolute;top:11px;right:11px;display:inline-flex;align-items:center;gap:3px;font-size:0.65rem;color:#2ecc71;font-weight:500;}
+.online-mark .dot{width:6px;height:6px;border-radius:50%;background:#2ecc71;}
+.online-mark.off{color:#bababa;}
+.online-mark.off .dot{background:#bababa;animation:none;}
+.avatar{width:60px;height:60px;border-radius:50%;background:var(--gold-pale);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:500;font-size:1.15rem;color:var(--gold-deeper);margin:0 auto 0.7rem;}
+.staff-name{font-weight:500;font-size:0.95rem;color:var(--gold-deeper);}
+.staff-rating{font-size:0.78rem;color:var(--gold-dark);margin-top:4px;display:inline-flex;align-items:center;gap:3px;cursor:pointer;border-radius:99px;padding:2px 8px;transition:background 0.15s;}
+.staff-rating:hover{background:var(--gold-pale);}
+.staff-done{font-size:0.7rem;color:#9a7a50;margin-top:2px;}
+.badge-row{display:flex;justify-content:center;gap:3px;margin-top:8px;flex-wrap:wrap;}
+.badge{font-size:0.62rem;padding:2px 6px;border-radius:99px;font-weight:500;display:inline-flex;align-items:center;gap:2px;}
+.badge svg{width:0.85em;height:0.85em;fill:currentColor;}
+.b-verified{background:#e3f2fd;color:#1976d2;}
+.b-safe{background:#e8f5e9;color:#2e7d32;}
+.b-cpr{background:#ffebee;color:#c62828;}
+.b-cna{background:#fff3e0;color:#e65100;}
+.b-senior{background:#fce4ec;color:#ad1457;}
+.mini-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:8px;}
+.mtag{font-size:0.66rem;background:var(--gold-pale);color:var(--gold-deeper);padding:2px 8px;border-radius:99px;border:0.5px solid #c9a96e;}
+.card-meta{display:flex;justify-content:center;gap:8px;margin-top:8px;font-size:0.7rem;color:#9a7a50;}
+.card-meta span{display:inline-flex;align-items:center;gap:3px;}
+.card-meta svg{width:0.95em;height:0.95em;fill:currentColor;}
+.card-cta{margin-top:0.85rem;background:transparent;border:1.5px solid var(--gold-dark);color:var(--gold-dark);padding:0.45rem 0;width:100%;border-radius:8px;font-size:0.78rem;font-weight:500;cursor:pointer;transition:all 0.15s;}
+.card-cta:hover{background:var(--gold-dark);color:#ffffff;}
+
+.no-result{text-align:center;padding:3rem 1rem;color:#9a7a50;font-size:0.9rem;}
+.no-result strong{display:block;color:var(--gold-deeper);font-size:1rem;margin-bottom:6px;font-weight:500;}
+
+/* Footer */
+.footer{text-align:center;font-size:0.75rem;color:#9a7a50;padding:1.5rem 2rem;background:var(--cream);border-top:0.5px solid #e8d8be;}
+.home-fab{position:fixed;top:14px;left:14px;width:42px;height:42px;border-radius:50%;background:#fff;border:1.5px solid #c9a96e;color:var(--gold-deeper);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 2px 8px rgba(99,56,6,0.1);transition:all 0.15s;text-decoration:none;}.home-fab:hover{background:var(--gold);color:#fff;border-color:var(--gold);transform:scale(1.05);}.home-fab svg{width:18px;height:18px;fill:currentColor;}
+/* === 全站視覺統一補丁 === */
+:root{
+  --u-radius:14px;
+  --u-shadow:0 4px 18px rgba(99,56,6,0.04);
+  --u-shadow-hover:0 10px 28px rgba(99,56,6,0.08);
+  --u-border:0.5px solid rgba(201,169,110,0.3);
+}
+.page-header{position:relative;padding:2.75rem 1.5rem 1.75rem!important;overflow:hidden;text-align:center;background:
+  radial-gradient(ellipse 60% 50% at 80% 30%, rgba(239,159,39,0.18) 0%, transparent 60%),
+  radial-gradient(ellipse 50% 40% at 10% 80%, rgba(74,140,106,0.10) 0%, transparent 60%),
+  linear-gradient(180deg, var(--gold-pale) 0%, #fcf7ed 100%)!important;
+  border-bottom:none!important;
+}
+.page-header::after{content:'';position:absolute;top:-60px;right:-80px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.18) 0%,transparent 70%);pointer-events:none;}
+.page-header > *{position:relative;z-index:1;}
+.page-title{font-size:1.65rem!important;font-weight:600!important;letter-spacing:-0.5px!important;color:var(--gold-deeper)!important;line-height:1.25!important;}
+.page-sub{font-size:0.85rem!important;color:#7a5c3a!important;margin-top:0.75rem!important;line-height:1.7!important;}
+.card,.section-card,.step1-card{
+  border-radius:var(--u-radius)!important;
+  border:var(--u-border)!important;
+  box-shadow:var(--u-shadow)!important;
+}
+.sec-title::before{
+  width:4px!important;
+  height:16px!important;
+  background:linear-gradient(180deg,var(--gold) 0%,var(--gold-dark) 100%)!important;
+  border-radius:2px!important;
+}
+.sec-title{font-weight:600!important;letter-spacing:-0.2px!important;}
+
+</style>
+</head>
+<body>
+<a href="index.html" class="home-fab" title="回首頁"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-1.5 16L6 12.5l1.4-1.4 3.1 3.1 6.1-6.1L18 9.5l-7.5 7.5z"/></symbol>
+  <symbol id="i-heart-cross" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><path d="M11 6h2v3h3v2h-3v3h-2v-3H8V9h3z" fill="#ffffff"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></symbol>
+  <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M19 8c-1.66 0-3 1.34-3 3 0 1.31.84 2.41 2 2.83V15c0 2.21-1.79 4-4 4s-4-1.79-4-4v-.18c2.84-.48 5-2.94 5-5.92V3h-4v2h2v4c0 2.21-1.79 4-4 4S4 11.21 4 9V5h2V3H2v6c0 2.98 2.16 5.44 5 5.92V15c0 3.31 2.69 6 6 6s6-2.69 6-6v-1.17c1.16-.42 2-1.52 2-2.83 0-1.66-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 11H7v-2h3.5V6h2v7z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.51 4.51 0 0 1 9.5 14z"/></symbol>
+</defs>
+</svg>
+
+<div class="page-header">
+  <div class="page-title">順咖介紹</div>
+  <div class="page-sub">看看誰能幫你 · 篩選你需要的條件</div>
+  <div class="total-count">
+    <span class="dot"></span>
+    <span>本平台共 <strong id="total-num">47</strong> 位順咖 · 目前 <strong id="online-num">23</strong> 位在線</span>
+  </div>
+</div>
+
+<div class="pool-tabs">
+  <div class="p-tab on" data-pool="all" onclick="switchPool(this)">
+    <svg class="ico"><use href="#i-people"/></svg>
+    全部順咖 <span class="count">47</span>
+  </div>
+  <div class="p-tab" data-pool="general" onclick="switchPool(this)">
+    <svg class="ico"><use href="#i-people"/></svg>
+    一般跑腿 <span class="count">35</span>
+  </div>
+  <div class="p-tab" data-pool="care" onclick="switchPool(this)">
+    <svg class="ico"><use href="#i-stethoscope"/></svg>
+    照服員專區 <span class="count">12</span>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-section">
+    <div class="filter-label">徽章篩選</div>
+    <div class="badge-filters">
+      <span class="bf bf-verified" data-badge="verified" onclick="toggleBadge(this)"><svg><use href="#i-check"/></svg>實名</span>
+      <span class="bf bf-safe" data-badge="safe" onclick="toggleBadge(this)"><svg><use href="#i-shield"/></svg>良民</span>
+      <span class="bf bf-cpr" data-badge="cpr" onclick="toggleBadge(this)"><svg><use href="#i-heart-cross"/></svg>急救</span>
+      <span class="bf bf-cna" data-badge="cna" onclick="toggleBadge(this)"><svg><use href="#i-star"/></svg>照服員</span>
+      <span class="bf bf-senior" data-badge="senior" onclick="toggleBadge(this)"><svg><use href="#i-crown"/></svg>資深照服</span>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <div class="filter-label">擅長類別</div>
+    <div class="cat-filters">
+      <span class="cf on" data-cat="all" onclick="toggleCat(this)">全部</span>
+      <span class="cf" data-cat="errand" onclick="toggleCat(this)">代排 · 代購</span>
+      <span class="cf" data-cat="pet" onclick="toggleCat(this)">寵物</span>
+      <span class="cf" data-cat="clean" onclick="toggleCat(this)">打掃</span>
+      <span class="cf" data-cat="companion" onclick="toggleCat(this)">陪伴 · 陪逛</span>
+      <span class="cf" data-cat="game" onclick="toggleCat(this)">陪打遊戲</span>
+      <span class="cf" data-cat="elder" onclick="toggleCat(this)">長輩照顧</span>
+      <span class="cf" data-cat="kid" onclick="toggleCat(this)">兒童接送</span>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <div class="sort-row">
+      <div class="sort-group">
+        <span class="lbl">排序</span>
+        <select class="sort-sel" id="sort-sel" onchange="renderStaff()">
+          <option value="rating">評分高到低</option>
+          <option value="done">完成件數多到少</option>
+          <option value="new">最近新加入</option>
+          <option value="online">在線狀態</option>
+        </select>
+      </div>
+      <div class="result-count">符合條件：<strong id="count-num">47</strong> 位</div>
+    </div>
+  </div>
+</div>
+
+<div class="staff-wrap">
+  <div class="staff-grid" id="staff-grid"></div>
+  <div class="no-result" id="no-result" style="display:none;">
+    <strong>沒有符合條件的順咖</strong>
+    試試放寬篩選條件
+  </div>
+</div>
+
+<div class="footer">
+  順咖資料為平台認證資訊 · 點擊卡片查看完整介紹與接單時段
+</div>
+
+<script>
+/* 順咖資料庫，pool=care 表示照服員，其餘為一般 */
+var staffList = [
+  {name:'小芳', avatar:'芳', rating:4.9, done:23, online:true, new:false, pool:'care', cats:['companion','elder','clean'], tags:['陪伴','陪看醫生','備餐'], badges:['verified','safe','senior','cna']},
+  {name:'阿凱', avatar:'凱', rating:4.8, done:17, online:true, new:false, pool:'general', cats:['pet','errand','game'], tags:['遛狗','代排隊','陪打遊戲'], badges:['verified','safe']},
+  {name:'小雯', avatar:'雯', rating:5.0, done:31, online:true, new:false, pool:'care', cats:['clean','companion','elder'], tags:['打掃','陪逛街','陪吃飯'], badges:['verified','safe','cpr','cna']},
+  {name:'大明', avatar:'明', rating:4.7, done:14, online:false, new:false, pool:'care', cats:['elder','companion'], tags:['就醫陪同','備餐','服藥提醒'], badges:['verified','safe','cna']},
+  {name:'小玲', avatar:'玲', rating:4.9, done:28, online:true, new:false, pool:'general', cats:['pet','clean'], tags:['寵物','打掃','到府陪伴'], badges:['verified','safe','cpr']},
+  {name:'阿翔', avatar:'翔', rating:4.6, done:9, online:false, new:false, pool:'general', cats:['errand','game'], tags:['搶票','代排','陪打遊戲'], badges:['verified']},
+  {name:'小慧', avatar:'慧', rating:4.95, done:42, online:true, new:false, pool:'care', cats:['elder','clean','companion'], tags:['長輩陪伴','備餐','打掃'], badges:['verified','safe','cpr','cna','senior']},
+  {name:'阿傑', avatar:'傑', rating:4.5, done:6, online:true, new:true, pool:'general', cats:['errand','pet'], tags:['代購','遛狗','代取件'], badges:['verified','safe']},
+  {name:'May', avatar:'M', rating:4.85, done:19, online:false, new:false, pool:'general', cats:['companion','kid'], tags:['陪伴聊天','陪逛街','接送小孩'], badges:['verified','safe','cpr']},
+  {name:'阿德', avatar:'德', rating:4.7, done:12, online:true, new:false, pool:'general', cats:['kid','errand'], tags:['放學接送','陪寫功課','代購'], badges:['verified','safe']},
+  {name:'小婷', avatar:'婷', rating:4.95, done:35, online:true, new:false, pool:'care', cats:['elder','companion'], tags:['失智陪伴','備餐','就醫'], badges:['verified','safe','cpr','cna','senior']},
+  {name:'阿宏', avatar:'宏', rating:4.4, done:4, online:false, new:true, pool:'general', cats:['errand','clean'], tags:['代排','搬運','打掃'], badges:['verified']}
+];
+
+var currentPool = 'all';
+var currentCat = 'all';
+var selectedBadges = [];
+
+function switchPool(el) {
+  document.querySelectorAll('.p-tab').forEach(function(t){ t.classList.remove('on'); });
+  el.classList.add('on');
+  currentPool = el.getAttribute('data-pool');
+  renderStaff();
+}
+
+function toggleBadge(el) {
+  var b = el.getAttribute('data-badge');
+  el.classList.toggle('on');
+  if (selectedBadges.indexOf(b) > -1) {
+    selectedBadges = selectedBadges.filter(function(x){ return x !== b; });
+  } else {
+    selectedBadges.push(b);
+  }
+  renderStaff();
+}
+
+function toggleCat(el) {
+  document.querySelectorAll('.cf').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+  currentCat = el.getAttribute('data-cat');
+  renderStaff();
+}
+
+var badgeMap = {
+  verified: {cls:'b-verified', icon:'i-check', name:'實名'},
+  safe: {cls:'b-safe', icon:'i-shield', name:'良民'},
+  cpr: {cls:'b-cpr', icon:'i-heart-cross', name:'急救'},
+  cna: {cls:'b-cna', icon:'i-star', name:'照服員'},
+  senior: {cls:'b-senior', icon:'i-crown', name:'資深照服'}
+};
+
+function renderStaff() {
+  var filtered = staffList.filter(function(s){
+    if (currentPool === 'general' && s.pool !== 'general') return false;
+    if (currentPool === 'care' && s.pool !== 'care') return false;
+    if (currentCat !== 'all' && s.cats.indexOf(currentCat) === -1) return false;
+    if (selectedBadges.length > 0) {
+      for (var i = 0; i < selectedBadges.length; i++) {
+        if (s.badges.indexOf(selectedBadges[i]) === -1) return false;
+      }
+    }
+    return true;
+  });
+
+  var sortBy = document.getElementById('sort-sel').value;
+  filtered.sort(function(a, b){
+    if (sortBy === 'rating') return b.rating - a.rating;
+    if (sortBy === 'done') return b.done - a.done;
+    if (sortBy === 'new') return (b.new ? 1 : 0) - (a.new ? 1 : 0);
+    if (sortBy === 'online') return (b.online ? 1 : 0) - (a.online ? 1 : 0);
+    return 0;
+  });
+
+  document.getElementById('count-num').textContent = filtered.length;
+  var grid = document.getElementById('staff-grid');
+  var nores = document.getElementById('no-result');
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    nores.style.display = 'block';
+    return;
+  }
+  nores.style.display = 'none';
+
+  grid.innerHTML = filtered.map(function(s){
+    var badges = s.badges.map(function(b){
+      var bm = badgeMap[b];
+      return '<span class="badge '+bm.cls+'"><svg><use href="#'+bm.icon+'"/></svg>'+bm.name+'</span>';
+    }).join('');
+    var tags = s.tags.map(function(t){ return '<span class="mtag">'+t+'</span>'; }).join('');
+    var onlineMark = s.online
+      ? '<span class="online-mark"><span class="dot"></span>在線</span>'
+      : '<span class="online-mark off"><span class="dot"></span>離線</span>';
+    return '<div class="staff-card" onclick="window.location.href=\'04_order_form.html?staff='+encodeURIComponent(s.name)+'\'">' +
+      onlineMark +
+      '<div class="avatar">'+s.avatar+'</div>' +
+      '<div class="staff-name">'+s.name+(s.new?' · <span style="color:var(--green);font-size:0.7rem;">新</span>':'')+'</div>' +
+      '<div class="staff-rating" onclick="event.stopPropagation(); window.location.href=\'05_review.html?view=fang\'" title="查看評價"><svg class="icon"><use href="#i-star"/></svg>'+s.rating.toFixed(1)+'</div>' +
+      '<div class="staff-done">已完成 '+s.done+' 件</div>' +
+      '<div class="badge-row">'+badges+'</div>' +
+      '<div class="mini-tags">'+tags+'</div>' +
+      '<button class="card-cta">指定她下單</button>' +
+    '</div>';
+  }).join('');
+}
+
+renderStaff();
+</script>
+</body>
+</html>

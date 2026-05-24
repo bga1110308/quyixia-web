@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>註冊 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+--gold:#EF9F27;--gold-dark:#BA7517;--gold-deeper:#633806;--gold-pale:#FAEEDA;
+--cream:#fdf6ec;--green:#4a8c6a;--green-light:#d4ede1;--green-pale:#eaf5ef;--green-dark:#2f6048;
+--alert:#c9762f;--alert-pale:#fdf2e4;
+--line:#06c755;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,var(--gold-pale) 0%,#fdf6ec 50%,var(--green-pale) 100%);color:#2a1f10;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;}
+
+/* 浮動回首頁 */
+.home-fab{position:fixed;top:14px;left:14px;width:42px;height:42px;border-radius:50%;background:#fff;border:1.5px solid #c9a96e;color:var(--gold-deeper);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 2px 8px rgba(99,56,6,0.1);transition:all 0.15s;text-decoration:none;}
+.home-fab:hover{background:var(--gold);color:#fff;border-color:var(--gold);transform:scale(1.05);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.signup-card{background:#fff;border-radius:16px;padding:2rem 1.75rem 1.5rem;max-width:480px;width:100%;box-shadow:0 10px 40px rgba(99,56,6,0.1);border:0.5px solid #e8d8be;}
+
+.brand{text-align:center;margin-bottom:1.25rem;}
+.brand-logo{display:inline-flex;align-items:center;justify-content:center;width:54px;height:54px;background:var(--gold-dark);border-radius:14px;color:#fff;font-size:0.9rem;font-weight:500;letter-spacing:-0.5px;margin-bottom:0.75rem;}
+.brand-title{font-size:1.35rem;font-weight:500;color:var(--gold-deeper);letter-spacing:-0.5px;}
+.brand-en{font-size:0.65rem;color:var(--gold-dark);letter-spacing:3px;margin-top:2px;}
+
+.welcome{text-align:center;margin-bottom:1.5rem;}
+.welcome-title{font-size:1.05rem;font-weight:500;color:var(--gold-deeper);margin-bottom:4px;}
+.welcome-sub{font-size:0.78rem;color:#7a5c3a;line-height:1.7;}
+
+/* === 步驟指示 === */
+.step-bar{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:1.5rem;}
+.step-dot{width:10px;height:10px;border-radius:50%;background:#e8d8be;transition:all 0.2s;}
+.step-dot.on{background:var(--gold-dark);transform:scale(1.2);}
+.step-dot.done{background:var(--green);}
+.step-line{flex:0 0 24px;height:1.5px;background:#e8d8be;}
+.step-line.done{background:var(--green);}
+
+/* === 步驟切換容器 === */
+.step{display:none;}
+.step.on{display:block;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* === Step 1: 選身份 === */
+.role-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:1.25rem;}
+.role-card{background:#fff;border:1.5px solid #c9a96e;border-radius:14px;padding:1.25rem 1.25rem 1.1rem;cursor:pointer;transition:all 0.2s;text-align:left;display:flex;align-items:flex-start;gap:14px;font-family:inherit;text-decoration:none;color:inherit;width:100%;}
+.role-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(99,56,6,0.1);border-color:var(--gold-dark);}
+.role-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.role-icon svg{width:26px;height:26px;fill:currentColor;}
+.role-card-client .role-icon{background:#FFF4DD;color:var(--gold-dark);}
+.role-card-staff .role-icon{background:var(--green-pale);color:var(--green-dark);}
+.role-name{font-size:1rem;font-weight:600;color:var(--gold-deeper);margin-bottom:3px;}
+.role-card-staff .role-name{color:var(--green-dark);}
+.role-desc{font-size:0.78rem;color:#7a5c3a;line-height:1.6;}
+.role-arrow{margin-left:auto;color:var(--gold-dark);align-self:center;flex-shrink:0;font-size:1.1rem;}
+.role-card-staff .role-arrow{color:var(--green);}
+
+/* === Step 2: 註冊方式 === */
+.chosen-role{background:var(--gold-pale);border:0.5px solid #e8d8be;border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:1rem;font-size:0.82rem;color:var(--gold-deeper);display:flex;align-items:center;gap:8px;}
+.chosen-role .ico{width:18px;height:18px;color:var(--gold-dark);flex-shrink:0;}
+.chosen-role .ico svg{width:100%;height:100%;fill:currentColor;}
+.chosen-role a{margin-left:auto;color:var(--gold-dark);font-size:0.74rem;text-decoration:underline;cursor:pointer;}
+
+.social-row{display:flex;flex-direction:column;gap:10px;margin-bottom:1rem;}
+.social-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:0.85rem 1rem;border-radius:10px;font-size:0.92rem;font-weight:500;cursor:pointer;font-family:inherit;text-decoration:none;border:none;transition:all 0.15s;}
+.social-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.social-btn svg{width:1.25em;height:1.25em;}
+.btn-line{background:var(--line);color:#fff;}
+.btn-line:hover{background:#05a847;}
+.btn-google{background:#fff;color:#3c4043;border:1px solid #dadce0;}
+.btn-google:hover{background:#f7f8f8;border-color:#c9a96e;}
+.btn-email{background:#fff;color:var(--gold-deeper);border:1px solid #c9a96e;}
+.btn-email:hover{background:var(--gold-pale);}
+
+.info-box{background:var(--cream);border:0.5px solid #e8d8be;border-radius:10px;padding:0.75rem 0.85rem;font-size:0.74rem;color:#5a3e1b;line-height:1.7;display:flex;gap:7px;align-items:flex-start;margin-bottom:1rem;}
+.info-box svg{width:14px;height:14px;color:var(--gold-dark);flex-shrink:0;margin-top:2px;fill:currentColor;}
+.info-box strong{color:var(--gold-deeper);}
+
+/* === Step 3: Email 註冊 === */
+.field{margin-bottom:0.9rem;}
+.field label{display:block;font-size:0.8rem;color:#5a3e1b;margin-bottom:5px;font-weight:500;}
+.field label .req{color:#c93030;margin-left:2px;}
+.field input{width:100%;border:1px solid #c9a96e;border-radius:8px;padding:0.7rem 0.85rem;font-size:0.92rem;font-family:inherit;color:#2a1f10;background:#fff;}
+.field input:focus{outline:none;border-color:var(--gold-dark);background:var(--gold-pale);}
+.field .hint{font-size:0.7rem;color:#9a7a50;margin-top:4px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* === Step 4: 補資料(案家)=== */
+.id-success{background:var(--green-pale);border:1px solid var(--green-light);border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;font-size:0.82rem;color:var(--green-dark);display:flex;align-items:center;gap:10px;}
+.id-success .ico{width:24px;height:24px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.id-success .ico svg{width:14px;height:14px;fill:currentColor;}
+.id-success strong{display:block;font-weight:500;}
+.id-success .small{font-size:0.72rem;color:#3d6b52;margin-top:2px;}
+
+.fill-note{background:var(--alert-pale);border:0.5px solid #f0d4a8;border-radius:10px;padding:0.7rem 0.85rem;font-size:0.74rem;color:#7a4a1f;line-height:1.7;margin-bottom:1rem;display:flex;gap:7px;align-items:flex-start;}
+.fill-note svg{width:14px;height:14px;color:var(--alert);flex-shrink:0;margin-top:2px;fill:currentColor;}
+.fill-note strong{color:var(--alert);}
+
+/* === 主要鈕 === */
+.primary-btn{width:100%;background:var(--gold);color:#fff;border:none;padding:0.9rem;border-radius:10px;font-size:0.95rem;font-weight:500;cursor:pointer;font-family:inherit;margin-top:0.25rem;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.primary-btn:hover{background:var(--gold-dark);}
+.primary-btn svg{width:1.05em;height:1.05em;fill:currentColor;}
+
+.back-link-row{text-align:center;font-size:0.78rem;color:#9a7a50;margin-top:0.85rem;}
+.back-link-row a{color:var(--gold-dark);cursor:pointer;text-decoration:underline;}
+
+.signin-row{text-align:center;font-size:0.85rem;color:#7a5c3a;padding-top:0.85rem;border-top:0.5px solid #e8d8be;margin-top:0.85rem;}
+.signin-row a{color:var(--gold-dark);text-decoration:none;font-weight:500;margin-left:4px;}
+
+.divider{display:flex;align-items:center;gap:10px;margin:0.85rem 0;color:#b89a60;font-size:0.7rem;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#e8d8be;}
+
+/* === 同意書區 === */
+.terms-row{font-size:0.78rem;color:#7a5c3a;line-height:1.7;margin:1rem 0;padding:0.85rem 1rem;background:#fff;border:0.5px solid #e8d8be;border-radius:10px;display:flex;align-items:flex-start;gap:8px;}
+.terms-row input{margin-top:3px;flex-shrink:0;}
+.terms-row input:disabled{cursor:not-allowed;}
+.terms-row label{cursor:pointer;}
+.terms-row a{color:var(--gold-dark);text-decoration:underline;cursor:pointer;font-weight:500;}
+.terms-row a:hover{color:var(--gold-deeper);}
+.terms-row a.read{color:var(--green);}
+.terms-row a.read::after{content:' ✓';color:var(--green);font-weight:500;}
+.terms-row .unread-hint{display:block;font-size:0.72rem;color:var(--alert);margin-top:5px;}
+.terms-row .unread-hint.hide{display:none;}
+
+.primary-btn:disabled{background:#e0d4b8;color:#9a7a50;cursor:not-allowed;}
+.primary-btn:disabled:hover{background:#e0d4b8;}
+
+/* === Modal === */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25);}
+.modal-header{padding:1.1rem 1.4rem;border-bottom:0.5px solid #e8d8be;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;background:var(--gold-pale);}
+.modal-title{font-size:1.05rem;font-weight:500;color:var(--gold-deeper);}
+.modal-close{width:32px;height:32px;border-radius:8px;border:none;background:transparent;color:#9a7a50;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-family:inherit;}
+.modal-close:hover{background:#fff;color:var(--gold-deeper);}
+.modal-body{padding:1.25rem 1.4rem;overflow-y:auto;flex:1;font-size:0.82rem;line-height:1.85;color:#5a3e1b;}
+.modal-body h3{font-size:0.92rem;font-weight:500;color:var(--gold-deeper);margin:1rem 0 0.5rem;display:flex;align-items:center;gap:6px;}
+.modal-body h3:first-child{margin-top:0;}
+.modal-body h3 .num{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--gold-dark);color:#fff;font-size:0.72rem;line-height:22px;text-align:center;}
+.modal-body p{margin-bottom:0.5rem;}
+.modal-body ul{padding-left:1.2rem;margin-bottom:0.5rem;}
+.modal-body ul li{margin-bottom:3px;}
+.modal-body strong{color:var(--gold-deeper);font-weight:500;}
+.modal-body .highlight{background:var(--alert-pale,#fdf2e4);border-left:3px solid var(--alert,#c9762f);padding:0.75rem 0.9rem;border-radius:0 8px 8px 0;margin:0.5rem 0;color:#7a4a1f;}
+.modal-footer{padding:1rem 1.4rem;border-top:0.5px solid #e8d8be;display:flex;flex-direction:column;gap:10px;flex-shrink:0;background:var(--cream);}
+
+/* 進度條 */
+.read-prog{display:flex;align-items:center;gap:10px;}
+.read-prog-label{font-size:0.78rem;color:#5a3e1b;font-weight:500;flex-shrink:0;}
+.read-prog-track{flex:1;height:10px;background:#f0e4ce;border-radius:99px;overflow:hidden;border:0.5px solid #e8d8be;}
+.read-prog-fill{height:100%;background:linear-gradient(90deg,var(--gold) 0%,var(--gold-dark) 50%,#4a8c6a 100%);border-radius:99px;transition:width 0.3s ease;width:0%;}
+.read-prog-text{font-size:0.85rem;font-weight:600;color:var(--gold-deeper);font-variant-numeric:tabular-nums;min-width:42px;text-align:right;flex-shrink:0;}
+.read-prog-text.done{color:#4a8c6a;}
+.modal-confirm{padding:0.85rem;background:#e0d4b8;color:#9a7a50;border:none;border-radius:10px;font-size:0.95rem;font-weight:500;cursor:not-allowed;font-family:inherit;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.modal-confirm.ready{background:#4a8c6a;color:#fff;cursor:pointer;}
+.modal-confirm.ready:hover{background:#3d7058;}
+.modal-confirm svg{width:1.1em;height:1.1em;fill:currentColor;}
+</style>
+</head>
+<body>
+
+<a href="index.html" class="home-fab" title="回首頁">
+  <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
+  <symbol id="i-staff" viewBox="0 0 24 24"><circle cx="12" cy="6" r="3.2"/><path d="M12 11c-3.5 0-6.5 1.8-6.5 4.5V20c0 .55.45 1 1 1h11c.55 0 1-.45 1-1v-4.5c0-2.7-3-4.5-6.5-4.5z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></symbol>
+</defs>
+</svg>
+
+<div class="signup-card">
+
+  <div class="brand">
+    <div class="brand-logo">去一下</div>
+    <div class="brand-title">註冊新帳號</div>
+    <div class="brand-en">QU YI XIA</div>
+  </div>
+
+  <!-- 步驟指示 -->
+  <div class="step-bar" id="step-bar">
+    <span class="step-dot on" data-s="1"></span>
+    <span class="step-line"></span>
+    <span class="step-dot" data-s="2"></span>
+    <span class="step-line"></span>
+    <span class="step-dot" data-s="3"></span>
+  </div>
+
+  <!-- ===== Step 1: 選身份 ===== -->
+  <div class="step on" id="step-1">
+    <div class="welcome">
+      <div class="welcome-title">你是?</div>
+      <div class="welcome-sub">選擇一個身份開始</div>
+    </div>
+
+    <div class="role-grid">
+      <button class="role-card role-card-client" onclick="pickRole('client')">
+        <div class="role-icon"><svg><use href="#i-heart"/></svg></div>
+        <div style="flex:1;">
+          <div class="role-name">我要找順咖</div>
+          <div class="role-desc">下單請人幫忙跑腿、照顧家人、遛狗、代排</div>
+        </div>
+        <span class="role-arrow">→</span>
+      </button>
+
+      <a class="role-card role-card-staff" href="03_staff_apply.html">
+        <div class="role-icon"><svg><use href="#i-staff"/></svg></div>
+        <div style="flex:1;">
+          <div class="role-name">我要成為順咖</div>
+          <div class="role-desc">空閒時間接案賺錢,自己排班、自己定價</div>
+        </div>
+        <span class="role-arrow">→</span>
+      </a>
+    </div>
+
+    <div class="info-box">
+      <svg><use href="#i-info"/></svg>
+      <div>選錯了沒關係,<strong>同一支手機可以同時擁有兩個身份</strong>,登入後在設定切換即可。</div>
+    </div>
+
+    <div class="signin-row">
+      已經有帳號?<a href="13_login.html">直接登入</a>
+    </div>
+  </div>
+
+  <!-- ===== Step 2: 選註冊方式(案家)===== -->
+  <div class="step" id="step-2">
+    <div class="welcome">
+      <div class="welcome-title">選擇註冊方式</div>
+      <div class="welcome-sub">用社群帳號最快,1 分鐘完成</div>
+    </div>
+
+    <div class="chosen-role">
+      <span class="ico"><svg><use href="#i-heart"/></svg></span>
+      <span>身份:<strong>找順咖的人</strong></span>
+      <a onclick="goStep(1)">改</a>
+    </div>
+
+    <div class="info-box">
+      <svg><use href="#i-info"/></svg>
+      <div><strong>建議用 LINE</strong>客服可即時聯繫你、訂單通知不漏接</div>
+    </div>
+
+    <div class="social-row">
+      <button class="social-btn btn-line" onclick="signupWith('LINE')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.81 4.27 8.84 10.035 9.608.391.084.923.258 1.058.592.122.303.08.778.039 1.085 0 0-.141.846-.171 1.027-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967h-.001c1.739-1.907 2.572-3.843 2.572-5.992zM7.586 13.55h-2.386c-.346 0-.628-.282-.628-.628V8.144c0-.346.282-.628.628-.628.346 0 .628.282.628.628v4.151h1.758c.346 0 .628.282.628.628s-.282.627-.628.627zm2.13-.628c0 .346-.282.628-.628.628-.346 0-.627-.282-.627-.628V8.144c0-.346.281-.628.627-.628.346 0 .628.282.628.628v4.778zm5.766 0c0 .27-.174.51-.43.593-.066.022-.135.034-.198.034-.196 0-.382-.094-.503-.254l-2.443-3.322v2.949c0 .346-.281.628-.626.628-.346 0-.628-.282-.628-.628V8.144c0-.27.174-.51.43-.593.063-.022.134-.033.197-.033.196 0 .382.094.503.254l2.443 3.323V8.144c0-.346.282-.628.628-.628.346 0 .627.282.627.628v4.778zm3.876-3.018h-1.758v.91h1.758c.346 0 .628.282.628.628s-.282.628-.628.628h-1.758v.911h1.758c.346 0 .628.282.628.628 0 .346-.282.627-.628.627h-2.386c-.346 0-.628-.282-.628-.628V8.144c0-.346.282-.628.628-.628h2.386c.346 0 .628.282.628.628s-.282.627-.628.627z"/></svg>
+        用 LINE 註冊
+      </button>
+
+      <button class="social-btn btn-google" onclick="signupWith('Google')">
+        <svg viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        用 Google 註冊
+      </button>
+
+      <button class="social-btn btn-email" onclick="signupWith('Email')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-mail"/></svg>
+        用 Email 註冊
+      </button>
+    </div>
+
+    <div class="back-link-row">
+      <a onclick="goStep(1)">← 改選身份</a>
+    </div>
+
+    <div class="signin-row">
+      已經有帳號?<a href="13_login.html">直接登入</a>
+    </div>
+  </div>
+
+  <!-- ===== Step 3: 補資料(案家通用,不論用哪種方式註冊)===== -->
+  <div class="step" id="step-3">
+    <div class="welcome">
+      <div class="welcome-title">完成註冊</div>
+      <div class="welcome-sub">這些資料用於配對順咖、客服聯繫</div>
+    </div>
+
+    <div class="id-success">
+      <span class="ico"><svg><use href="#i-check"/></svg></span>
+      <div>
+        <strong id="auth-msg">已用 LINE 完成身分驗證</strong>
+        <span class="small" id="auth-detail">系統收到:LINE 暱稱、頭像</span>
+      </div>
+    </div>
+
+    <div class="fill-note">
+      <svg><use href="#i-warn"/></svg>
+      <div><strong>還缺一點資料</strong>第三方登入無法提供姓名、電話、地址,需要你親自填寫,客服才能聯絡得到你</div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>真實姓名<span class="req">*</span></label>
+        <input type="text" placeholder="例:王小明">
+      </div>
+      <div class="field">
+        <label>稱呼<span class="req">*</span></label>
+        <input type="text" placeholder="例:小明、明哥">
+        <div class="hint">順咖會看到的稱呼</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>手機號碼<span class="req">*</span></label>
+      <input type="tel" placeholder="0912-345-678">
+      <div class="hint">用來接收訂單通知,不會公開給順咖</div>
+    </div>
+
+    <div class="field">
+      <label>Email <span style="color:#b89a60;font-weight:400;font-size:0.74rem;">(選填)</span></label>
+      <input type="email" id="email-field" placeholder="your@email.com">
+      <div class="hint">收訂單明細與發票用</div>
+    </div>
+
+    <div class="field">
+      <label>常用服務地址<span class="req">*</span></label>
+      <div class="row2" style="margin-bottom:8px;">
+        <input type="text" placeholder="縣市(例:新北市)">
+        <input type="text" placeholder="行政區(例:板橋區)">
+      </div>
+      <div class="row2">
+        <input type="text" placeholder="路 / 街(例:文化路一段)">
+        <input type="text" placeholder="號 · 樓(例:188 號 5 樓)">
+      </div>
+      <div class="hint">用於配對附近的順咖,可日後修改、新增其他地址</div>
+    </div>
+
+    <div class="info-box" style="margin-top:1rem;">
+      <svg><use href="#i-info"/></svg>
+      <div>身分證、信用卡這些<strong>下單時再加</strong>就好,不用一開始就填</div>
+    </div>
+
+    <!-- 同意書 -->
+    <div class="terms-row">
+      <input type="checkbox" id="agree" disabled onchange="handleAgreeChange(this)">
+      <label for="agree">
+        我已閱讀並同意 <a id="link-terms" onclick="openModal('modal-terms')">服務條款</a> 與 <a id="link-privacy" onclick="openModal('modal-privacy')">隱私權政策</a>,了解平台不介入服務內容、由我與順咖自行約定。
+        <span class="unread-hint" id="unread-hint">請先點開並閱讀完兩份文件,才能勾選同意</span>
+      </label>
+    </div>
+
+    <button class="primary-btn" id="submit-btn" onclick="completeSignup()" disabled>
+      完成註冊 · 開始找順咖
+      <svg><use href="#i-arrow"/></svg>
+    </button>
+
+    <div class="back-link-row">
+      <a onclick="goStep(2)">← 改用其他方式註冊</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- 服務條款 Modal -->
+<div class="modal-overlay" id="modal-terms" onclick="if(event.target===this)closeModal('modal-terms')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">服務條款</div>
+      <button class="modal-close" onclick="closeModal('modal-terms')">×</button>
+    </div>
+    <div class="modal-body" id="modal-terms-body" onscroll="trackScroll(this,'terms')">
+      <p style="color:#9a7a50;font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
+
+      <h3><span class="num">1</span>平台性質</h3>
+      <p>「去一下」(以下稱本平台)為<strong>資訊媒合服務平台</strong>,提供順咖與案家自由聯繫之資訊管道。本平台不參與、不介入實際提供之服務內容,亦非順咖之雇主。</p>
+      <div class="highlight">
+        順咖與案家係雙方獨立之契約關係,由雙方自行協商服務內容、時間、地點與報酬,本平台不負服務品質之擔保責任。
+      </div>
+
+      <h3><span class="num">2</span>案家義務</h3>
+      <ul>
+        <li>據實提供個人資料、服務地址、聯絡電話</li>
+        <li>準時於約定時間出現於服務地點,如需取消須提前告知</li>
+        <li>對順咖以基本尊重對待,不得有騷擾、歧視、暴力之言行</li>
+        <li>對服務內容如有爭議,應於完成 48 小時內回報平台處理</li>
+        <li>不得引導順咖私下交易、繞過平台付款機制</li>
+      </ul>
+
+      <h3><span class="num">3</span>服務分類與限制</h3>
+      <p>本平台服務分為兩類:</p>
+      <ul>
+        <li><strong>一般跑腿類</strong>:代排、遛狗、陪伴、打掃等</li>
+        <li><strong>身體照顧類</strong>:協助洗澡、翻身擦澡、服藥提醒等,依《長期照顧服務法》規定,<strong>必須由領有照顧服務員證之順咖提供</strong></li>
+      </ul>
+
+      <h3><span class="num">4</span>保險責任</h3>
+      <div class="highlight">
+        本平台<strong>不為案家或順咖投保任何保險</strong>。建議雙方自行評估風險並投保意外險。服務過程中發生意外、損失、糾紛,由雙方自行協調或循司法途徑解決,本平台不負連帶賠償責任。
+      </div>
+
+      <h3><span class="num">5</span>付款與抽成</h3>
+      <ul>
+        <li>案家透過本平台付款,本平台扣除服務抽成後,餘額撥入順咖帳戶</li>
+        <li>服務完成後 48 小時內未確認,視同確認,自動撥款</li>
+        <li>若對服務有重大爭議,可於服務完成 24 小時內申訴,平台介入協調</li>
+      </ul>
+
+      <h3><span class="num">6</span>取消政策</h3>
+      <ul>
+        <li>媒合中尚未有順咖接單:可隨時取消、全額退款</li>
+        <li>已接單但服務開始前 2 小時以上取消:退 80%</li>
+        <li>服務開始前 2 小時內取消:退 50%</li>
+        <li>服務已開始後取消:不退款,但可協調已完成的部分</li>
+      </ul>
+
+      <h3><span class="num">7</span>違規處置</h3>
+      <p>案家如有下列情形,本平台得逕行停權:</p>
+      <ul>
+        <li>提供不實資料</li>
+        <li>對順咖騷擾、性騷擾、暴力對待</li>
+        <li>連續 3 次無故取消已接單訂單</li>
+        <li>惡意給予不實負評</li>
+        <li>引導私下交易</li>
+      </ul>
+
+      <h3><span class="num">8</span>智慧財產與資料使用</h3>
+      <ul>
+        <li>案家發佈之任務內容、評價,授權本平台於平台內公開展示</li>
+        <li>本平台得使用案家服務紀錄統計數據(去識別化後)作平台優化</li>
+      </ul>
+
+      <h3><span class="num">9</span>條款修改</h3>
+      <p>本平台保留隨時修改本條款之權利。修改後將以簡訊或站內通知告知,<strong>繼續使用平台即視為同意修改後條款</strong>。</p>
+
+      <h3><span class="num">10</span>準據法與管轄</h3>
+      <p>本條款以中華民國法律為準據法,並以<strong>台灣新北地方法院</strong>為第一審管轄法院。</p>
+
+      <p style="margin-top:1.5rem;padding-top:1rem;border-top:1px dashed #e8d8be;color:#9a7a50;font-size:0.78rem;">
+        以上條款由大天使長照有限公司附設新北市私立大天使居家長照機構(「去一下」平台營運者)擬定。
+      </p>
+    </div>
+    <div class="modal-footer">
+      <div class="read-prog">
+        <span class="read-prog-label">閱讀進度</span>
+        <div class="read-prog-track"><div class="read-prog-fill" id="terms-progress" style="width:0%;"></div></div>
+        <span class="read-prog-text" id="terms-progress-text">0%</span>
+      </div>
+      <button class="modal-confirm" id="terms-confirm" onclick="confirmRead('terms')">請將內容拉至最底才能確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- 隱私權政策 Modal -->
+<div class="modal-overlay" id="modal-privacy" onclick="if(event.target===this)closeModal('modal-privacy')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">隱私權政策</div>
+      <button class="modal-close" onclick="closeModal('modal-privacy')">×</button>
+    </div>
+    <div class="modal-body" id="modal-privacy-body" onscroll="trackScroll(this,'privacy')">
+      <p style="color:#9a7a50;font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
+
+      <h3><span class="num">1</span>資料蒐集範圍</h3>
+      <p>本平台為提供媒合服務,將蒐集以下資料:</p>
+      <ul>
+        <li><strong>基本身分</strong>:真實姓名、暱稱、聯絡電話、Email</li>
+        <li><strong>第三方登入資料</strong>:LINE 暱稱與頭像、Google Email 與頭像(如以社群登入)</li>
+        <li><strong>服務資料</strong>:服務地址、訂單紀錄、評價、付款紀錄</li>
+        <li><strong>使用紀錄</strong>:登入紀錄、IP 位址、瀏覽行為</li>
+      </ul>
+
+      <h3><span class="num">2</span>資料使用目的</h3>
+      <ul>
+        <li>身分審核、確保平台安全</li>
+        <li>媒合順咖與案家</li>
+        <li>提供客戶服務、處理爭議</li>
+        <li>付款結算</li>
+        <li>平台優化與功能改善</li>
+        <li>法令遵循(如配合司法調查)</li>
+      </ul>
+
+      <h3><span class="num">3</span>資料公開原則</h3>
+      <div class="highlight">
+        身分證、銀行帳號、真實姓名、電話、住址<strong>絕對不會公開給其他使用者</strong>。順咖僅能看到你的暱稱、評分與服務紀錄;接單後才會看到聯絡電話與服務地址。
+      </div>
+
+      <h3><span class="num">4</span>資料保存期限</h3>
+      <ul>
+        <li>帳號使用中:持續保存</li>
+        <li>停止使用後:基本資料保存 5 年(符合稅法、長照法規)</li>
+        <li>金流紀錄:依法保存 10 年</li>
+      </ul>
+
+      <h3><span class="num">5</span>資料當事人權利</h3>
+      <p>依個人資料保護法,您有權:</p>
+      <ul>
+        <li>查詢或請求閱覽個人資料</li>
+        <li>請求複製本</li>
+        <li>請求補充或更正</li>
+        <li>請求停止蒐集、處理、利用</li>
+        <li>請求刪除(除法令要求保存者外)</li>
+      </ul>
+      <p>請以電子郵件至客服信箱辦理。本平台將於 30 日內處理。</p>
+
+      <h3><span class="num">6</span>第三方資料分享</h3>
+      <p>本平台不會將您的個人資料販售、出租、交換給第三方,除非:</p>
+      <ul>
+        <li>取得您事前同意</li>
+        <li>司法機關依法律程序要求</li>
+        <li>為保護平台、其他使用者之合法權益</li>
+        <li>金流服務商(限撥款必要資訊)</li>
+        <li>簡訊服務商(限發送驗證碼必要資訊)</li>
+      </ul>
+
+      <h3><span class="num">7</span>Cookie 使用</h3>
+      <p>本平台使用 Cookie 追蹤登入狀態與使用偏好。您可於瀏覽器停用 Cookie,但部分功能將無法使用。</p>
+
+      <h3><span class="num">8</span>資料安全</h3>
+      <ul>
+        <li>所有個人資料以加密方式儲存</li>
+        <li>金流資訊使用 SSL 加密傳輸</li>
+        <li>採用權限管理,僅授權人員可存取</li>
+        <li>本平台已採取合理之資安措施,但不保證百分之百無資料外洩風險</li>
+      </ul>
+
+      <h3><span class="num">9</span>政策修改</h3>
+      <p>本政策得隨時修改。重大修改將以簡訊或站內通知告知。繼續使用平台視為同意修改後政策。</p>
+
+      <h3><span class="num">10</span>聯絡方式</h3>
+      <p>如對本政策有任何疑問,請聯繫:</p>
+      <p>大天使長照有限公司附設新北市私立大天使居家長照機構<br>客服信箱:service@quyixia.tw</p>
+
+      <p style="margin-top:1.5rem;padding-top:1rem;border-top:1px dashed #e8d8be;color:#9a7a50;font-size:0.78rem;">
+        本政策依《個人資料保護法》、《長期照顧服務法》相關規定擬定。
+      </p>
+    </div>
+    <div class="modal-footer">
+      <div class="read-prog">
+        <span class="read-prog-label">閱讀進度</span>
+        <div class="read-prog-track"><div class="read-prog-fill" id="privacy-progress" style="width:0%;"></div></div>
+        <span class="read-prog-text" id="privacy-progress-text">0%</span>
+      </div>
+      <button class="modal-confirm" id="privacy-confirm" onclick="confirmRead('privacy')">請將內容拉至最底才能確認</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var chosenAuthMethod = '';
+
+function goStep(n) {
+  document.querySelectorAll('.step').forEach(function(s){ s.classList.remove('on'); });
+  document.getElementById('step-' + n).classList.add('on');
+  /* 步驟指示燈號 */
+  document.querySelectorAll('.step-dot').forEach(function(d){
+    var s = parseInt(d.getAttribute('data-s'));
+    d.classList.remove('on','done');
+    if (s < n) d.classList.add('done');
+    else if (s === n) d.classList.add('on');
+  });
+  document.querySelectorAll('.step-line').forEach(function(line, idx){
+    line.classList.toggle('done', idx < n - 1);
+  });
+}
+
+function pickRole(role) {
+  if (role === 'client') {
+    goStep(2);
+  }
+  /* staff 已經在 HTML 用 <a href> 直接跳走,不會進這 */
+}
+
+function signupWith(method) {
+  chosenAuthMethod = method;
+  /* 真實情境:呼叫 supabase.auth.signInWithOAuth({ provider: 'line'/'google' }) 或 signUp({ email })
+     第三方會跳出授權頁,使用者同意後跳回來
+     demo 模擬:直接進補資料步驟 */
+  var msgMap = {
+    'LINE': { msg: '已用 LINE 完成身分驗證', detail: '系統收到:LINE 暱稱、頭像(姓名、電話需自填)' },
+    'Google': { msg: '已用 Google 完成身分驗證', detail: '系統收到:Google Email、頭像(姓名、電話需自填)' },
+    'Email': { msg: '已寄送驗證信至你的 Email', detail: '請完成信箱驗證(姓名、電話需自填)' }
+  };
+  var info = msgMap[method];
+  document.getElementById('auth-msg').textContent = info.msg;
+  document.getElementById('auth-detail').textContent = info.detail;
+
+  /* Google 註冊時自動預填 Email */
+  if (method === 'Google') {
+    document.getElementById('email-field').value = 'your-google-email@gmail.com';
+    document.getElementById('email-field').setAttribute('readonly', 'readonly');
+  } else {
+    document.getElementById('email-field').removeAttribute('readonly');
+    document.getElementById('email-field').value = '';
+  }
+
+  alert('用 ' + method + ' 註冊流程:\n\n1. 跳到 ' + method + ' 授權頁\n2. 同意授權\n3. 自動跳回網站、進入補資料步驟\n\n(demo 模擬中,假設授權成功)');
+  setTimeout(function(){ goStep(3); }, 300);
+}
+
+function completeSignup() {
+  /* 簡單驗證 */
+  var inputs = document.querySelectorAll('#step-3 input');
+  var required = [0,1,2,4,5,6,7]; /* 姓名、稱呼、電話、地址四欄 */
+  var ok = true;
+  required.forEach(function(idx){
+    var inp = inputs[idx];
+    if (inp && !inp.value.trim() && inp.placeholder.indexOf('選填') === -1) {
+      inp.style.borderColor = '#c93030';
+      ok = false;
+    } else if (inp) {
+      inp.style.borderColor = '';
+    }
+  });
+  if (!ok) {
+    alert('請填完帶 * 的必填欄位');
+    return;
+  }
+  /* 同意書檢查 */
+  if (!readStatus.terms || !readStatus.privacy) {
+    alert('請先閱讀服務條款與隱私權政策');
+    return;
+  }
+  if (!document.getElementById('agree').checked) {
+    alert('請勾選同意條款');
+    return;
+  }
+  alert('註冊完成!即將進入會員主頁');
+  window.location.href = '11_client_home.html';
+}
+
+/* === 同意書 Modal 相關 === */
+var readStatus = { terms: false, privacy: false };
+
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+  document.body.style.overflow = 'hidden';
+  var key = id === 'modal-terms' ? 'terms' : 'privacy';
+  var body = document.getElementById('modal-' + key + '-body');
+  setTimeout(function(){ trackScroll(body, key); }, 50);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function trackScroll(el, key) {
+  var scrolled = el.scrollTop + el.clientHeight;
+  var total = el.scrollHeight;
+  var pct = total > el.clientHeight ? Math.min(100, Math.round(scrolled / total * 100)) : 100;
+  document.getElementById(key + '-progress').style.width = pct + '%';
+  document.getElementById(key + '-progress-text').textContent = pct + '%';
+
+  if (pct >= 95) {
+    document.getElementById(key + '-progress-text').classList.add('done');
+    var btn = document.getElementById(key + '-confirm');
+    if (!btn.classList.contains('ready')) {
+      btn.classList.add('ready');
+      btn.innerHTML = '<svg><use href="#i-check"/></svg>我已讀完,確認同意';
+    }
+  }
+}
+
+function confirmRead(key) {
+  var btn = document.getElementById(key + '-confirm');
+  if (!btn.classList.contains('ready')) return;
+
+  readStatus[key] = true;
+  var link = document.getElementById('link-' + key);
+  if (link) link.classList.add('read');
+
+  closeModal('modal-' + key);
+
+  if (readStatus.terms && readStatus.privacy) {
+    var cb = document.getElementById('agree');
+    cb.disabled = false;
+    document.getElementById('unread-hint').classList.add('hide');
+  }
+}
+
+function handleAgreeChange(cb) {
+  if (cb.checked && (!readStatus.terms || !readStatus.privacy)) {
+    cb.checked = false;
+    alert('請先點開並閱讀完兩份文件');
+    return;
+  }
+  /* 勾選後啟用送出鈕 */
+  document.getElementById('submit-btn').disabled = !cb.checked;
+}
+</script>
+</body>
+</html>
