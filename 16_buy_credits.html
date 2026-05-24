@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>點數加值 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+--gold:#EF9F27;--gold-dark:#BA7517;--gold-deeper:#633806;--gold-pale:#FAEEDA;
+--cream:#fdf6ec;--green:#4a8c6a;--green-light:#d4ede1;--green-pale:#eaf5ef;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:linear-gradient(135deg,var(--gold-pale) 0%,#fdf6ec 50%,var(--green-pale) 100%);color:#2a1f10;min-height:100vh;padding:1.25rem;}
+
+.home-fab{position:fixed;top:14px;left:14px;width:42px;height:42px;border-radius:50%;background:#fff;border:1.5px solid #c9a96e;color:var(--gold-deeper);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 2px 8px rgba(99,56,6,0.1);transition:all 0.15s;text-decoration:none;}
+.home-fab:hover{background:var(--gold);color:#fff;border-color:var(--gold);transform:scale(1.05);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.wrap{max-width:480px;margin:1.5rem auto 0;}
+
+/* === 目前點數卡 === */
+.balance-card{background:linear-gradient(135deg,var(--gold) 0%,var(--gold-dark) 100%);color:#fff;border-radius:16px;padding:1.5rem 1.5rem 1.25rem;box-shadow:0 10px 30px rgba(186,117,23,0.25);margin-bottom:1.25rem;position:relative;overflow:hidden;}
+.balance-card::before{content:'';position:absolute;top:-30%;right:-15%;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,0.08);}
+.balance-card::after{content:'';position:absolute;bottom:-40%;left:-10%;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.06);}
+.balance-label{font-size:0.78rem;opacity:0.9;letter-spacing:1px;margin-bottom:6px;position:relative;}
+.balance-num{font-size:2.6rem;font-weight:500;letter-spacing:-1px;display:flex;align-items:baseline;gap:8px;position:relative;}
+.balance-num .unit{font-size:1rem;opacity:0.85;font-weight:400;}
+.balance-tip{font-size:0.72rem;opacity:0.85;margin-top:8px;position:relative;line-height:1.6;}
+
+/* === 成功提示 === */
+.success-banner{background:var(--green-pale);border:1px solid var(--green-light);border-radius:12px;padding:0.85rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:10px;font-size:0.85rem;color:var(--green);font-weight:500;display:none;}
+.success-banner.show{display:flex;}
+.success-banner svg{width:20px;height:20px;fill:currentColor;flex-shrink:0;}
+
+/* === 方案標題 === */
+.section-title{font-size:1rem;font-weight:500;color:var(--gold-deeper);margin-bottom:0.85rem;display:flex;align-items:center;gap:8px;}
+.section-title::before{content:'';display:block;width:3px;height:16px;background:var(--gold-dark);border-radius:2px;}
+
+/* === 方案卡片 === */
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.25rem;}
+.plan{background:#fff;border:1.5px solid #e8d8be;border-radius:14px;padding:1.1rem 1rem;cursor:pointer;transition:all 0.15s;position:relative;overflow:hidden;text-align:center;}
+.plan:hover{border-color:var(--gold-dark);transform:translateY(-2px);box-shadow:0 6px 16px rgba(186,117,23,0.12);}
+.plan.popular{border-color:var(--gold);background:linear-gradient(180deg,#fff 0%,var(--gold-pale) 100%);}
+.plan-badge{position:absolute;top:0;right:0;background:var(--gold);color:#fff;font-size:0.62rem;padding:3px 10px;border-bottom-left-radius:10px;font-weight:500;letter-spacing:0.5px;}
+.plan-pts{font-size:1.6rem;font-weight:500;color:var(--gold-deeper);line-height:1;margin-bottom:4px;}
+.plan-pts .pts-unit{font-size:0.7rem;color:#9a7a50;margin-left:3px;font-weight:400;}
+.plan-bonus{font-size:0.7rem;color:var(--green);font-weight:500;background:var(--green-pale);padding:2px 8px;border-radius:99px;display:inline-block;margin-bottom:8px;}
+.plan-bonus.empty{visibility:hidden;}
+.plan-price{font-size:1.1rem;font-weight:500;color:var(--gold-dark);margin-bottom:2px;}
+.plan-price .tw{font-size:0.7rem;color:#9a7a50;font-weight:400;margin-right:2px;}
+.plan-unit-price{font-size:0.66rem;color:#9a7a50;}
+
+/* === 使用說明 === */
+.info-list{background:#fff;border:0.5px solid #e8d8be;border-radius:12px;padding:1rem 1.15rem;margin-bottom:1.25rem;}
+.info-list-title{font-size:0.82rem;color:var(--gold-deeper);font-weight:500;margin-bottom:0.6rem;display:flex;align-items:center;gap:6px;}
+.info-list-title svg{width:14px;height:14px;fill:var(--gold-dark);}
+.info-item{font-size:0.78rem;color:#5a3e1b;line-height:1.85;display:flex;gap:8px;}
+.info-item .num{color:var(--gold-dark);font-weight:500;flex-shrink:0;width:18px;}
+
+/* === 返回按鈕 === */
+.back-btn{width:100%;background:#fff;color:var(--gold-deeper);border:1.5px solid #c9a96e;padding:0.9rem;border-radius:10px;font-size:0.9rem;font-weight:500;cursor:pointer;font-family:inherit;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;}
+.back-btn:hover{background:var(--gold-pale);border-color:var(--gold-dark);}
+.back-btn svg{width:14px;height:14px;fill:currentColor;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.31 16.13v1.32h-1.06v-1.31c-1.71-.22-2.54-1.21-2.6-2.41h1.27c.06.65.51 1.16 1.86 1.16 1.45 0 1.77-.72 1.77-1.18 0-.62-.33-1.21-2-1.61-1.86-.45-3.13-1.21-3.13-2.74 0-1.29.99-2.13 2.43-2.4v-1.32h1.06v1.32c1.55.25 2.41 1.16 2.46 2.34h-1.27c-.04-.69-.41-1.18-1.66-1.18-1.16 0-1.85.51-1.85 1.21 0 .68.43 1.17 2.04 1.6 1.65.45 3.09 1.21 3.09 2.79 0 1.39-1.07 2.18-2.41 2.41z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="wrap">
+
+  <!-- 儲值成功提示（從 17 頁回來後顯示）-->
+  <div class="success-banner" id="success-banner">
+    <svg><use href="#i-check"/></svg>
+    <span id="success-text">儲值成功！</span>
+  </div>
+
+  <!-- 目前點數 -->
+  <div class="balance-card">
+    <div class="balance-label">目前點數</div>
+    <div class="balance-num">
+      <span id="balance-num">0</span>
+      <span class="unit">點</span>
+    </div>
+    <div class="balance-tip">每張額外證件 50 點 · 點下方方案儲值</div>
+  </div>
+
+  <!-- 加值方案 -->
+  <div class="section-title">選擇加值方案</div>
+  <div class="plans">
+    <div class="plan" onclick="goPay(100, 100, 0)">
+      <div class="plan-pts">100<span class="pts-unit">點</span></div>
+      <div class="plan-bonus empty">送 0 點</div>
+      <div class="plan-price"><span class="tw">NT$</span>100</div>
+      <div class="plan-unit-price">每點 $1.00</div>
+    </div>
+    <div class="plan" onclick="goPay(300, 280, 20)">
+      <div class="plan-pts">300<span class="pts-unit">點</span></div>
+      <div class="plan-bonus">送 20 點</div>
+      <div class="plan-price"><span class="tw">NT$</span>280</div>
+      <div class="plan-unit-price">每點 $0.93</div>
+    </div>
+    <div class="plan popular" onclick="goPay(500, 450, 50)">
+      <div class="plan-badge">熱門</div>
+      <div class="plan-pts">500<span class="pts-unit">點</span></div>
+      <div class="plan-bonus">送 50 點</div>
+      <div class="plan-price"><span class="tw">NT$</span>450</div>
+      <div class="plan-unit-price">每點 $0.90</div>
+    </div>
+    <div class="plan" onclick="goPay(1000, 850, 150)">
+      <div class="plan-pts">1000<span class="pts-unit">點</span></div>
+      <div class="plan-bonus">送 150 點</div>
+      <div class="plan-price"><span class="tw">NT$</span>850</div>
+      <div class="plan-unit-price">每點 $0.85</div>
+    </div>
+  </div>
+
+  <!-- 使用說明 -->
+  <div class="info-list">
+    <div class="info-list-title"><svg><use href="#i-info"/></svg>使用說明</div>
+    <div class="info-item"><span class="num">1.</span><span>新增第 1 張其他證件免費</span></div>
+    <div class="info-item"><span class="num">2.</span><span>第 2 張起每張需扣 <strong style="color:var(--gold-deeper);">50 點</strong></span></div>
+    <div class="info-item"><span class="num">3.</span><span>每帳號最多 <strong id="max-cert-num" style="color:var(--gold-deeper);">5</strong> 張（後台可調整）</span></div>
+    <div class="info-item"><span class="num">4.</span><span>付款方式：Apple Pay、LINE Pay、信用卡、街口、Google Pay</span></div>
+  </div>
+
+  <a href="07_verification.html" class="back-btn">
+    <svg><use href="#i-arrow-left"/></svg>返回證件上傳
+  </a>
+
+</div>
+
+<script>
+/* 從 sessionStorage 讀取目前點數 */
+function refreshBalance() {
+  var pts = 0;
+  try {
+    pts = parseInt(sessionStorage.getItem('userPoints') || '0', 10);
+    if (isNaN(pts)) pts = 0;
+  } catch(e) { pts = 0; }
+  document.getElementById('balance-num').textContent = pts;
+}
+
+/* 跳到刷卡頁 */
+function goPay(pts, price, bonus) {
+  try {
+    sessionStorage.setItem('pendingPlan', JSON.stringify({pts:pts, price:price, bonus:bonus}));
+  } catch(e){}
+  window.location.href = '17_payment.html';
+}
+
+/* 若 URL 帶 ?success=1，顯示成功提示（從 17 跳回來時用） */
+function checkSuccess() {
+  var p = new URLSearchParams(window.location.search);
+  if (p.get('success') === '1') {
+    var addPts = parseInt(p.get('add') || '0', 10);
+    var banner = document.getElementById('success-banner');
+    var txt = document.getElementById('success-text');
+    if (addPts > 0) txt.textContent = '儲值成功！本次共獲得 ' + addPts + ' 點';
+    else txt.textContent = '儲值成功！';
+    banner.classList.add('show');
+    /* 清掉 URL 參數 */
+    setTimeout(function(){
+      window.history.replaceState({}, '', '16_buy_credits.html');
+    }, 100);
+  }
+}
+
+refreshBalance();
+checkSuccess();
+</script>
+</body>
+</html>
