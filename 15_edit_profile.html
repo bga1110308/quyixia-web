@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>編輯資料 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+--honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;--amber-darker:#8B5A0F;
+--champagne:#FFF4DD;--champagne-soft:#FFFCF5;
+--forest:#2F6048;--forest-deep:#1F4A36;--mint:#5FB58E;--mint-pale:#E8F5EE;
+--ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+--border:#FFE9B8;--border-soft:#F5EBD8;--border-mint:rgba(95,181,142,0.3);
+--warn:#E89544;--warn-pale:#FFF1E0;
+--danger:#D9534F;--danger-pale:#FCE8E7;
+--line-green:#06C755;--info:#3A7CB8;--info-pale:#E8F1F8;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--champagne-soft);color:var(--ink);min-height:100vh;padding-bottom:110px;line-height:1.6;}
+.ico{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
+
+/* 品牌字(備用) */
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+/* 頂部頁面識別條 */
+.role-strip{padding:8px 1.5rem 8px 70px;font-size:0.78rem;font-weight:500;letter-spacing:0.5px;display:flex;align-items:center;gap:8px;color:#fff;}
+.role-strip.client{background:linear-gradient(90deg,var(--honey) 0%,var(--amber) 100%);}
+.role-strip.staff{background:linear-gradient(90deg,var(--mint) 0%,var(--forest) 100%);}
+.role-strip svg{width:0.95em;height:0.95em;fill:currentColor;}
+
+/* 浮動返回(案家端:金色) */
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+/* 順咖端:綠色版 */
+.staff-mode .home-fab{border:1px solid var(--border-mint);color:var(--forest);box-shadow:0 4px 14px rgba(47,96,72,0.15);}
+.staff-mode .home-fab:hover{background:var(--mint-pale);border-color:var(--mint);}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--champagne) 0%,#fff 70%);padding:2rem 1.5rem 1.5rem;border-bottom:1px solid var(--border-soft);}
+.staff-mode .hero{background:linear-gradient(135deg,var(--mint-pale) 0%,#fff 70%);}
+.hero-inner{max-width:680px;margin:0 auto;text-align:center;}
+.hero-title{font-size:1.4rem;font-weight:600;color:var(--ink);margin-bottom:6px;letter-spacing:-0.3px;}
+.hero-sub{font-size:0.85rem;color:var(--ink-soft);}
+
+/* 視角切換按鈕(進到頁面時也能切) */
+.view-switch{display:inline-flex;background:#fff;border:1.5px solid var(--border);border-radius:99px;padding:3px;margin-top:14px;box-shadow:0 2px 8px rgba(186,117,23,0.06);}
+.staff-mode .view-switch{border-color:var(--border-mint);box-shadow:0 2px 8px rgba(47,96,72,0.06);}
+.vs-btn{padding:7px 16px;border-radius:99px;font-size:0.78rem;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-family:inherit;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:all 0.2s;}
+.vs-btn svg{width:0.95em;height:0.95em;fill:currentColor;}
+.vs-btn.on{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;box-shadow:0 2px 6px rgba(239,159,39,0.3);}
+.staff-mode .vs-btn.on{background:linear-gradient(135deg,var(--mint),var(--forest));box-shadow:0 2px 6px rgba(47,96,72,0.3);}
+
+/* 大頭照區 */
+.avatar-block{margin:1.2rem auto 0;display:flex;flex-direction:column;align-items:center;gap:10px;}
+.avatar-wrap{position:relative;}
+.big-avatar{position:relative;width:90px;height:90px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:600;color:var(--amber-deep);overflow:hidden;box-shadow:0 4px 14px rgba(186,117,23,0.2),inset 0 0 0 1.5px var(--border);}
+.staff-mode .big-avatar{color:var(--forest);box-shadow:0 4px 14px rgba(47,96,72,0.2),inset 0 0 0 1.5px var(--border-mint);}
+.big-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.cam-btn{position:absolute;bottom:-2px;right:-2px;width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:2.5px solid #fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(239,159,39,0.4);transition:all 0.2s;}
+.staff-mode .cam-btn{background:linear-gradient(135deg,var(--mint),var(--forest));box-shadow:0 2px 6px rgba(47,96,72,0.4);}
+.cam-btn:hover{transform:scale(1.08);}
+.cam-btn svg{width:14px;height:14px;fill:#fff;}
+.avatar-hint{font-size:0.74rem;color:var(--ink-soft);}
+
+/* 主容器 */
+.container{max-width:680px;margin:1.2rem auto 0;padding:0 1.2rem;}
+
+/* 區塊卡 */
+.section-card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.35rem;margin-bottom:1rem;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.section-title{font-size:0.95rem;font-weight:600;color:var(--ink);margin-bottom:0.95rem;display:flex;align-items:center;gap:8px;}
+.section-title::before{content:'';display:block;width:4px;height:18px;background:linear-gradient(180deg,var(--honey),var(--amber));border-radius:2px;}
+.staff-mode .section-title::before{background:linear-gradient(180deg,var(--mint),var(--forest));}
+.section-title svg{width:15px;height:15px;fill:var(--amber);}
+.staff-mode .section-title svg{fill:var(--forest);}
+.section-title .tag-shared{font-size:0.62rem;background:var(--info);color:#fff;padding:1px 7px;border-radius:99px;font-weight:500;}
+.section-title .tag-staff{font-size:0.62rem;background:var(--forest);color:#fff;padding:1px 7px;border-radius:99px;font-weight:500;}
+.section-desc{font-size:0.74rem;color:var(--ink-soft);margin-bottom:0.85rem;line-height:1.65;}
+
+/* B 方案提示橫條(共用區頂端) */
+.shared-banner{background:var(--info-pale);border:1.5px solid rgba(58,124,184,0.25);border-radius:12px;padding:0.85rem 1rem;margin-bottom:1.1rem;font-size:0.8rem;color:var(--info);line-height:1.65;display:flex;align-items:flex-start;gap:9px;}
+.shared-banner svg{width:1.05em;height:1.05em;fill:currentColor;flex-shrink:0;margin-top:2px;}
+.shared-banner b{font-weight:700;}
+
+/* 表單欄位 */
+.field{margin-bottom:1rem;}
+.field:last-child{margin-bottom:0;}
+.field-label{display:block;font-size:0.82rem;color:var(--ink);margin-bottom:8px;font-weight:600;}
+.field-label .req{color:var(--danger);}
+.field-label .opt{color:var(--ink-soft);font-size:0.72rem;font-weight:400;margin-left:4px;}
+.field input[type=text],.field input[type=tel],.field input[type=email],.field input[type=password],.field input[type=number],.field select,.field textarea{
+  width:100%;padding:0.85rem 1rem;border:2px solid var(--border);border-radius:14px;font-size:0.95rem;background:var(--champagne-soft);color:var(--ink);font-family:inherit;transition:all 0.2s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--amber);background:#fff;box-shadow:0 0 0 4px rgba(239,159,39,0.12);}
+.staff-mode .field input[type=text],.staff-mode .field input[type=tel],.staff-mode .field input[type=email],.staff-mode .field input[type=password],.staff-mode .field input[type=number],.staff-mode .field select,.staff-mode .field textarea{border-color:var(--border-mint);}
+.staff-mode .field input:focus,.staff-mode .field select:focus,.staff-mode .field textarea:focus{border-color:var(--forest);box-shadow:0 0 0 4px rgba(47,96,72,0.12);}
+.field textarea{min-height:90px;resize:vertical;line-height:1.6;}
+.field-hint{font-size:0.74rem;color:var(--ink-light);margin-top:6px;line-height:1.55;}
+
+/* 證件連結 */
+.cert-link{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;background:var(--mint-pale);border:1.5px solid var(--border-mint);border-radius:14px;color:var(--forest);text-decoration:none;font-size:0.88rem;font-weight:600;transition:all 0.2s;}
+.cert-link:hover{background:#DCEEE4;border-color:var(--mint);transform:translateY(-1px);}
+.cert-link svg{width:0.95em;height:0.95em;fill:currentColor;}
+
+/* 證件清單 */
+.cert-item{display:flex;align-items:center;gap:11px;padding:0.85rem 1rem;background:#fff;border:1.5px solid var(--border-soft);border-radius:12px;margin-bottom:7px;transition:all 0.2s;}
+.cert-item:last-child{margin-bottom:0;}
+.cert-thumb{width:44px;height:44px;border-radius:10px;background:var(--champagne);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--amber-deep);}
+.cert-thumb svg{width:1.2em;height:1.2em;fill:currentColor;}
+.cert-meta{flex:1;min-width:0;}
+.cert-name{font-size:0.9rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.cert-status{font-size:0.7rem;display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:99px;font-weight:600;}
+.cert-status.verified{background:var(--mint-pale);color:var(--forest);}
+.cert-status.pending{background:var(--info-pale);color:var(--info);}
+.cert-status.empty{background:#F1EFE8;color:var(--ink-soft);}
+.cert-status.expired{background:var(--danger-pale);color:var(--danger);}
+.cert-unlocks{font-size:0.7rem;color:var(--ink-soft);margin-top:4px;line-height:1.5;}
+.cert-del-btn{flex-shrink:0;width:34px;height:34px;border-radius:10px;background:#fff;border:1.5px solid var(--danger-pale);color:var(--danger);display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.cert-del-btn:hover{background:var(--danger);color:#fff;border-color:var(--danger);transform:translateY(-1px);}
+.cert-del-btn svg{width:1em;height:1em;fill:currentColor;}
+.cert-del-btn:disabled{background:#F5F1E8;color:var(--ink-light);border-color:var(--border-soft);cursor:not-allowed;}
+.cert-del-btn:disabled:hover{transform:none;background:#F5F1E8;color:var(--ink-light);}
+
+/* 服務班表 */
+.schedule-grid{display:grid;grid-template-columns:auto repeat(7,1fr);gap:6px;margin-top:6px;}
+.sch-head{font-size:0.74rem;color:var(--forest-deep);text-align:center;padding:4px 2px;font-weight:600;}
+.sch-day{font-size:0.78rem;color:var(--ink);font-weight:600;padding:8px 4px;display:flex;align-items:center;gap:4px;white-space:nowrap;}
+.sch-cell{background:#fff;border:1.5px solid var(--border-mint);border-radius:8px;padding:6px 2px;font-size:0.7rem;color:var(--ink-soft);cursor:pointer;text-align:center;transition:all 0.2s;user-select:none;min-height:34px;display:flex;align-items:center;justify-content:center;}
+.sch-cell:hover{border-color:var(--forest);background:var(--mint-pale);}
+.sch-cell.on{background:linear-gradient(135deg,var(--mint),var(--forest));border-color:var(--forest);color:#fff;font-weight:600;}
+
+/* 一鍵套用按鈕 */
+.sch-apply-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;}
+.sch-apply-btn{font-size:0.74rem;padding:6px 12px;background:#fff;border:1.5px solid var(--border-mint);border-radius:99px;color:var(--forest);cursor:pointer;font-family:inherit;font-weight:600;transition:all 0.2s;}
+.sch-apply-btn:hover{background:var(--mint-pale);border-color:var(--forest);transform:translateY(-1px);}
+
+/* 區域選擇 */
+.area-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px;}
+.area-chip{font-size:0.78rem;padding:6px 13px;border-radius:99px;background:#fff;color:var(--ink);border:1.5px solid var(--border-mint);cursor:pointer;transition:all 0.2s;font-weight:500;user-select:none;}
+.area-chip:hover{border-color:var(--forest);background:var(--mint-pale);}
+.area-chip.on{background:linear-gradient(135deg,var(--mint),var(--forest));border-color:var(--forest);color:#fff;font-weight:600;}
+
+/* 服務項目分類 */
+.svc-cat{margin-bottom:16px;}
+.svc-cat:last-child{margin-bottom:0;}
+.svc-cat-title{font-size:0.88rem;font-weight:600;color:var(--ink);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.svc-cat-title .cat-tag{font-size:0.7rem;background:var(--mint-pale);color:var(--forest);padding:3px 10px;border-radius:99px;font-weight:600;border:1px solid var(--border-mint);}
+.svc-cat-desc{font-size:0.74rem;color:var(--ink-soft);margin-bottom:8px;line-height:1.6;}
+.svc-list{display:flex;flex-direction:column;gap:7px;}
+.svc-item{display:flex;align-items:flex-start;gap:10px;padding:0.7rem 0.85rem;background:var(--champagne-soft);border:1.5px solid var(--border-soft);border-radius:10px;cursor:pointer;font-size:0.86rem;color:var(--ink);transition:all 0.2s;}
+.svc-item:hover{border-color:var(--mint);}
+.svc-item input[type=checkbox]{width:17px;height:17px;flex:0 0 17px;margin:1px 0 0;accent-color:var(--forest);cursor:pointer;}
+.svc-item.checked{background:var(--mint-pale);border-color:var(--forest);}
+.svc-item .svc-name{font-weight:500;}
+.svc-item .svc-detail{font-size:0.72rem;color:var(--ink-soft);margin-top:2px;line-height:1.55;}
+.svc-item.locked{background:#F5F1E8;border-color:#E8DFCE;color:var(--ink-light);cursor:not-allowed;}
+.svc-item.locked:hover{border-color:#E8DFCE;}
+.svc-item.locked input{cursor:not-allowed;}
+.svc-item .lock-tag{display:inline-block;font-size:0.66rem;background:var(--warn);color:#fff;padding:2px 8px;border-radius:99px;margin-left:6px;font-weight:600;}
+
+/* 接案狀態切換 */
+.status-toggle-wrap{display:flex;align-items:center;justify-content:space-between;padding:0.95rem 1.1rem;background:var(--mint-pale);border:1.5px solid var(--border-mint);border-radius:14px;}
+.status-info{font-size:0.92rem;color:var(--ink);font-weight:600;}
+.status-info-sub{font-size:0.74rem;color:var(--ink-soft);margin-top:3px;font-weight:400;}
+.toggle{width:48px;height:28px;background:#D6CDB8;border-radius:99px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;transition:left 0.2s;box-shadow:0 2px 4px rgba(0,0,0,0.15);}
+.toggle.on{background:linear-gradient(135deg,var(--mint),var(--forest));}
+.toggle.on::after{left:23px;}
+
+/* 交通方式 */
+.transport-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:6px;}
+.tp-chip{font-size:0.82rem;padding:7px 14px;border-radius:10px;background:#fff;color:var(--ink);border:1.5px solid var(--border-mint);cursor:pointer;transition:all 0.2s;font-weight:500;display:inline-flex;align-items:center;gap:6px;user-select:none;}
+.tp-chip:hover{border-color:var(--forest);background:var(--mint-pale);}
+.tp-chip.on{background:linear-gradient(135deg,var(--mint),var(--forest));border-color:var(--forest);color:#fff;font-weight:600;}
+.tp-chip svg{width:0.95em;height:0.95em;fill:currentColor;}
+
+/* 時薪下拉 */
+.rate-wrap{display:flex;align-items:center;gap:8px;}
+.rate-prefix{font-size:1rem;color:var(--ink);font-weight:700;flex-shrink:0;}
+.rate-suffix{font-size:0.85rem;color:var(--ink-soft);flex-shrink:0;}
+.rate-wrap select{flex:1;font-weight:600;}
+#custom-rate-wrap{display:none;margin-top:10px;}
+#custom-rate-wrap input{width:100%;}
+
+/* 底部固定送出列 */
+.submit-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border-soft);padding:0.9rem 1.2rem;box-shadow:0 -4px 16px rgba(186,117,23,0.06);z-index:30;}
+.submit-bar-inner{max-width:680px;margin:0 auto;display:flex;gap:10px;}
+.btn-cancel{flex:0 0 auto;padding:0.95rem 1.3rem;background:#fff;border:1.5px solid var(--border);color:var(--ink);border-radius:14px;font-size:0.92rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.staff-mode .btn-cancel{border-color:var(--border-mint);}
+.btn-cancel:hover{background:var(--champagne);border-color:var(--amber);transform:translateY(-1px);}
+.staff-mode .btn-cancel:hover{background:var(--mint-pale);border-color:var(--mint);}
+.btn-save{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:0.95rem 1.2rem;background:linear-gradient(135deg,var(--honey),var(--amber));border:none;color:#fff;border-radius:14px;font-size:1rem;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(239,159,39,0.3);transition:all 0.2s;}
+.staff-mode .btn-save{background:linear-gradient(135deg,var(--mint),var(--forest));box-shadow:0 6px 20px rgba(47,96,72,0.3);}
+.btn-save:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(239,159,39,0.4);}
+.staff-mode .btn-save:hover{box-shadow:0 10px 26px rgba(47,96,72,0.4);}
+
+/* Toast */
+.toast{position:fixed;bottom:110px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;padding:0.85rem 1.6rem;border-radius:99px;font-size:0.88rem;font-weight:600;opacity:0;transition:all 0.3s;z-index:100;pointer-events:none;box-shadow:0 8px 24px rgba(239,159,39,0.35);}
+.staff-mode .toast{background:linear-gradient(135deg,var(--mint),var(--forest));box-shadow:0 8px 24px rgba(47,96,72,0.35);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media(max-width:480px){
+  .schedule-grid{gap:3px;}
+  .sch-cell{padding:5px 1px;font-size:0.6rem;min-height:28px;}
+  .sch-head{font-size:0.66rem;padding:3px 1px;}
+  .sch-day{font-size:0.68rem;padding:4px 2px;}
+}
+</style>
+</head>
+<body id="body-root">
+
+<!-- SVG defs -->
+<svg width="0" height="0" style="position:absolute;">
+<defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M12 3l9 8h-3v9h-4v-6h-4v6H6v-9H3l9-8z"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><path d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z"/></symbol>
+<symbol id="i-staff" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5L18.2 22 12 17.3 5.8 22l2.4-8.1L2 9.4h7.6z"/></symbol>
+<symbol id="i-cam" viewBox="0 0 24 24"><path d="M20 5h-3.2L15 3H9L7.2 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-8 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+<symbol id="i-cert" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4 1.4 1.4L11 16.8 7.6 13.4 9 12zM19 3H5c-1.1 0-2 .9-2 2v14l4-2 4 2 4-2 4 2V5c0-1.1-.9-2-2-2z"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></symbol>
+<symbol id="i-money" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0L15.13 5.12l3.75 3.75 1.83-1.83z"/></symbol>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></symbol>
+<symbol id="i-bike" viewBox="0 0 24 24"><path d="M5 5.5C5 6.88 6.12 8 7.5 8S10 6.88 10 5.5 8.88 3 7.5 3 5 4.12 5 5.5zm12 5.5c-2.49 0-4.5 2.01-4.5 4.5S14.51 20 17 20s4.5-2.01 4.5-4.5S19.49 11 17 11zm-7-1l2.3-2.3c.41-.41 1.07-.41 1.48 0L17 11l1.42-1.42L15 6c-.59-.59-1.54-.59-2.12 0L9 9.88c-.59.59-.59 1.54 0 2.12L13 16h2v-1.59L11.5 11l-1.5-1zM7 11c-2.49 0-4.5 2.01-4.5 4.5S4.51 20 7 20s4.5-2.01 4.5-4.5S9.49 11 7 11z"/></symbol>
+<symbol id="i-bus" viewBox="0 0 24 24"><path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/></symbol>
+<symbol id="i-walk" viewBox="0 0 24 24"><path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6z"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></symbol>
+</defs>
+</svg>
+
+<!-- 浮動回首頁 -->
+<a class="home-fab" id="home-link" href="11_client_home.html" title="返回首頁">
+  <svg><use href="#i-home"/></svg>
+</a>
+
+<!-- 頁面識別條 -->
+<div class="role-strip client" id="role-strip">
+  <svg><use href="#i-user"/></svg>
+  <span class="role-label" id="role-label">案家 · 編輯資料</span>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-title" id="hero-title">編輯個人資料</div>
+    <div class="hero-sub">資料更新後立即生效</div>
+
+    <!-- 視角切換器 -->
+    <div class="view-switch" id="view-switch">
+      <button class="vs-btn on" id="vs-client" onclick="switchView('client')"><svg><use href="#i-user"/></svg>案家資料</button>
+      <button class="vs-btn" id="vs-staff" onclick="switchView('staff')"><svg><use href="#i-staff"/></svg>順咖資料</button>
+    </div>
+
+    <div class="avatar-block">
+      <div class="avatar-wrap">
+        <div class="big-avatar" id="big-avatar">慧</div>
+        <label class="cam-btn" for="avatar-upload" title="更換大頭照">
+          <svg><use href="#i-cam"/></svg>
+        </label>
+        <input type="file" id="avatar-upload" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+      </div>
+      <div class="avatar-hint">點相機更換大頭照</div>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- B 方案說明橫條 -->
+  <div class="shared-banner">
+    <svg><use href="#i-info"/></svg>
+    <div>
+      下方<b>「基本資料」</b>是案家跟順咖身份共用,改一次兩邊都會同步。<br>
+      下方<b>「順咖專屬」</b>區只在順咖視角顯示。
+    </div>
+  </div>
+
+  <!-- 基本資料(共用) -->
+  <div class="section-card">
+    <div class="section-title">
+      <svg><use href="#i-user"/></svg>基本資料
+      <span class="tag-shared">共用</span>
+    </div>
+
+    <div class="field">
+      <label class="field-label">暱稱 <span class="req">*</span></label>
+      <input type="text" id="nickname" value="慧怡" maxlength="20">
+      <div class="field-hint">顯示在訂單與評價上,限 20 字內</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">真實姓名 <span class="req">*</span><span class="opt">(不會公開)</span></label>
+      <input type="text" id="realname" value="林慧怡" maxlength="10">
+      <div class="field-hint">僅後台與訂單核對使用</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">手機號碼 <span class="req">*</span></label>
+      <input type="tel" id="phone" value="0912345678" maxlength="10" pattern="09[0-9]{8}">
+      <div class="field-hint">緊急聯繫用,請填可接通號碼</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">LINE ID <span class="opt">(選填)</span></label>
+      <input type="text" id="lineid" value="" placeholder="例:huiyi_line">
+      <div class="field-hint">訂單成立後自動建群會用到</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">Email <span class="req">*</span></label>
+      <input type="email" id="email" value="huiyi@example.com">
+    </div>
+
+    <div class="field" id="default-addr-field">
+      <label class="field-label">預設聯絡地址 <span class="opt">(選填)</span></label>
+      <input type="text" id="address" value="" placeholder="例:新北市板橋區中山路一段 88 號 5 樓">
+      <div class="field-hint">下單時可快速代入,可隨時修改</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label">密碼 <span class="opt">(留空表示不修改)</span></label>
+      <input type="password" id="password" value="" placeholder="輸入新密碼(至少 8 字)" minlength="8">
+    </div>
+  </div>
+
+  <!-- ============ 順咖專屬區(client 隱藏) ============ -->
+  <div class="staff-only" style="display:none;">
+
+    <!-- 接案狀態 -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-clock"/></svg>接案狀態
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="status-toggle-wrap">
+        <div>
+          <div class="status-info" id="status-label">接單中</div>
+          <div class="status-info-sub" id="status-sub">案家可以看到你並指定下單</div>
+        </div>
+        <div class="toggle on" id="status-toggle" onclick="toggleStatus()"></div>
+      </div>
+    </div>
+
+    <!-- 期望時薪(下拉) -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-money"/></svg>期望時薪
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="section-desc">案家下單仍由案家出價,這個數字僅供案家參考</div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-label">期望時薪</label>
+        <div class="rate-wrap">
+          <span class="rate-prefix">NT$</span>
+          <select id="hourly-rate-select" onchange="onRateSelectChange()">
+            <option value="200">200</option>
+            <option value="250">250</option>
+            <option value="300">300</option>
+            <option value="350" selected>350</option>
+            <option value="400">400</option>
+            <option value="450">450</option>
+            <option value="500">500</option>
+            <option value="600">600</option>
+            <option value="custom">自填金額</option>
+          </select>
+          <span class="rate-suffix">/ 小時</span>
+        </div>
+        <div id="custom-rate-wrap">
+          <input type="number" id="hourly-rate-custom" min="160" max="20000" step="10" placeholder="專業技能 600-2000、高階教練/講師 2000-20000" value="">
+        </div>
+        <div class="field-hint">建議範圍:跑腿任務 200-400、照服任務 350-600</div>
+      </div>
+    </div>
+
+    <!-- 自我介紹 -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-edit"/></svg>自我介紹
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="section-desc">這段會顯示在你的順咖卡片上,讓案家認識你</div>
+      <div class="field" style="margin-bottom:0;">
+        <textarea id="bio" maxlength="300" placeholder="例:30 歲,三年照服員經驗,擅長失智長輩陪伴與備餐。下班後接副業,週末整天可接案。">30 歲,三年照服員經驗,擅長失智長輩陪伴與備餐。</textarea>
+        <div class="field-hint">最多 300 字</div>
+      </div>
+    </div>
+
+    <!-- 服務班表 -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-clock"/></svg>服務班表
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="section-desc">勾選你方便接案的時段,案家下單時可以看到</div>
+
+      <div class="schedule-grid" id="schedule-grid">
+        <!-- JS 渲染 -->
+      </div>
+      <div class="sch-apply-row">
+        <button type="button" class="sch-apply-btn" onclick="applySchedule('all-day')">全天可接</button>
+        <button type="button" class="sch-apply-btn" onclick="applySchedule('weekday-night')">平日晚上</button>
+        <button type="button" class="sch-apply-btn" onclick="applySchedule('weekend-day')">週末白天</button>
+        <button type="button" class="sch-apply-btn" onclick="applySchedule('clear')">全部清除</button>
+      </div>
+    </div>
+
+    <!-- 服務區域 -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-map"/></svg>服務區域
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="section-desc">你願意接案的行政區(可複選)</div>
+      <div class="area-chips" id="area-chips">
+        <!-- JS 渲染 -->
+      </div>
+    </div>
+
+    <!-- 服務項目(5 大類) -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-list"/></svg>服務項目
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="section-desc">你能接的任務類型,案家會依此找到你。鎖頭項目需要證件解鎖。</div>
+      <div id="svc-list">
+        <!-- JS 渲染 5 大類 -->
+      </div>
+    </div>
+
+    <!-- 交通方式 -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-car"/></svg>交通方式
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="section-desc">你能用的交通方式(可複選)</div>
+      <div class="transport-chips">
+        <div class="tp-chip" onclick="toggleChip(this)"><svg><use href="#i-car"/></svg>汽車</div>
+        <div class="tp-chip on" onclick="toggleChip(this)"><svg><use href="#i-bike"/></svg>機車</div>
+        <div class="tp-chip on" onclick="toggleChip(this)"><svg><use href="#i-bus"/></svg>大眾運輸</div>
+        <div class="tp-chip" onclick="toggleChip(this)"><svg><use href="#i-walk"/></svg>步行</div>
+      </div>
+    </div>
+
+    <!-- 證件管理 -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-cert"/></svg>證件管理
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="section-desc">⚠️ 刪除證件後,對應的徽章與開通項目會一併關閉</div>
+      <div id="cert-list">
+        <!-- JS 渲染 -->
+      </div>
+      <a class="cert-link" href="07_verification.html" style="margin-top:0.7rem;">
+        <span><svg style="vertical-align:-0.15em;margin-right:5px;"><use href="#i-cert"/></svg>新增 / 更新證件(前往 07 上傳頁)</span>
+        <span style="font-size:1.1rem;">›</span>
+      </a>
+    </div>
+
+  </div>
+  <!-- ============ 順咖專屬區 END ============ -->
+
+</div>
+
+<!-- 底部送出列 -->
+<div class="submit-bar">
+  <div class="submit-bar-inner">
+    <button class="btn-cancel" onclick="cancelEdit()">取消</button>
+    <button class="btn-save" onclick="saveProfile()">儲存變更</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">儲存成功</div>
+
+<script>
+/* ============ 角色狀態 ============ */
+var urlParams = new URLSearchParams(window.location.search);
+var role = urlParams.get('role') || 'client';
+if (role !== 'staff') role = 'client';
+
+/* ============ 切換視角(同頁切,不重新載入) ============ */
+function switchView(newRole) {
+  if (newRole === role) return;
+  role = newRole;
+  applyRoleUI();
+  /* 切到順咖視角時讀順咖專屬資料 */
+  if (role === 'staff') loadStaffProfile();
+  /* 同步 URL 但不刷頁面,方便重整保留視角 */
+  var newUrl = window.location.pathname + '?role=' + role;
+  window.history.replaceState({}, '', newUrl);
+}
+
+function applyRoleUI() {
+  document.body.classList.toggle('staff-mode', role === 'staff');
+
+  /* 識別條 */
+  var strip = document.getElementById('role-strip');
+  if (role === 'staff') {
+    strip.className = 'role-strip staff';
+    strip.innerHTML = '<svg><use href="#i-staff"/></svg><span class="role-label">順咖 · 編輯資料</span>';
+    document.getElementById('home-link').href = '12_staff_home.html';
+    document.querySelector('.staff-only').style.display = 'block';
+    document.getElementById('default-addr-field').style.display = 'none';
+    /* 視角切換器 */
+    document.getElementById('vs-client').classList.remove('on');
+    document.getElementById('vs-staff').classList.add('on');
+    /* 渲染順咖區內容 */
+    renderSchedule();
+    renderAreas();
+    renderServices();
+    renderCerts();
+  } else {
+    strip.className = 'role-strip client';
+    strip.innerHTML = '<svg><use href="#i-user"/></svg><span class="role-label">案家 · 編輯資料</span>';
+    document.getElementById('home-link').href = '11_client_home.html';
+    document.querySelector('.staff-only').style.display = 'none';
+    document.getElementById('default-addr-field').style.display = 'block';
+    /* 視角切換器 */
+    document.getElementById('vs-client').classList.add('on');
+    document.getElementById('vs-staff').classList.remove('on');
+  }
+}
+
+/* ============ 大頭照預覽 ============ */
+function previewAvatar(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    alert('圖片大小不能超過 5MB');
+    input.value = '';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var av = document.getElementById('big-avatar');
+    av.innerHTML = '<img src="' + e.target.result + '" alt="頭像">';
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ============ 接案狀態切換 ============ */
+function toggleStatus() {
+  var t = document.getElementById('status-toggle');
+  var label = document.getElementById('status-label');
+  var sub = document.getElementById('status-sub');
+  t.classList.toggle('on');
+  if (t.classList.contains('on')) {
+    label.textContent = '接單中';
+    sub.textContent = '案家可以看到你並指定下單';
+  } else {
+    label.textContent = '暫停接案';
+    sub.textContent = '案家會看到「暫不接單」,無法指定你';
+  }
+}
+
+/* ============ 期望時薪下拉 ============ */
+function onRateSelectChange() {
+  var sel = document.getElementById('hourly-rate-select');
+  var wrap = document.getElementById('custom-rate-wrap');
+  if (sel.value === 'custom') {
+    wrap.style.display = 'block';
+    document.getElementById('hourly-rate-custom').focus();
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+/* ============ 服務班表(時段為列 × 星期為欄) ============ */
+/* 4 個時段的名稱跟起止時間都寫死,不可調 */
+var slotConfig = [
+  { name: '上午', range: '6-12' },
+  { name: '下午', range: '12-18' },
+  { name: '晚上', range: '18-22' },
+  { name: '深夜', range: '22-6' }
+];
+/* scheduleData[時段index][星期index] = bool */
+/* 星期 0=一 ... 6=日 */
+var scheduleData = [
+  [true,  true,  false, true,  true,  false, false], /* 上午 */
+  [true,  true,  false, true,  true,  true,  false], /* 下午 */
+  [false, false, true,  true,  false, true,  true ], /* 晚上 */
+  [false, false, true,  false, false, true,  false]  /* 深夜 */
+];
+var DAYS = ['週一','週二','週三','週四','週五','週六','週日'];
+
+function renderSchedule() {
+  var grid = document.getElementById('schedule-grid');
+  /* 表頭:空格 + 7 個星期(橫排) */
+  var html = '<div class="sch-head"></div>';
+  DAYS.forEach(function(d) {
+    html += '<div class="sch-head">' + d + '</div>';
+  });
+  /* 4 列時段 */
+  slotConfig.forEach(function(s, slotIdx) {
+    html += '<div class="sch-day">' + s.name + ' <span style="color:var(--ink-soft);font-size:0.66rem;font-weight:400;">'+s.range+'</span></div>';
+    DAYS.forEach(function(d, dayIdx) {
+      var on = scheduleData[slotIdx][dayIdx];
+      html += '<div class="sch-cell'+(on?' on':'')+'" data-slot="'+slotIdx+'" data-day="'+dayIdx+'" onclick="toggleSlot(this)">' + (on?'✓':'') + '</div>';
+    });
+  });
+  grid.innerHTML = html;
+}
+
+function toggleSlot(el) {
+  var slotIdx = parseInt(el.dataset.slot);
+  var dayIdx = parseInt(el.dataset.day);
+  scheduleData[slotIdx][dayIdx] = !scheduleData[slotIdx][dayIdx];
+  el.classList.toggle('on');
+  el.textContent = scheduleData[slotIdx][dayIdx] ? '✓' : '';
+}
+
+function applySchedule(preset) {
+  if (preset === 'all-day') {
+    scheduleData = [[true,true,true,true,true,true,true],
+                    [true,true,true,true,true,true,true],
+                    [true,true,true,true,true,true,true],
+                    [true,true,true,true,true,true,true]];
+  } else if (preset === 'weekday-night') {
+    scheduleData = [[false,false,false,false,false,false,false],
+                    [false,false,false,false,false,false,false],
+                    [true,true,true,true,true,false,false],
+                    [false,false,false,false,false,false,false]];
+  } else if (preset === 'weekend-day') {
+    scheduleData = [[false,false,false,false,false,true,true],
+                    [false,false,false,false,false,true,true],
+                    [false,false,false,false,false,false,false],
+                    [false,false,false,false,false,false,false]];
+  } else if (preset === 'clear') {
+    scheduleData = [[false,false,false,false,false,false,false],
+                    [false,false,false,false,false,false,false],
+                    [false,false,false,false,false,false,false],
+                    [false,false,false,false,false,false,false]];
+  }
+  renderSchedule();
+}
+
+/* ============ 服務區域 ============ */
+var allAreas = ['板橋','中和','永和','三重','新莊','蘆洲','土城','樹林','新店','汐止','深坑','五股','泰山','林口','八里','淡水','三峽','鶯歌','大同','中正','萬華','大安','中山','信義','松山','文山','南港','內湖','士林','北投'];
+var selectedAreas = ['板橋','中和','永和'];
+
+function renderAreas() {
+  var html = allAreas.map(function(a) {
+    var on = selectedAreas.indexOf(a) > -1 ? ' on' : '';
+    return '<div class="area-chip'+on+'" onclick="toggleArea(this)" data-area="'+a+'">'+a+'</div>';
+  }).join('');
+  document.getElementById('area-chips').innerHTML = html;
+}
+function toggleArea(el) {
+  var a = el.dataset.area;
+  var idx = selectedAreas.indexOf(a);
+  if (idx > -1) selectedAreas.splice(idx, 1);
+  else selectedAreas.push(a);
+  el.classList.toggle('on');
+}
+
+/* ============ 服務項目 5 大類 + 子項複選 ============ */
+var serviceCategories = [
+  {
+    key: 'errand',
+    name: '日常跑腿類',
+    desc: '代買 / 代送 / 代排隊,需求量最大',
+    items: [
+      {k:'buy-food', n:'買便當 / 飲料 / 超商代購'},
+      {k:'buy-fresh', n:'生鮮採買 / 幫買藥(非處方) / 寵物用品'},
+      {k:'deliver', n:'代送文件 / 鑰匙 / 小包裹 / 禮物'},
+      {k:'queue', n:'代排隊(掛號 / 領號碼牌 / 限量商品 / 政府機關抽號)'}
+    ]
+  },
+  {
+    key: 'life',
+    name: '生活幫忙類',
+    desc: '到府小幫手、臨時支援、社區協助',
+    items: [
+      {k:'home-help', n:'倒垃圾 / 換燈泡 / 收包裹 / 澆花'},
+      {k:'furniture', n:'組裝簡易家具 / 搬小東西'},
+      {k:'stand-by', n:'幫忙顧店 / 帶東西 / 拍照'},
+      {k:'pick-kid', n:'接小孩下課 / 幫忙遛狗'}
+    ]
+  },
+  {
+    key: 'elder',
+    name: '高齡友善型',
+    desc: '陪伴、陪同就醫、數位協助。⚠️ 涉及身體照顧的項目需上傳照服員證才能解鎖',
+    items: [
+      {k:'companion-elder', n:'陪同散步 / 陪聊天 / 關懷探視'},
+      {k:'medical', n:'陪診 / 代領慢箋 / 陪同就醫'},
+      {k:'shopping-elder', n:'陪同採買 / 協助領藥 / 買菜'},
+      {k:'digital-help', n:'教手機 / LINE / 視訊 / 政府 APP / 協助繳費'},
+      {k:'family-report', n:'到家拍照回報長輩狀況 / 緊急代處理'},
+      {k:'body-care', n:'身體照顧(洗澡 / 翻身 / 擦澡 / 服藥提醒)', locked:true, lockText:'需照服員證'}
+    ]
+  },
+  {
+    key: 'skill',
+    name: '技能 / 微任務',
+    desc: '教學、簡易維修、跑腿送件',
+    items: [
+      {k:'teach', n:'教電腦 / 教英文 / 教手機操作'},
+      {k:'repair', n:'修腳踏車 / 簡單家用維修'},
+      {k:'micro', n:'貼海報 / 跑銀行 / 送件 / 拿東西'},
+      {k:'review-doc', n:'幫看履歷 / 文件初校'}
+    ]
+  },
+  {
+    key: 'companion',
+    name: '陪伴 / 寵物',
+    desc: '情緒陪伴、寵物服務、親子協助',
+    items: [
+      {k:'chat', n:'陪聊天 / 陪吃飯 / 陪逛街'},
+      {k:'sport', n:'陪運動 / 陪打遊戲(手遊 / 桌遊 / 線上遊戲)'},
+      {k:'pet', n:'遛狗 / 餵貓 / 寵物臨時照顧 / 帶去洗澡'},
+      {k:'kid-care', n:'陪寫作業 / 臨時托接 / 才藝陪同'}
+    ]
+  }
+];
+var selectedSvcs = ['buy-food','deliver','queue','home-help','companion-elder','digital-help','pet'];
+
+function renderServices() {
+  var html = '';
+  serviceCategories.forEach(function(cat) {
+    html += '<div class="svc-cat">';
+    html += '<div class="svc-cat-title"><span class="cat-tag">'+cat.name+'</span></div>';
+    html += '<div class="svc-cat-desc">'+cat.desc+'</div>';
+    html += '<div class="svc-list">';
+    cat.items.forEach(function(s) {
+      var on = selectedSvcs.indexOf(s.k) > -1;
+      var locked = !!s.locked;
+      var cls = 'svc-item' + (on && !locked ? ' checked' : '') + (locked ? ' locked' : '');
+      var clickAttr = locked ? '' : 'onclick="toggleSvc(this, \''+s.k+'\')"';
+      html += '<label class="'+cls+'" '+clickAttr+'>';
+      html += '<input type="checkbox" '+(on && !locked ? 'checked' : '')+' '+(locked ? 'disabled' : '')+' onclick="event.stopPropagation();this.parentElement.click()">';
+      html += '<div><div class="svc-name">';
+      html += locked ? '<svg style="width:0.9em;height:0.9em;fill:currentColor;vertical-align:-0.1em;margin-right:3px;"><use href="#i-lock"/></svg>' : '';
+      html += s.n;
+      html += locked ? '<span class="lock-tag">'+s.lockText+'</span>' : '';
+      html += '</div></div>';
+      html += '</label>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('svc-list').innerHTML = html;
+}
+
+function toggleSvc(el, key) {
+  if (el.classList.contains('locked')) return;
+  var idx = selectedSvcs.indexOf(key);
+  if (idx > -1) selectedSvcs.splice(idx, 1);
+  else selectedSvcs.push(key);
+  el.classList.toggle('checked');
+  var cb = el.querySelector('input[type=checkbox]');
+  cb.checked = !cb.checked;
+}
+
+/* ============ 交通方式 chip ============ */
+function toggleChip(el) {
+  el.classList.toggle('on');
+}
+
+/* ============ 證件清單(可刪)============ */
+/* 4 張固定證件 + 解鎖對應徽章/服務項目 */
+var certData = [
+  {
+    key: 'id_card',
+    name: '身分證',
+    status: 'verified',     /* verified / pending / empty / expired */
+    required: true,         /* 必備證件,不可刪 */
+    unlocks: ['實名徽章', '接案資格']
+  },
+  {
+    key: 'cna_cert',
+    name: '居服員證',
+    status: 'verified',
+    required: false,
+    unlocks: ['照服員徽章', 'B 池接案資格', '身體照顧服務開通']
+  },
+  {
+    key: 'crime_check',
+    name: '良民證',
+    status: 'verified',
+    required: false,
+    unlocks: ['良民徽章', '兒童任務開通']
+  },
+  {
+    key: 'first_aid',
+    name: '急救證',
+    status: 'pending',
+    required: false,
+    unlocks: ['急救徽章 案家加分']
+  }
+];
+
+function getCertStatusBadge(status) {
+  if (status === 'verified') return '<span class="cert-status verified">🟢 已驗證</span>';
+  if (status === 'pending')  return '<span class="cert-status pending">🔵 審核中</span>';
+  if (status === 'expired')  return '<span class="cert-status expired">🔴 已過期</span>';
+  return '<span class="cert-status empty">⚪ 未上傳</span>';
+}
+
+function renderCerts() {
+  var html = certData.map(function(c) {
+    var canDelete = !c.required && (c.status === 'verified' || c.status === 'pending' || c.status === 'expired');
+    var delTitle = c.required ? '必備證件,不可刪除' : (c.status === 'empty' ? '尚未上傳' : '刪除此證件');
+
+    var item = '<div class="cert-item">';
+    item += '<div class="cert-thumb"><svg><use href="#i-cert"/></svg></div>';
+    item += '<div class="cert-meta">';
+    item += '<div class="cert-name">' + c.name + (c.required ? ' <span style="font-size:0.66rem;color:var(--danger);">必備</span>' : '') + '</div>';
+    item += getCertStatusBadge(c.status);
+    if (c.unlocks && c.unlocks.length) {
+      item += '<div class="cert-unlocks">解鎖:' + c.unlocks.join('、') + '</div>';
+    }
+    item += '</div>';
+    item += '<button class="cert-del-btn" ' + (canDelete ? '' : 'disabled') + ' onclick="deleteCert(\''+c.key+'\')" title="'+delTitle+'">';
+    item += '<svg><use href="#i-trash"/></svg></button>';
+    item += '</div>';
+    return item;
+  }).join('');
+  document.getElementById('cert-list').innerHTML = html;
+}
+
+function deleteCert(key) {
+  var cert = certData.find(function(c){ return c.key === key; });
+  if (!cert) return;
+
+  var msg = '確定要刪除「' + cert.name + '」?\n\n' +
+            '⚠️ 刪除後會關閉以下功能:\n' +
+            cert.unlocks.map(function(u){ return '・' + u; }).join('\n') + '\n\n' +
+            '若要重新啟用,需重新上傳審核。';
+
+  if (!confirm(msg)) return;
+
+  /* 把證件狀態設為 empty */
+  cert.status = 'empty';
+
+  /* 連動關閉:依證件 key 鎖回相應的服務項目 */
+  if (key === 'cna_cert') {
+    /* 居服員證刪了 → 取消身體照顧勾選 */
+    var idx = selectedSvcs.indexOf('body-care');
+    if (idx > -1) selectedSvcs.splice(idx, 1);
+    renderServices();
+    showToast('已刪除居服員證,身體照顧服務已關閉');
+  } else if (key === 'crime_check') {
+    /* 良民證刪了 → 取消兒童相關勾選 */
+    ['kid-care','pick-kid'].forEach(function(k) {
+      var idx2 = selectedSvcs.indexOf(k);
+      if (idx2 > -1) selectedSvcs.splice(idx2, 1);
+    });
+    renderServices();
+    showToast('已刪除良民證,兒童任務已關閉');
+  } else {
+    showToast('已刪除' + cert.name);
+  }
+  renderCerts();
+}
+
+/* ============ 儲存 / 取消 ============ */
+function saveProfile() {
+  var nick = document.getElementById('nickname').value.trim();
+  var phone = document.getElementById('phone').value.trim();
+  var email = document.getElementById('email').value.trim();
+
+  if (!nick) { alert('請填寫暱稱'); return; }
+  if (!/^09\d{8}$/.test(phone)) { alert('請輸入正確的手機號碼(09xx-xxx-xxx)'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('請輸入正確的 Email'); return; }
+
+  var pwd = document.getElementById('password').value;
+  if (pwd && pwd.length < 8) { alert('密碼至少 8 字'); return; }
+
+  /* 順咖額外驗證 */
+  if (role === 'staff') {
+    var sel = document.getElementById('hourly-rate-select').value;
+    var rate;
+    if (sel === 'custom') {
+      rate = parseInt(document.getElementById('hourly-rate-custom').value);
+      if (!rate || rate < 160 || rate > 20000) {
+        alert('期望時薪請填寫 160-20000 之間');
+        return;
+      }
+    } else {
+      rate = parseInt(sel);
+    }
+
+    /* 至少選一個服務區域 */
+    if (selectedAreas.length === 0) {
+      alert('請至少選擇一個服務區域');
+      return;
+    }
+    /* 至少選一個服務項目 */
+    if (selectedSvcs.length === 0) {
+      alert('請至少選擇一個服務項目');
+      return;
+    }
+  }
+
+  /* Demo 模式:sessionStorage 暫存,正式版接 Supabase */
+  /* 共用基本資料(覆蓋同一份 key) */
+  var sharedProfile = {
+    nickname: nick,
+    realname: document.getElementById('realname').value.trim(),
+    phone: phone,
+    lineid: document.getElementById('lineid').value.trim(),
+    email: email,
+    address: document.getElementById('address').value.trim()
+  };
+  sessionStorage.setItem('userProfile_shared', JSON.stringify(sharedProfile));
+
+  /* 順咖專屬區 */
+  if (role === 'staff') {
+    var selRate = document.getElementById('hourly-rate-select').value;
+    var rateVal = selRate === 'custom'
+      ? parseInt(document.getElementById('hourly-rate-custom').value)
+      : parseInt(selRate);
+    var staffProfile = {
+      hourlyRate: rateVal,
+      bio: document.getElementById('bio').value.trim(),
+      schedule: scheduleData,
+      areas: selectedAreas,
+      services: selectedSvcs,
+      certs: certData,
+      acceptingOrders: document.getElementById('status-toggle').classList.contains('on')
+    };
+    sessionStorage.setItem('userProfile_staff', JSON.stringify(staffProfile));
+  }
+
+  showToast('儲存成功');
+  setTimeout(function() {
+    window.location.href = role === 'staff' ? '12_staff_home.html' : '11_client_home.html';
+  }, 900);
+}
+
+function cancelEdit() {
+  if (confirm('放棄修改並返回?')) {
+    window.location.href = role === 'staff' ? '12_staff_home.html' : '11_client_home.html';
+  }
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 1800);
+}
+
+/* ============ 初始化 ============ */
+/* 從 sessionStorage 讀已儲存的共用資料回填 */
+function loadSharedProfile() {
+  var raw = sessionStorage.getItem('userProfile_shared');
+  if (!raw) return;
+  try {
+    var p = JSON.parse(raw);
+    if (p.nickname) document.getElementById('nickname').value = p.nickname;
+    if (p.realname) document.getElementById('realname').value = p.realname;
+    if (p.phone) document.getElementById('phone').value = p.phone;
+    if (typeof p.lineid === 'string') document.getElementById('lineid').value = p.lineid;
+    if (p.email) document.getElementById('email').value = p.email;
+    if (typeof p.address === 'string') document.getElementById('address').value = p.address;
+    /* 大頭照取暱稱第一個字 */
+    if (p.nickname) document.getElementById('big-avatar').textContent = p.nickname.charAt(0);
+  } catch(e) {}
+}
+
+/* 從 sessionStorage 讀順咖專屬資料回填 */
+function loadStaffProfile() {
+  var raw = sessionStorage.getItem('userProfile_staff');
+  if (!raw) return;
+  try {
+    var p = JSON.parse(raw);
+    if (p.bio) document.getElementById('bio').value = p.bio;
+    /* schedule 新結構是 4x7 陣列;舊結構是物件,做相容 */
+    if (Array.isArray(p.schedule) && p.schedule.length === 4) {
+      scheduleData = p.schedule;
+    }
+    if (Array.isArray(p.areas)) selectedAreas = p.areas;
+    if (Array.isArray(p.services)) selectedSvcs = p.services;
+    if (Array.isArray(p.certs)) certData = p.certs;
+    if (p.hourlyRate) {
+      var preset = [200,250,300,350,400,450,500,600,800,1000,1500,2000,3000,5000,8000,12000,20000];
+      var sel = document.getElementById('hourly-rate-select');
+      if (preset.indexOf(p.hourlyRate) > -1) {
+        sel.value = String(p.hourlyRate);
+      } else {
+        sel.value = 'custom';
+        document.getElementById('custom-rate-wrap').style.display = 'block';
+        document.getElementById('hourly-rate-custom').value = p.hourlyRate;
+      }
+    }
+    /* 重新渲染所有區塊 */
+    renderSchedule();
+    renderAreas();
+    renderServices();
+    renderCerts();
+    if (typeof p.acceptingOrders === 'boolean') {
+      var t = document.getElementById('status-toggle');
+      var label = document.getElementById('status-label');
+      var sub = document.getElementById('status-sub');
+      if (p.acceptingOrders) {
+        t.classList.add('on');
+        label.textContent = '接單中';
+        sub.textContent = '案家可以看到你並指定下單';
+      } else {
+        t.classList.remove('on');
+        label.textContent = '暫停接案';
+        sub.textContent = '案家會看到「暫不接單」,無法指定你';
+      }
+    }
+  } catch(e) {}
+}
+
+loadSharedProfile();
+applyRoleUI();
+if (role === 'staff') loadStaffProfile();
+</script>
+
+</body>
+</html>

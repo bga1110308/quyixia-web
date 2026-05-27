@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>註冊 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;
+  --amber:#EF9F27;
+  --amber-deep:#BA7517;
+  --amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;
+  --champagne-soft:#FFFCF5;
+  --forest:#2F6048;
+  --mint:#5FB58E;
+  --mint-pale:#E8F5EE;
+  --ink:#3D2914;
+  --ink-soft:#8B7355;
+  --ink-light:#B8A485;
+  --border:#FFE9B8;
+  --warn:#E89544;
+  --warn-pale:#FFF1E0;
+  --danger:#D9534F;
+  --danger-pale:#FCE8E7;
+  --line-green:#06C755;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 50%,var(--mint-pale) 100%);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem;line-height:1.55;position:relative;overflow-x:hidden;}
+
+body::before{content:'';position:absolute;top:-100px;right:-100px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.15) 0%,transparent 70%);pointer-events:none;}
+body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.15) 0%,transparent 70%);pointer-events:none;}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+/* 品牌字 */
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+.signup-card{position:relative;background:#fff;border-radius:24px;padding:2.25rem 1.85rem 1.65rem;max-width:500px;width:100%;box-shadow:0 20px 60px rgba(186,117,23,0.15);border:1.5px solid var(--border);}
+
+.brand-wrap{text-align:center;margin-bottom:1.25rem;}
+.brand-wrap .brand{font-size:1.85rem;}
+.brand-en{font-size:0.68rem;color:var(--amber-deep);letter-spacing:0.45em;margin-top:6px;font-weight:500;}
+
+.welcome{text-align:center;margin-bottom:1.5rem;}
+.welcome-title{font-size:1.1rem;font-weight:600;color:var(--ink);margin-bottom:6px;}
+.welcome-sub{font-size:0.82rem;color:var(--ink-soft);line-height:1.7;}
+
+/* === 步驟指示 === */
+.step-bar{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:1.5rem;}
+.step-dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:all 0.25s;}
+.step-dot.on{background:linear-gradient(135deg,var(--honey),var(--amber));transform:scale(1.3);box-shadow:0 0 0 4px rgba(239,159,39,0.18);}
+.step-dot.done{background:var(--mint);}
+.step-line{flex:0 0 28px;height:2px;background:var(--border);}
+.step-line.done{background:var(--mint);}
+
+/* === 步驟切換 === */
+.step{display:none;}
+.step.on{display:block;animation:fadeIn 0.3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* === Step 1: 選身份 === */
+.role-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:1.25rem;}
+.role-card{background:#fff;border:2px solid var(--border);border-radius:18px;padding:1.25rem;cursor:pointer;transition:all 0.25s;text-align:left;display:flex;align-items:flex-start;gap:14px;font-family:inherit;text-decoration:none;color:inherit;width:100%;position:relative;overflow:hidden;}
+.role-card::before{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.1) 0%,transparent 70%);transition:all 0.3s;}
+.role-card:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(186,117,23,0.15);border-color:var(--amber);}
+.role-card:hover::before{width:140px;height:140px;}
+.role-card-staff::before{background:radial-gradient(circle,rgba(95,181,142,0.12) 0%,transparent 70%);}
+.role-card-staff:hover{border-color:var(--mint);}
+.role-icon{position:relative;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.role-icon svg{width:26px;height:26px;fill:currentColor;}
+.role-card-client .role-icon{background:linear-gradient(135deg,var(--champagne),#fff);color:var(--amber-deep);border:1px solid var(--border);}
+.role-card-staff .role-icon{background:linear-gradient(135deg,var(--mint-pale),#fff);color:var(--forest);border:1px solid rgba(95,181,142,0.3);}
+.role-name{position:relative;font-size:1.05rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.role-card-staff .role-name{color:var(--forest);}
+.role-desc{position:relative;font-size:0.8rem;color:var(--ink-soft);line-height:1.65;}
+.role-arrow{position:relative;margin-left:auto;align-self:center;flex-shrink:0;font-size:1.2rem;color:var(--amber-deep);}
+.role-card-staff .role-arrow{color:var(--mint);}
+
+/* === Step 2: 註冊方式 === */
+.chosen-role{background:var(--champagne);border:1px solid var(--border);border-radius:14px;padding:0.85rem 1rem;margin-bottom:1.25rem;font-size:0.85rem;color:var(--amber-deep);display:flex;align-items:center;gap:10px;}
+.chosen-role .ico{width:20px;height:20px;color:var(--amber);flex-shrink:0;}
+.chosen-role .ico svg{width:100%;height:100%;fill:currentColor;}
+.chosen-role strong{color:var(--amber-darker);}
+.chosen-role a{margin-left:auto;color:var(--amber-deep);font-size:0.76rem;text-decoration:underline;cursor:pointer;font-weight:500;}
+
+.social-row{display:flex;flex-direction:column;gap:10px;margin-bottom:1rem;}
+.social-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:0.95rem 1rem;border-radius:14px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;border:none;transition:all 0.2s;}
+.social-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,0.08);}
+.social-btn svg{width:1.3em;height:1.3em;}
+.btn-line{background:var(--line-green);color:#fff;box-shadow:0 4px 14px rgba(6,199,85,0.25);}
+.btn-line:hover{background:#05a847;box-shadow:0 8px 22px rgba(6,199,85,0.35);}
+.btn-google{background:#fff;color:#3c4043;border:1.5px solid #e0e0e0;}
+.btn-google:hover{background:#fafafa;border-color:var(--amber);}
+.btn-email{background:#fff;color:var(--amber-deep);border:1.5px solid var(--amber);}
+.btn-email:hover{background:var(--champagne);}
+
+/* 提示框 */
+.info-box{background:var(--mint-pale);border:1px solid rgba(95,181,142,0.3);border-radius:14px;padding:0.85rem 1rem;font-size:0.8rem;color:var(--forest);line-height:1.7;display:flex;gap:9px;align-items:flex-start;margin-bottom:1rem;}
+.info-box svg{width:16px;height:16px;flex-shrink:0;margin-top:2px;fill:currentColor;}
+.info-box strong{font-weight:600;}
+
+.fill-note{background:var(--warn-pale);border:1px solid rgba(232,149,68,0.3);border-radius:14px;padding:0.85rem 1rem;font-size:0.8rem;color:var(--warn);line-height:1.7;display:flex;gap:9px;align-items:flex-start;margin-bottom:1.25rem;}
+.fill-note svg{width:16px;height:16px;flex-shrink:0;margin-top:2px;fill:currentColor;}
+.fill-note strong{font-weight:600;color:#b86d2e;}
+
+/* === Step 3: 填資料 === */
+.id-success{background:var(--mint-pale);border:1px solid rgba(95,181,142,0.3);border-radius:14px;padding:0.85rem 1rem;margin-bottom:1rem;display:flex;align-items:flex-start;gap:10px;}
+.id-success .ico{width:24px;height:24px;border-radius:50%;background:var(--mint);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.id-success .ico svg{width:14px;height:14px;fill:currentColor;}
+.id-success strong{display:block;font-size:0.88rem;font-weight:600;color:var(--forest);margin-bottom:2px;}
+.id-success .small{font-size:0.72rem;color:var(--forest);opacity:0.85;}
+
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:0.85rem;color:var(--ink);margin-bottom:8px;font-weight:600;}
+.field .req{color:var(--danger);margin-left:3px;}
+.field input{width:100%;border:2px solid var(--border);border-radius:14px;padding:0.85rem 1rem;font-size:0.95rem;font-family:inherit;color:var(--ink);background:var(--champagne-soft);transition:all 0.2s;}
+.field input:focus{outline:none;border-color:var(--amber);background:#fff;box-shadow:0 0 0 4px rgba(239,159,39,0.12);}
+.field input[readonly]{background:#F5EBD8;color:var(--ink-soft);}
+.field .hint{font-size:0.72rem;color:var(--ink-light);margin-top:6px;}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* 條款區 */
+.terms-row{display:flex;gap:10px;padding:1rem;background:var(--champagne-soft);border:1px dashed var(--border);border-radius:14px;margin:1.25rem 0;font-size:0.85rem;color:var(--ink);align-items:flex-start;}
+.terms-row input[type=checkbox]{appearance:none;-webkit-appearance:none;width:20px;height:20px;border:2px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;position:relative;flex-shrink:0;margin-top:1px;transition:all 0.15s;}
+.terms-row input[type=checkbox]:checked{background:var(--amber);border-color:var(--amber);}
+.terms-row input[type=checkbox]:checked::after{content:'';position:absolute;left:5px;top:1px;width:6px;height:11px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
+.terms-row input[type=checkbox]:disabled{cursor:not-allowed;opacity:0.6;background:#F5EBD8;}
+.terms-row label{cursor:pointer;line-height:1.65;flex:1;}
+.terms-row a{color:var(--amber-deep);text-decoration:underline;font-weight:500;cursor:pointer;}
+.terms-row a.read{color:var(--forest);}
+.terms-row a.read::after{content:'✓';margin-left:3px;}
+.unread-hint{display:block;font-size:0.72rem;color:var(--warn);margin-top:4px;}
+.unread-hint.hide{display:none;}
+
+.primary-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;padding:1rem;border-radius:14px;font-size:1rem;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(239,159,39,0.35);transition:all 0.2s;}
+.primary-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(239,159,39,0.45);}
+.primary-btn:disabled{background:#E5DCC8;color:#fff;box-shadow:none;cursor:not-allowed;}
+.primary-btn svg{width:1.05em;height:1.05em;fill:currentColor;}
+
+.back-link-row{text-align:center;font-size:0.82rem;color:var(--ink-soft);margin-top:1rem;}
+.back-link-row a{color:var(--amber-deep);cursor:pointer;text-decoration:underline;font-weight:500;}
+
+.signin-row{text-align:center;font-size:0.88rem;color:var(--ink-soft);padding-top:1rem;border-top:1px dashed var(--border);margin-top:1rem;}
+.signin-row a{color:var(--amber-deep);text-decoration:none;font-weight:600;margin-left:6px;}
+
+/* === Modal === */
+.modal-overlay{position:fixed;inset:0;background:rgba(61,41,20,0.6);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:20px;max-width:560px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.3);}
+.modal-header{padding:1.25rem 1.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:1.1rem;font-weight:600;color:var(--ink);}
+.modal-close{background:none;border:none;color:var(--ink-soft);font-size:1.5rem;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{background:var(--champagne);color:var(--amber-deep);}
+
+.modal-body{padding:1.25rem 1.5rem;overflow-y:auto;flex:1;color:var(--ink);font-size:0.88rem;line-height:1.85;}
+.modal-body h3{font-size:0.95rem;font-weight:600;color:var(--amber-deep);margin:1.25rem 0 0.5rem;display:flex;align-items:center;gap:8px;}
+.modal-body h3:first-of-type{margin-top:0.5rem;}
+.modal-body h3 .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-size:0.78rem;font-weight:700;}
+.modal-body p{margin-bottom:0.65rem;color:var(--ink);}
+.modal-body p strong{color:var(--amber-darker);font-weight:600;}
+.modal-body ul{list-style:none;padding-left:1.25rem;margin-bottom:0.85rem;}
+.modal-body ul li{position:relative;padding-left:1rem;margin-bottom:0.5rem;color:var(--ink);}
+.modal-body ul li::before{content:'';position:absolute;left:0;top:11px;width:5px;height:5px;border-radius:50%;background:var(--amber);}
+.modal-body ul li strong{color:var(--amber-darker);}
+.modal-body .highlight{background:var(--warn-pale);border-left:3px solid var(--warn);padding:0.85rem 1rem;border-radius:8px;margin:0.65rem 0;font-size:0.84rem;line-height:1.75;}
+.modal-body .highlight strong{color:#9c5e22;}
+
+.modal-footer{padding:1rem 1.5rem 1.25rem;border-top:1px solid var(--border);background:var(--champagne-soft);}
+.read-prog{display:flex;align-items:center;gap:10px;margin-bottom:0.85rem;font-size:0.74rem;color:var(--ink-soft);}
+.read-prog-label{font-weight:500;}
+.read-prog-track{flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
+.read-prog-fill{height:100%;background:linear-gradient(90deg,var(--honey),var(--amber));border-radius:99px;transition:width 0.2s;}
+.read-prog-text{font-weight:600;color:var(--amber-deep);min-width:36px;text-align:right;}
+.read-prog-text.done{color:var(--forest);}
+
+.modal-confirm{width:100%;padding:0.85rem;border:none;border-radius:12px;background:#E5DCC8;color:var(--ink-light);font-size:0.92rem;font-weight:600;cursor:not-allowed;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;}
+.modal-confirm.ready{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;cursor:pointer;}
+.modal-confirm.ready:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(47,96,72,0.3);}
+.modal-confirm svg{width:1.05em;height:1.05em;fill:currentColor;}
+
+@media (max-width:480px){
+  .signup-card{padding:2rem 1.4rem 1.5rem;}
+  .brand-wrap .brand{font-size:1.6rem;}
+  .row2{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
+  <symbol id="i-staff" viewBox="0 0 24 24"><path d="M12 4a4 4 0 110 8 4 4 0 010-8m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="signup-card">
+
+  <div class="brand-wrap">
+    <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span>
+    <div class="brand-en">QU YI XIA</div>
+  </div>
+
+  <!-- 步驟指示 -->
+  <div class="step-bar">
+    <div class="step-dot on" data-s="1"></div>
+    <div class="step-line"></div>
+    <div class="step-dot" data-s="2"></div>
+    <div class="step-line"></div>
+    <div class="step-dot" data-s="3"></div>
+  </div>
+
+  <!-- ===== Step 1: 選身份 ===== -->
+  <div class="step on" id="step-1">
+    <div class="welcome">
+      <div class="welcome-title">你是?</div>
+      <div class="welcome-sub">選擇一個身份開始</div>
+    </div>
+
+    <div class="role-grid">
+      <button class="role-card role-card-client" onclick="pickRole('client')">
+        <div class="role-icon"><svg><use href="#i-heart"/></svg></div>
+        <div style="flex:1;">
+          <div class="role-name">我要找順咖</div>
+          <div class="role-desc">下單請人幫忙跑腿、照顧家人、遛狗、代排</div>
+        </div>
+        <span class="role-arrow">→</span>
+      </button>
+
+      <a class="role-card role-card-staff" href="03_staff_apply.html">
+        <div class="role-icon"><svg><use href="#i-staff"/></svg></div>
+        <div style="flex:1;">
+          <div class="role-name">我要成為順咖</div>
+          <div class="role-desc">空閒時間接案賺錢,自己排班、自己定價</div>
+        </div>
+        <span class="role-arrow">→</span>
+      </a>
+    </div>
+
+    <div class="info-box">
+      <svg><use href="#i-info"/></svg>
+      <div>選錯了沒關係,<strong>同一支手機可以同時擁有兩個身份</strong>,登入後在設定切換即可。</div>
+    </div>
+
+    <div class="signin-row">
+      已經有帳號?<a href="13_login.html">直接登入</a>
+    </div>
+  </div>
+
+  <!-- ===== Step 2: 選註冊方式 ===== -->
+  <div class="step" id="step-2">
+    <div class="welcome">
+      <div class="welcome-title">選擇註冊方式</div>
+      <div class="welcome-sub">用社群帳號最快,1 分鐘完成</div>
+    </div>
+
+    <div class="chosen-role">
+      <span class="ico"><svg><use href="#i-heart"/></svg></span>
+      <span>身份:<strong>找順咖的人</strong></span>
+      <a onclick="goStep(1)">改</a>
+    </div>
+
+    <div class="info-box">
+      <svg><use href="#i-info"/></svg>
+      <div><strong>建議用 LINE</strong>客服可即時聯繫你、訂單通知不漏接</div>
+    </div>
+
+    <div class="social-row">
+      <button class="social-btn btn-line" onclick="signupWith('LINE')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.81 4.27 8.84 10.035 9.608.391.084.923.258 1.058.592.122.303.08.778.039 1.085 0 0-.141.846-.171 1.027-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967h-.001c1.739-1.907 2.572-3.843 2.572-5.992zM7.586 13.55h-2.386c-.346 0-.628-.282-.628-.628V8.144c0-.346.282-.628.628-.628.346 0 .628.282.628.628v4.151h1.758c.346 0 .628.282.628.628s-.282.627-.628.627zm2.13-.628c0 .346-.282.628-.628.628-.346 0-.627-.282-.627-.628V8.144c0-.346.281-.628.627-.628.346 0 .628.282.628.628v4.778zm5.766 0c0 .27-.174.51-.43.593-.066.022-.135.034-.198.034-.196 0-.382-.094-.503-.254l-2.443-3.322v2.949c0 .346-.281.628-.626.628-.346 0-.628-.282-.628-.628V8.144c0-.27.174-.51.43-.593.063-.022.134-.033.197-.033.196 0 .382.094.503.254l2.443 3.323V8.144c0-.346.282-.628.628-.628.346 0 .627.282.627.628v4.778zm3.876-3.018h-1.758v.91h1.758c.346 0 .628.282.628.628s-.282.628-.628.628h-1.758v.911h1.758c.346 0 .628.282.628.628 0 .346-.282.627-.628.627h-2.386c-.346 0-.628-.282-.628-.628V8.144c0-.346.282-.628.628-.628h2.386c.346 0 .628.282.628.628s-.282.627-.628.627z"/></svg>
+        用 LINE 註冊
+      </button>
+
+      <button class="social-btn btn-google" onclick="signupWith('Google')">
+        <svg viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        用 Google 註冊
+      </button>
+
+      <button class="social-btn btn-email" onclick="signupWith('Email')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-mail"/></svg>
+        用 Email 註冊
+      </button>
+    </div>
+
+    <div class="back-link-row">
+      <a onclick="goStep(1)">← 改選身份</a>
+    </div>
+
+    <div class="signin-row">
+      已經有帳號?<a href="13_login.html">直接登入</a>
+    </div>
+  </div>
+
+  <!-- ===== Step 3: 補資料 ===== -->
+  <div class="step" id="step-3">
+    <div class="welcome">
+      <div class="welcome-title">完成註冊</div>
+      <div class="welcome-sub">這些資料用於配對順咖、客服聯繫</div>
+    </div>
+
+    <div class="id-success">
+      <span class="ico"><svg><use href="#i-check"/></svg></span>
+      <div>
+        <strong id="auth-msg">已用 LINE 完成身分驗證</strong>
+        <span class="small" id="auth-detail">系統收到:LINE 暱稱、頭像</span>
+      </div>
+    </div>
+
+    <div class="fill-note">
+      <svg><use href="#i-warn"/></svg>
+      <div><strong>還缺一點資料</strong>第三方登入無法提供姓名、電話、地址,需要你親自填寫,客服才能聯絡得到你</div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>真實姓名<span class="req">*</span></label>
+        <input type="text" placeholder="例:王小明">
+      </div>
+      <div class="field">
+        <label>稱呼<span class="req">*</span></label>
+        <input type="text" placeholder="例:小明、明哥">
+        <div class="hint">順咖會看到的稱呼</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>手機號碼<span class="req">*</span></label>
+      <input type="tel" placeholder="0912-345-678">
+      <div class="hint">用來接收訂單通知,不會公開給順咖</div>
+    </div>
+
+    <div class="field">
+      <label>Email <span style="color:var(--ink-light);font-weight:400;font-size:0.74rem;">(選填)</span></label>
+      <input type="email" id="email-field" placeholder="your@email.com">
+      <div class="hint">收訂單明細與發票用</div>
+    </div>
+
+    <div class="field">
+      <label>常用服務地址<span class="req">*</span></label>
+      <div class="row2" style="margin-bottom:8px;">
+        <input type="text" placeholder="縣市(例:新北市)">
+        <input type="text" placeholder="行政區(例:板橋區)">
+      </div>
+      <div class="row2">
+        <input type="text" placeholder="路 / 街(例:文化路一段)">
+        <input type="text" placeholder="號 · 樓(例:188 號 5 樓)">
+      </div>
+      <div class="hint">用於配對附近的順咖,可日後修改、新增其他地址</div>
+    </div>
+
+    <div class="info-box" style="margin-top:1rem;">
+      <svg><use href="#i-info"/></svg>
+      <div>身分證、信用卡這些<strong>下單時再加</strong>就好,不用一開始就填</div>
+    </div>
+
+    <!-- 同意書 -->
+    <div class="terms-row">
+      <input type="checkbox" id="agree" disabled onchange="handleAgreeChange(this)">
+      <label for="agree">
+        我已閱讀並同意 <a id="link-terms" onclick="openModal('modal-terms')">服務條款</a> 與 <a id="link-privacy" onclick="openModal('modal-privacy')">隱私權政策</a>,了解平台不介入服務內容、由我與順咖自行約定。
+        <span class="unread-hint" id="unread-hint">請先點開並閱讀完兩份文件,才能勾選同意</span>
+      </label>
+    </div>
+
+    <button class="primary-btn" id="submit-btn" onclick="completeSignup()" disabled>
+      完成註冊 · 開始找順咖
+      <svg><use href="#i-arrow"/></svg>
+    </button>
+
+    <div class="back-link-row">
+      <a onclick="goStep(2)">← 改用其他方式註冊</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- 服務條款 Modal -->
+<div class="modal-overlay" id="modal-terms" onclick="if(event.target===this)closeModal('modal-terms')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">服務條款</div>
+      <button class="modal-close" onclick="closeModal('modal-terms')">×</button>
+    </div>
+    <div class="modal-body" id="modal-terms-body" onscroll="trackScroll(this,'terms')">
+      <p style="color:var(--ink-light);font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
+
+      <h3><span class="num">1</span>平台性質</h3>
+      <p>「去一下」(以下稱本平台)為<strong>資訊媒合服務平台</strong>,提供順咖與案家自由聯繫之資訊管道。本平台不參與、不介入實際提供之服務內容,亦非順咖之雇主。</p>
+      <div class="highlight">
+        順咖與案家係雙方獨立之契約關係,由雙方自行協商服務內容、時間、地點與報酬,本平台不負服務品質之擔保責任。
+      </div>
+
+      <h3><span class="num">2</span>案家義務</h3>
+      <ul>
+        <li>據實提供個人資料、服務地址、聯絡電話</li>
+        <li>準時於約定時間出現於服務地點,如需取消須提前告知</li>
+        <li>對順咖以基本尊重對待,不得有騷擾、歧視、暴力之言行</li>
+        <li>對服務內容如有爭議,應於完成 48 小時內回報平台處理</li>
+        <li>不得引導順咖私下交易、繞過平台付款機制</li>
+      </ul>
+
+      <h3><span class="num">3</span>服務分類與限制</h3>
+      <p>本平台服務分為兩類:</p>
+      <ul>
+        <li><strong>一般跑腿類</strong>:代排、遛狗、陪伴、打掃等</li>
+        <li><strong>身體照顧類</strong>:協助洗澡、翻身擦澡、服藥提醒等,依《長期照顧服務法》規定,<strong>必須由領有照顧服務員證之順咖提供</strong></li>
+      </ul>
+
+      <h3><span class="num">4</span>保險責任</h3>
+      <div class="highlight">
+        本平台<strong>不為案家或順咖投保任何保險</strong>。建議雙方自行評估風險並投保意外險。服務過程中發生意外、損失、糾紛,由雙方自行協調或循司法途徑解決,本平台不負連帶賠償責任。
+      </div>
+
+      <h3><span class="num">5</span>平台收費與金流</h3>
+      <div class="highlight">
+        <strong>本平台不抽成、不經手案家與順咖之間的服務報酬</strong>。本平台僅向使用者收取功能性服務費(以點數扣抵),用於下單、媒合、置頂等平台功能。
+      </div>
+      <ul>
+        <li>下單將扣除 50 點平台服務費,含建立訂單、媒合順咖、自動建立 LINE 聯絡群</li>
+        <li>服務報酬(案家給付順咖之費用)由雙方於 LINE 群內自行協議,由案家直接支付給順咖</li>
+        <li>本平台不對服務報酬之金額、付款方式、撥款時間負擔任何責任</li>
+        <li>使用者不得引導他人繞過平台、未透過下單流程私下接案</li>
+      </ul>
+
+      <h3><span class="num">6</span>取消訂單規則</h3>
+      <p>取消訂單之退點規則依「責任歸屬」判斷:</p>
+      <ul>
+        <li><strong>媒合中(順咖尚未接單)案家自行取消</strong>:全額退還 50 點</li>
+        <li><strong>24 小時內無順咖接單</strong>:訂單自動關閉,退還 40 點(保留 10 點作為平台行政成本)</li>
+        <li><strong>順咖已接單後案家取消</strong>:50 點服務費<strong>不予退還</strong>,30 天內累計達 2 次將暫停下單功能</li>
+        <li><strong>順咖已接單後順咖無故取消</strong>:案家全額退還 50 點,順咖扣信用分</li>
+        <li><strong>服務進行中</strong>:不可取消,僅得透過客服回報處理</li>
+      </ul>
+
+      <h3><span class="num">7</span>違規處置</h3>
+      <p>案家如有下列情形,本平台得逕行停權:</p>
+      <ul>
+        <li>提供不實資料</li>
+        <li>對順咖騷擾、性騷擾、暴力對待</li>
+        <li>連續 3 次無故取消已接單訂單</li>
+        <li>惡意給予不實負評</li>
+        <li>引導私下交易</li>
+      </ul>
+
+      <h3><span class="num">8</span>智慧財產與資料使用</h3>
+      <ul>
+        <li>案家發佈之任務內容、評價,授權本平台於平台內公開展示</li>
+        <li>本平台得使用案家服務紀錄統計數據(去識別化後)作平台優化</li>
+      </ul>
+
+      <h3><span class="num">9</span>條款修改</h3>
+      <p>本平台保留隨時修改本條款之權利。修改後將以簡訊或站內通知告知,<strong>繼續使用平台即視為同意修改後條款</strong>。</p>
+
+      <h3><span class="num">10</span>準據法與管轄</h3>
+      <p>本條款以中華民國法律為準據法,並以<strong>台灣新北地方法院</strong>為第一審管轄法院。</p>
+
+      <p style="margin-top:1.5rem;padding-top:1rem;border-top:1px dashed var(--border);color:var(--ink-light);font-size:0.78rem;">
+        以上條款由大天使長照有限公司附設新北市私立大天使居家長照機構(「去一下」平台營運者)擬定。
+      </p>
+    </div>
+    <div class="modal-footer">
+      <div class="read-prog">
+        <span class="read-prog-label">閱讀進度</span>
+        <div class="read-prog-track"><div class="read-prog-fill" id="terms-progress" style="width:0%;"></div></div>
+        <span class="read-prog-text" id="terms-progress-text">0%</span>
+      </div>
+      <button class="modal-confirm" id="terms-confirm" onclick="confirmRead('terms')">請將內容拉至最底才能確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- 隱私權政策 Modal -->
+<div class="modal-overlay" id="modal-privacy" onclick="if(event.target===this)closeModal('modal-privacy')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">隱私權政策</div>
+      <button class="modal-close" onclick="closeModal('modal-privacy')">×</button>
+    </div>
+    <div class="modal-body" id="modal-privacy-body" onscroll="trackScroll(this,'privacy')">
+      <p style="color:var(--ink-light);font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
+
+      <h3><span class="num">1</span>資料蒐集範圍</h3>
+      <p>本平台為提供媒合服務,將蒐集以下資料:</p>
+      <ul>
+        <li><strong>基本身分</strong>:真實姓名、暱稱、聯絡電話、Email</li>
+        <li><strong>第三方登入資料</strong>:LINE 暱稱與頭像、Google Email 與頭像(如以社群登入)</li>
+        <li><strong>服務資料</strong>:服務地址、訂單紀錄、評價、付款紀錄</li>
+        <li><strong>使用紀錄</strong>:登入紀錄、IP 位址、瀏覽行為</li>
+      </ul>
+
+      <h3><span class="num">2</span>資料使用目的</h3>
+      <ul>
+        <li>身分審核、確保平台安全</li>
+        <li>媒合順咖與案家</li>
+        <li>提供客戶服務、處理爭議</li>
+        <li>付款結算</li>
+        <li>平台優化與功能改善</li>
+        <li>法令遵循(如配合司法調查)</li>
+      </ul>
+
+      <h3><span class="num">3</span>資料公開原則</h3>
+      <div class="highlight">
+        身分證、真實姓名、電話、住址<strong>絕對不會公開給其他使用者</strong>。順咖僅能看到你的暱稱、評分與服務紀錄;順咖接單後,聯絡方式(電話、LINE)僅於自動建立之 LINE 群內顯示。
+      </div>
+
+      <h3><span class="num">4</span>資料保存期限</h3>
+      <ul>
+        <li>帳號使用中:持續保存</li>
+        <li>停止使用後:基本資料保存 5 年(符合稅法、長照法規)</li>
+        <li>點數加值與發票紀錄:依稅法規定保存 7 年</li>
+      </ul>
+
+      <h3><span class="num">5</span>資料當事人權利</h3>
+      <p>依個人資料保護法,您有權:</p>
+      <ul>
+        <li>查詢或請求閱覽個人資料</li>
+        <li>請求複製本</li>
+        <li>請求補充或更正</li>
+        <li>請求停止蒐集、處理、利用</li>
+        <li>請求刪除(除法令要求保存者外)</li>
+      </ul>
+      <p>請以電子郵件至客服信箱辦理。本平台將於 30 日內處理。</p>
+
+      <h3><span class="num">6</span>第三方資料分享</h3>
+      <p>本平台不會將您的個人資料販售、出租、交換給第三方,除非:</p>
+      <ul>
+        <li>取得您事前同意</li>
+        <li>司法機關依法律程序要求</li>
+        <li>為保護平台、其他使用者之合法權益</li>
+        <li>點數加值之金流服務商(限刷卡與發票必要資訊)</li>
+        <li>簡訊服務商(限發送驗證碼必要資訊)</li>
+      </ul>
+
+      <h3><span class="num">7</span>Cookie 使用</h3>
+      <p>本平台使用 Cookie 追蹤登入狀態與使用偏好。您可於瀏覽器停用 Cookie,但部分功能將無法使用。</p>
+
+      <h3><span class="num">8</span>資料安全</h3>
+      <ul>
+        <li>所有個人資料以加密方式儲存</li>
+        <li>點數加值之金流資訊使用 SSL 加密傳輸</li>
+        <li>採用權限管理,僅授權人員可存取</li>
+        <li>本平台已採取合理之資安措施,但不保證百分之百無資料外洩風險</li>
+      </ul>
+
+      <h3><span class="num">9</span>政策修改</h3>
+      <p>本政策得隨時修改。重大修改將以簡訊或站內通知告知。繼續使用平台視為同意修改後政策。</p>
+
+      <h3><span class="num">10</span>聯絡方式</h3>
+      <p>如對本政策有任何疑問,請聯繫:</p>
+      <p>大天使長照有限公司附設新北市私立大天使居家長照機構<br>客服信箱:service@quyixia.tw</p>
+
+      <p style="margin-top:1.5rem;padding-top:1rem;border-top:1px dashed var(--border);color:var(--ink-light);font-size:0.78rem;">
+        本政策依《個人資料保護法》、《長期照顧服務法》相關規定擬定。
+      </p>
+    </div>
+    <div class="modal-footer">
+      <div class="read-prog">
+        <span class="read-prog-label">閱讀進度</span>
+        <div class="read-prog-track"><div class="read-prog-fill" id="privacy-progress" style="width:0%;"></div></div>
+        <span class="read-prog-text" id="privacy-progress-text">0%</span>
+      </div>
+      <button class="modal-confirm" id="privacy-confirm" onclick="confirmRead('privacy')">請將內容拉至最底才能確認</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var chosenAuthMethod = '';
+
+function goStep(n) {
+  document.querySelectorAll('.step').forEach(function(s){ s.classList.remove('on'); });
+  document.getElementById('step-' + n).classList.add('on');
+  document.querySelectorAll('.step-dot').forEach(function(d){
+    var s = parseInt(d.getAttribute('data-s'));
+    d.classList.remove('on','done');
+    if (s < n) d.classList.add('done');
+    else if (s === n) d.classList.add('on');
+  });
+  document.querySelectorAll('.step-line').forEach(function(line, idx){
+    line.classList.toggle('done', idx < n - 1);
+  });
+}
+
+function pickRole(role) {
+  if (role === 'client') {
+    goStep(2);
+  }
+}
+
+function signupWith(method) {
+  chosenAuthMethod = method;
+  var msgMap = {
+    'LINE': { msg: '已用 LINE 完成身分驗證', detail: '系統收到:LINE 暱稱、頭像(姓名、電話需自填)' },
+    'Google': { msg: '已用 Google 完成身分驗證', detail: '系統收到:Google Email、頭像(姓名、電話需自填)' },
+    'Email': { msg: '已寄送驗證信至你的 Email', detail: '請完成信箱驗證(姓名、電話需自填)' }
+  };
+  var info = msgMap[method];
+  document.getElementById('auth-msg').textContent = info.msg;
+  document.getElementById('auth-detail').textContent = info.detail;
+
+  if (method === 'Google') {
+    document.getElementById('email-field').value = 'your-google-email@gmail.com';
+    document.getElementById('email-field').setAttribute('readonly', 'readonly');
+  } else {
+    document.getElementById('email-field').removeAttribute('readonly');
+    document.getElementById('email-field').value = '';
+  }
+
+  alert('用 ' + method + ' 註冊流程:\n\n1. 跳到 ' + method + ' 授權頁\n2. 同意授權\n3. 自動跳回網站、進入補資料步驟\n\n(demo 模擬中,假設授權成功)');
+  setTimeout(function(){ goStep(3); }, 300);
+}
+
+function completeSignup() {
+  var inputs = document.querySelectorAll('#step-3 input');
+  var required = [0,1,2,4,5,6,7];
+  var ok = true;
+  required.forEach(function(idx){
+    var inp = inputs[idx];
+    if (inp && !inp.value.trim() && inp.placeholder.indexOf('選填') === -1) {
+      inp.style.borderColor = 'var(--danger)';
+      ok = false;
+    } else if (inp) {
+      inp.style.borderColor = '';
+    }
+  });
+  if (!ok) {
+    alert('請填完帶 * 的必填欄位');
+    return;
+  }
+  if (!readStatus.terms || !readStatus.privacy) {
+    alert('請先閱讀服務條款與隱私權政策');
+    return;
+  }
+  if (!document.getElementById('agree').checked) {
+    alert('請勾選同意條款');
+    return;
+  }
+  alert('註冊完成!即將進入會員主頁');
+  window.location.href = '11_client_home.html';
+}
+
+/* === 條款 Modal === */
+var readStatus = { terms: false, privacy: false };
+
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+  document.body.style.overflow = 'hidden';
+  var key = id === 'modal-terms' ? 'terms' : 'privacy';
+  var body = document.getElementById('modal-' + key + '-body');
+  setTimeout(function(){ trackScroll(body, key); }, 50);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function trackScroll(el, key) {
+  var scrolled = el.scrollTop + el.clientHeight;
+  var total = el.scrollHeight;
+  var pct = total > el.clientHeight ? Math.min(100, Math.round(scrolled / total * 100)) : 100;
+  document.getElementById(key + '-progress').style.width = pct + '%';
+  document.getElementById(key + '-progress-text').textContent = pct + '%';
+
+  if (pct >= 95) {
+    document.getElementById(key + '-progress-text').classList.add('done');
+    var btn = document.getElementById(key + '-confirm');
+    if (!btn.classList.contains('ready')) {
+      btn.classList.add('ready');
+      btn.innerHTML = '<svg><use href="#i-check"/></svg>我已讀完,確認同意';
+    }
+  }
+}
+
+function confirmRead(key) {
+  var btn = document.getElementById(key + '-confirm');
+  if (!btn.classList.contains('ready')) return;
+
+  readStatus[key] = true;
+  var link = document.getElementById('link-' + key);
+  if (link) link.classList.add('read');
+
+  closeModal('modal-' + key);
+
+  if (readStatus.terms && readStatus.privacy) {
+    var cb = document.getElementById('agree');
+    cb.disabled = false;
+    document.getElementById('unread-hint').classList.add('hide');
+  }
+}
+
+function handleAgreeChange(cb) {
+  if (cb.checked && (!readStatus.terms || !readStatus.privacy)) {
+    cb.checked = false;
+    alert('請先點開並閱讀完兩份文件');
+    return;
+  }
+  document.getElementById('submit-btn').disabled = !cb.checked;
+}
+</script>
+</body>
+</html>

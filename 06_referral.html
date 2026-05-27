@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>推薦碼皇冠計畫 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;
+  --amber:#EF9F27;
+  --amber-deep:#BA7517;
+  --amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;
+  --champagne-soft:#FFFCF5;
+  --forest:#2F6048;
+  --forest-deep:#1F4A36;
+  --mint:#5FB58E;
+  --mint-pale:#E8F5EE;
+  --ink:#3D2914;
+  --ink-soft:#8B7355;
+  --ink-light:#B8A485;
+  --border:#FFE9B8;
+  --border-soft:#F5EBD8;
+  --border-mint:rgba(95,181,142,0.3);
+  --warn:#E89544;
+  --warn-pale:#FFF1E0;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--champagne-soft);color:var(--ink);line-height:1.6;}
+.ico{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
+
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+/* === 頁頭 === */
+.page-header{position:relative;padding:3rem 1.5rem 1.85rem;text-align:center;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 55%,var(--mint-pale) 100%);overflow:hidden;}
+.page-header::before{content:'';position:absolute;top:-80px;right:-100px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.18) 0%,transparent 70%);}
+.page-header::after{content:'';position:absolute;bottom:-100px;left:-80px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.15) 0%,transparent 70%);}
+.page-header > *{position:relative;z-index:1;}
+.page-title{font-size:1.85rem;font-weight:600;color:var(--ink);letter-spacing:-0.5px;line-height:1.3;}
+.page-sub{font-size:0.92rem;color:var(--ink-soft);margin-top:0.75rem;line-height:1.75;}
+
+/* Tab */
+.tab-bar{display:flex;background:#fff;border-bottom:1.5px solid var(--border-soft);position:sticky;top:0;z-index:10;}
+.tab{flex:1;padding:1rem 0.5rem;text-align:center;font-size:0.88rem;color:var(--ink-soft);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1.5px;transition:all 0.2s;font-weight:500;}
+.tab:hover{background:var(--champagne-soft);color:var(--amber-deep);}
+.tab.active{color:var(--amber-deep);font-weight:600;border-bottom-color:var(--amber);background:var(--champagne-soft);}
+
+.wrap{padding:1.5rem 1.25rem 3rem;max-width:680px;margin:0 auto;}
+
+.card{background:#fff;border:1.5px solid var(--border-soft);border-radius:18px;padding:1.35rem;margin-bottom:1rem;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.sec-title{font-size:0.95rem;font-weight:600;color:var(--ink);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.sec-title::before{content:'';display:block;width:4px;height:18px;background:linear-gradient(180deg,var(--honey),var(--amber));border-radius:2px;}
+
+/* === 我的皇冠 Hero === */
+.crown-hero{text-align:center;padding:1.5rem 1rem 1.25rem;}
+.my-crown-link{display:inline-block;text-decoration:none;cursor:pointer;transition:transform 0.25s;}
+.my-crown-link:hover{transform:scale(1.05);}
+.crown-circle{position:relative;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,#fff 30%,var(--champagne) 100%);border:3px solid var(--amber);display:inline-flex;align-items:center;justify-content:center;margin-bottom:0.65rem;box-shadow:0 12px 36px rgba(239,159,39,0.3);transition:box-shadow 0.25s;}
+.my-crown-link:hover .crown-circle{box-shadow:0 14px 42px rgba(239,159,39,0.45);}
+.crown-circle svg{width:54px;height:54px;fill:var(--amber);filter:drop-shadow(0 0 12px rgba(239,159,39,0.6));}
+.crown-circle .my-count{position:absolute;top:-8px;right:-8px;min-width:32px;height:32px;border-radius:99px;background:linear-gradient(135deg,var(--amber-deep),var(--amber-darker));color:#fff;font-size:0.95rem;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 10px;border:3px solid #fff;box-shadow:0 4px 12px rgba(139,90,15,0.4);}
+.crown-name{font-size:1.1rem;font-weight:600;color:var(--ink);margin-bottom:5px;}
+.crown-days{font-size:0.85rem;color:var(--ink-soft);}
+.crown-days strong{color:var(--amber-deep);font-weight:700;}
+
+.crown-bar-wrap{background:var(--border);border-radius:99px;height:10px;width:100%;max-width:320px;margin:0.85rem auto 7px;overflow:hidden;}
+.crown-bar{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--honey),var(--amber));}
+.crown-bar-label{font-size:0.74rem;color:var(--ink-light);}
+
+.crown-click-hint{display:inline-flex;align-items:center;gap:5px;font-size:0.76rem;color:var(--amber-deep);background:var(--champagne);border:1px solid var(--border);padding:5px 13px;border-radius:99px;margin-top:8px;transition:all 0.2s;font-weight:600;}
+.my-crown-link:hover .crown-click-hint{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;}
+.crown-click-hint svg{width:0.9em;height:0.9em;fill:currentColor;}
+
+.crown-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:1.1rem;padding-top:1.1rem;border-top:1px dashed var(--border);}
+.badge{padding:5px 14px;border-radius:99px;font-size:0.78rem;font-weight:600;border:1.5px solid;display:inline-flex;align-items:center;gap:5px;}
+.badge svg{width:0.9em;height:0.9em;fill:currentColor;}
+.badge.active{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(239,159,39,0.3);}
+.badge.inactive{background:#fff;color:var(--ink-light);border-color:var(--border);}
+
+/* 推薦碼 */
+.ref-code-box{background:linear-gradient(135deg,var(--champagne),#fff 70%);border:1.5px solid var(--border);border-radius:14px;padding:1.25rem 1rem;text-align:center;margin-bottom:1rem;}
+.ref-code{font-size:1.7rem;font-weight:700;color:var(--amber-deep);letter-spacing:3px;margin-bottom:10px;font-family:'Courier New',Monaco,monospace;}
+.ref-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.ref-btn{display:inline-flex;align-items:center;gap:5px;background:#fff;color:var(--ink);border:1.5px solid var(--border);padding:7px 14px;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.ref-btn:hover{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;transform:translateY(-1px);}
+.ref-btn svg{width:0.95em;height:0.95em;fill:currentColor;}
+.copy-msg{font-size:0.78rem;color:var(--forest);margin-top:8px;min-height:18px;font-weight:600;}
+
+.rules-box{font-size:0.82rem;color:var(--ink);line-height:1.95;background:var(--champagne-soft);border:1px dashed var(--border);border-radius:12px;padding:0.95rem 1.1rem;}
+.rules-box > div{display:flex;align-items:flex-start;gap:8px;}
+.rules-box strong{color:var(--amber-darker);font-weight:600;}
+
+.bonus-tag{display:inline-flex;align-items:center;gap:3px;font-size:0.68rem;background:linear-gradient(135deg,var(--warn-pale),#FFCDA8);color:#9c5e22;border:1px solid var(--warn);padding:2px 9px;border-radius:99px;font-weight:700;margin-left:6px;}
+.bonus-tag svg{width:0.9em;height:0.9em;fill:currentColor;}
+
+/* === 話術範本 === */
+.script-card{background:var(--champagne-soft);border:1px solid var(--border-soft);border-left:3px solid var(--amber);border-radius:12px;padding:0.95rem 1.1rem;margin-bottom:0.7rem;position:relative;}
+.script-label{font-size:0.76rem;color:var(--ink-soft);margin-bottom:6px;display:flex;align-items:center;gap:6px;font-weight:600;}
+.script-label svg{width:14px;height:14px;fill:var(--amber);}
+.script-text{font-size:0.84rem;color:var(--ink);line-height:1.8;padding-right:60px;}
+.script-copy-btn{position:absolute;top:0.75rem;right:0.75rem;background:#fff;border:1.5px solid var(--border);color:var(--amber-deep);padding:4px 10px;border-radius:8px;font-size:0.74rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-weight:600;transition:all 0.15s;}
+.script-copy-btn:hover{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;}
+.script-copy-btn svg{width:0.9em;height:0.9em;fill:currentColor;}
+
+/* 進度卡 */
+.progress-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+.progress-num{font-size:2.2rem;font-weight:700;color:var(--ink);line-height:1;letter-spacing:-1px;}
+.progress-label{font-size:0.85rem;color:var(--ink-soft);line-height:1.6;}
+.progress-label > span:first-child{color:var(--amber-deep);font-weight:600;}
+.progress-label > span:last-child{color:var(--forest);font-weight:600;}
+
+.milestone-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:0.85rem;}
+.milestone{flex:1;min-width:65px;text-align:center;background:#fff;border:1.5px solid var(--border-soft);border-radius:12px;padding:0.65rem 0.3rem;}
+.milestone.done{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;border-color:transparent;}
+.milestone.current{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(239,159,39,0.3);}
+.milestone-svg{width:22px;height:22px;display:block;margin:0 auto 3px;}
+.milestone-svg svg{width:100%;height:100%;fill:currentColor;}
+.milestone-label{font-size:0.72rem;font-weight:600;}
+
+/* === 推薦紀錄 === */
+.section-label{font-size:0.85rem;font-weight:600;margin:0.85rem 0 0.65rem;display:flex;align-items:center;gap:7px;}
+.section-label > span{display:block;width:4px;height:16px;border-radius:2px;flex-shrink:0;}
+
+.ref-list{display:flex;flex-direction:column;gap:9px;}
+.ref-item{display:flex;align-items:center;gap:11px;padding:0.75rem 0.95rem;background:#fff;border:1.5px solid var(--border-soft);border-radius:12px;transition:all 0.2s;}
+.ref-item:hover{border-color:var(--amber);box-shadow:0 3px 10px rgba(239,159,39,0.1);}
+.ref-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:600;flex-shrink:0;color:#fff;}
+.ref-avatar.s{background:linear-gradient(135deg,var(--honey),var(--amber));}
+.ref-avatar.c{background:linear-gradient(135deg,var(--mint),var(--forest));}
+.ref-info{flex:1;min-width:0;}
+.ref-name{font-size:0.88rem;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.ref-date{font-size:0.72rem;color:var(--ink-light);margin-top:3px;}
+.ref-type-tag{font-size:0.7rem;padding:3px 9px;border-radius:99px;font-weight:600;}
+.ref-type-tag.s{background:var(--champagne);color:var(--amber-deep);border:1px solid var(--border);}
+.ref-type-tag.c{background:var(--mint-pale);color:var(--forest);border:1px solid var(--border-mint);}
+.ref-point{font-size:0.78rem;font-weight:700;color:var(--amber-deep);}
+
+.ref-status{font-size:0.66rem;padding:2px 8px;border-radius:99px;font-weight:600;display:inline-flex;align-items:center;gap:3px;}
+.ref-status svg{width:0.9em;height:0.9em;fill:currentColor;}
+.rs-pending{background:var(--warn-pale);color:var(--warn);}
+.rs-registered{background:#E8F1F8;color:#3A7CB8;}
+.rs-active{background:var(--mint-pale);color:var(--forest);}
+
+.pool-chip{display:inline-flex;align-items:center;gap:3px;font-size:0.66rem;padding:2px 8px;border-radius:99px;font-weight:600;}
+.pool-chip svg{width:0.85em;height:0.85em;fill:currentColor;}
+.pool-A{background:var(--mint-pale);color:var(--forest);}
+.pool-B{background:var(--warn-pale);color:var(--warn);}
+
+/* === 兌換獎勵 === */
+.dual-points{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:0.95rem;}
+.pool-box{border-radius:14px;padding:1.05rem 1rem;text-align:center;border:1.5px solid;}
+.pool-box.staff-pool{background:linear-gradient(135deg,var(--champagne),#fff 70%);border-color:var(--border);}
+.pool-box.client-pool{background:linear-gradient(135deg,var(--mint-pale),#fff 70%);border-color:var(--border-mint);}
+.pool-label{font-size:0.82rem;font-weight:600;margin-bottom:6px;display:inline-flex;align-items:center;gap:5px;}
+.pool-label svg{width:1em;height:1em;fill:currentColor;}
+.staff-pool .pool-label{color:var(--amber-deep);}
+.client-pool .pool-label{color:var(--forest);}
+.pool-num{font-size:1.85rem;font-weight:700;letter-spacing:-0.5px;}
+.staff-pool .pool-num{color:var(--amber-deep);}
+.client-pool .pool-num{color:var(--forest);}
+.pool-sub{font-size:0.72rem;color:var(--ink-light);margin-top:3px;}
+
+.pool-note{font-size:0.76rem;color:var(--ink-light);text-align:center;margin-bottom:1rem;line-height:1.7;}
+
+.redeem-card{background:#fff;border:1.5px solid var(--border-soft);border-radius:14px;padding:1.05rem 1.2rem;margin-bottom:0.75rem;transition:all 0.2s;}
+.redeem-card:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(186,117,23,0.08);}
+.redeem-card.staff-card{border-left:4px solid var(--amber);}
+.redeem-card.client-card{border-left:4px solid var(--mint);}
+.redeem-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.redeem-title{font-size:0.92rem;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:6px;}
+.redeem-cost{font-size:0.88rem;font-weight:700;}
+.staff-card .redeem-cost{color:var(--amber-deep);}
+.client-card .redeem-cost{color:var(--forest);}
+.redeem-desc{font-size:0.8rem;color:var(--ink-soft);line-height:1.65;margin-bottom:10px;}
+.pool-tag{display:inline-block;font-size:0.68rem;padding:2px 9px;border-radius:99px;margin-bottom:7px;font-weight:600;}
+.staff-card .pool-tag{background:var(--champagne);color:var(--amber-deep);border:1px solid var(--border);}
+.client-card .pool-tag{background:var(--mint-pale);color:var(--forest);border:1px solid var(--border-mint);}
+
+.redeem-btn{padding:7px 18px;border-radius:10px;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;font-family:inherit;color:#fff;}
+.staff-card .redeem-btn{background:linear-gradient(135deg,var(--honey),var(--amber));box-shadow:0 4px 12px rgba(239,159,39,0.3);}
+.staff-card .redeem-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 16px rgba(239,159,39,0.4);}
+.client-card .redeem-btn{background:linear-gradient(135deg,var(--mint),var(--forest));box-shadow:0 4px 12px rgba(47,96,72,0.3);}
+.client-card .redeem-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 16px rgba(47,96,72,0.4);}
+.redeem-btn:disabled{background:#D8CFB8;color:#fff;cursor:not-allowed;box-shadow:none;}
+
+@media(max-width:600px){
+  .dual-points{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+  <symbol id="i-diamond" viewBox="0 0 24 24"><path d="M12 2L2 8.5 12 22l10-13.5zm0 3.31L18.4 9 12 17.3 5.6 9z"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.5 11H7v-2h3.5V6h2v7z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></symbol>
+  <symbol id="i-steth" viewBox="0 0 24 24"><path d="M19 8c-1.66 0-3 1.34-3 3 0 1.31.84 2.41 2 2.83V15c0 2.21-1.79 4-4 4s-4-1.79-4-4v-.18c2.84-.48 5-2.94 5-5.92V3h-4v2h2v4c0 2.21-1.79 4-4 4S4 11.21 4 9V5h2V3H2v6c0 2.98 2.16 5.44 5 5.92V15c0 3.31 2.69 6 6 6s6-2.69 6-6v-1.17c1.16-.42 2-1.52 2-2.83 0-1.66-1.34-3-3-3z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="page-header">
+  <div class="page-title">推薦碼 · 皇冠計畫</div>
+  <div class="page-sub">推薦越多,獎勵越豐厚<br>順咖點數、案家點數分開累積,各有專屬獎勵</div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab(0,this)">我的皇冠</div>
+  <div class="tab" onclick="switchTab(1,this)">推薦紀錄</div>
+  <div class="tab" onclick="switchTab(2,this)">兌換獎勵</div>
+</div>
+
+<!-- Tab 0:我的皇冠 -->
+<div class="wrap" id="tab0">
+  <div class="card">
+    <div class="crown-hero">
+      <a href="crown_all_levels.html?count=7" class="my-crown-link" title="點看完整皇冠等級表">
+        <div class="crown-circle">
+          <svg><use href="#i-crown"/></svg>
+          <span class="my-count">7</span>
+        </div>
+        <div class="crown-name">推薦達人皇冠</div>
+        <div class="crown-days">已推薦 <strong>7</strong> 位好友 · 剩餘顯示 <strong>12</strong> 天</div>
+        <div class="crown-bar-wrap"><div class="crown-bar" style="width:40%;"></div></div>
+        <div class="crown-bar-label">累積皇冠天數:12 / 30 天</div>
+        <div class="crown-click-hint">
+          <svg><use href="#i-crown"/></svg>
+          點看完整 11 級等級表
+          <svg><use href="#i-arrow-right"/></svg>
+        </div>
+      </a>
+    </div>
+    <div class="crown-badges">
+      <span class="badge active"><svg><use href="#i-crown"/></svg>已解鎖皇冠</span>
+      <span class="badge active"><svg><use href="#i-star"/></svg>推薦達人</span>
+      <span class="badge inactive"><svg><use href="#i-diamond"/></svg>傳說推薦者</span>
+      <span class="badge inactive"><svg><use href="#i-flame"/></svg>超級大使</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">我的推薦碼</div>
+    <div class="ref-code-box">
+      <div class="ref-code">FANG2025</div>
+      <div class="ref-btns">
+        <button class="ref-btn" onclick="copyTo('FANG2025','推薦碼已複製:FANG2025')"><svg><use href="#i-copy"/></svg>複製推薦碼</button>
+        <button class="ref-btn" onclick="copyTo('https://quyixia.tw/join?ref=FANG2025','推薦連結已複製!')"><svg><use href="#i-link"/></svg>複製推薦連結</button>
+        <button class="ref-btn" onclick="shareLink('FANG2025')"><svg><use href="#i-share"/></svg>分享給朋友</button>
+      </div>
+      <div class="copy-msg" id="copy-msg"></div>
+    </div>
+    <div class="rules-box">
+      <div><svg class="ico" style="color:var(--amber-deep)"><use href="#i-crown"/></svg> <span><strong>推薦一般順咖</strong>:每推薦 5 人 → 5 天皇冠頭框(上限 30 天)</span></div>
+      <div><svg class="ico" style="color:var(--warn)"><use href="#i-steth"/></svg> <span><strong>推薦照服員</strong>:每推薦 1 人 = 一般 3 人<span class="bonus-tag"><svg><use href="#i-flame"/></svg>3 倍獎勵</span></span></div>
+      <div><svg class="ico" style="color:var(--forest)"><use href="#i-pin"/></svg> <span><strong>推薦案家</strong>:每推薦 5 人 → 1 小時任務置頂(上限 72 小時)</span></div>
+      <div style="color:var(--ink-light);margin-top:5px;">兩種點數分開計算,1 年內使用完畢</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">推薦話術範本</div>
+    <div style="font-size:0.82rem;color:var(--ink-soft);margin-bottom:0.95rem;line-height:1.7;">直接複製貼到 LINE 給朋友,不知道怎麼開口時用這個。</div>
+
+    <div class="script-card">
+      <div class="script-label"><svg><use href="#i-msg"/></svg>給想接案的朋友</div>
+      <button class="script-copy-btn" onclick="copyScript(this, 'staff')"><svg><use href="#i-copy"/></svg>複製</button>
+      <div class="script-text">嘿,我在用一個叫「去一下」的接案平台,下班或假日有空就接,自己排班自己定價,不用打卡也沒底薪壓力。用我推薦碼 FANG2025 註冊,雙方都有獎勵。https://quyixia.tw/join?ref=FANG2025</div>
+    </div>
+
+    <div class="script-card">
+      <div class="script-label"><svg><use href="#i-steth"/></svg>給照服員 / 居服員朋友(建議用這個,獎勵 3 倍)</div>
+      <button class="script-copy-btn" onclick="copyScript(this, 'cna')"><svg><use href="#i-copy"/></svg>複製</button>
+      <div class="script-text">妳有照服員證的話可以試試「去一下」,下班後接自費案賺外快,平台不問妳在哪間機構上班,可以自己設定不接單時段保護本業。我的推薦碼 FANG2025。https://quyixia.tw/join?ref=FANG2025</div>
+    </div>
+
+    <div class="script-card">
+      <div class="script-label"><svg><use href="#i-pin"/></svg>給需要幫忙的朋友</div>
+      <button class="script-copy-btn" onclick="copyScript(this, 'client')"><svg><use href="#i-copy"/></svg>複製</button>
+      <div class="script-text">家裡長輩需要陪看醫生、遛狗、代排隊...這些雜事用「去一下」就好,平台都是實名認證過的順咖。用我的推薦碼 FANG2025 註冊有優惠。https://quyixia.tw/join?ref=FANG2025</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">推薦進度</div>
+    <div class="progress-row">
+      <div class="progress-num">8</div>
+      <div class="progress-label">總推薦人數<br><span>順咖 5 人</span> · <span>案家 3 人</span></div>
+    </div>
+    <div class="milestone-row">
+      <div class="milestone done"><span class="milestone-svg"><svg><use href="#i-crown"/></svg></span><div class="milestone-label">5人皇冠</div></div>
+      <div class="milestone current"><span class="milestone-svg"><svg><use href="#i-star"/></svg></span><div class="milestone-label">10人達人</div></div>
+      <div class="milestone"><span class="milestone-svg"><svg><use href="#i-diamond"/></svg></span><div class="milestone-label">20人傳說</div></div>
+      <div class="milestone"><span class="milestone-svg"><svg><use href="#i-flame"/></svg></span><div class="milestone-label">50人大使</div></div>
+    </div>
+    <div style="font-size:0.76rem;color:var(--ink-light);margin-top:10px;">再推薦 2 人(共 10 人)解鎖「推薦達人」稱號</div>
+  </div>
+</div>
+
+<!-- Tab 1:推薦紀錄 -->
+<div class="wrap" id="tab1" style="display:none;">
+  <div class="card">
+    <div class="sec-title">推薦紀錄(共 8 人)</div>
+    <div class="section-label" style="color:var(--amber-deep);">
+      <span style="background:linear-gradient(180deg,var(--honey),var(--amber));"></span>順咖推薦(5 人 · 已得 5 天皇冠)
+    </div>
+    <div class="ref-list" style="margin-bottom:1rem;">
+      <div class="ref-item"><div class="ref-avatar s">凱</div><div class="ref-info"><div class="ref-name">阿凱<span class="pool-chip pool-A">一般</span></div><div class="ref-date">2025/05/18 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已接單</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point">+1 點</span></div>
+      <div class="ref-item"><div class="ref-avatar s">玲</div><div class="ref-info"><div class="ref-name">小玲<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服</span></div><div class="ref-date">2025/05/15 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已接單</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point">+3 點</span></div>
+      <div class="ref-item"><div class="ref-avatar s">明</div><div class="ref-info"><div class="ref-name">大明<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服</span></div><div class="ref-date">2025/05/08 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已接單</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point">+3 點</span></div>
+      <div class="ref-item"><div class="ref-avatar s">張</div><div class="ref-info"><div class="ref-name">張先生<span class="pool-chip pool-A">一般</span></div><div class="ref-date">2025/05/02 · <span class="ref-status rs-registered"><svg><use href="#i-clock"/></svg>已註冊未接單</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point">+1 點</span></div>
+      <div class="ref-item"><div class="ref-avatar s">雯</div><div class="ref-info"><div class="ref-name">小雯<span class="pool-chip pool-A">一般</span></div><div class="ref-date">2025/04/28 · <span class="ref-status rs-pending"><svg><use href="#i-clock"/></svg>待註冊</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point" style="color:var(--ink-light);">待</span></div>
+    </div>
+    <div class="section-label" style="color:var(--forest);">
+      <span style="background:linear-gradient(180deg,var(--mint),var(--forest));"></span>案家推薦(3 人 · 累積中,再 2 人可兌換)
+    </div>
+    <div class="ref-list">
+      <div class="ref-item"><div class="ref-avatar c">王</div><div class="ref-info"><div class="ref-name">王先生</div><div class="ref-date">2025/05/12 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已下單</span></div></div><span class="ref-type-tag c">案家</span><span class="ref-point" style="color:var(--forest);">+1 點</span></div>
+      <div class="ref-item"><div class="ref-avatar c">李</div><div class="ref-info"><div class="ref-name">李小姐</div><div class="ref-date">2025/05/10 · <span class="ref-status rs-registered"><svg><use href="#i-clock"/></svg>已註冊未下單</span></div></div><span class="ref-type-tag c">案家</span><span class="ref-point" style="color:var(--forest);">+1 點</span></div>
+      <div class="ref-item"><div class="ref-avatar c">陳</div><div class="ref-info"><div class="ref-name">陳小姐</div><div class="ref-date">2025/05/05 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已下單</span></div></div><span class="ref-type-tag c">案家</span><span class="ref-point" style="color:var(--forest);">+1 點</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab 2:兌換獎勵 -->
+<div class="wrap" id="tab2" style="display:none;">
+  <div class="dual-points">
+    <div class="pool-box staff-pool">
+      <div class="pool-label"><svg><use href="#i-crown"/></svg>順咖點數</div>
+      <div class="pool-num" id="staff-pts">5</div>
+      <div class="pool-sub">推薦順咖累積</div>
+    </div>
+    <div class="pool-box client-pool">
+      <div class="pool-label"><svg><use href="#i-pin"/></svg>案家點數</div>
+      <div class="pool-num" id="client-pts">3</div>
+      <div class="pool-sub">推薦案家累積</div>
+    </div>
+  </div>
+  <div class="pool-note">兩種點數分開使用 · 有效期限 1 年 · 兌換後不可退</div>
+
+  <div class="section-label" style="color:var(--amber-deep);">
+    <span style="background:linear-gradient(180deg,var(--honey),var(--amber));"></span>順咖專屬兌換(使用順咖點數)
+  </div>
+
+  <div class="redeem-card staff-card">
+    <span class="pool-tag">順咖點數</span>
+    <div class="redeem-header">
+      <div class="redeem-title"><svg class="ico" style="color:var(--amber)"><use href="#i-crown"/></svg>皇冠頭框 5 天</div>
+      <div class="redeem-cost">5 點</div>
+    </div>
+    <div class="redeem-desc">順咖卡片顯示醒目皇冠頭框,提升被選中機率。每次兌換 +5 天,上限 30 天,可累積。</div>
+    <button class="redeem-btn" onclick="redeem(this,'staff',5,'皇冠頭框 5 天')">兌換</button>
+  </div>
+
+  <div class="redeem-card staff-card">
+    <span class="pool-tag">順咖點數</span>
+    <div class="redeem-header">
+      <div class="redeem-title"><svg class="ico" style="color:var(--amber)"><use href="#i-star"/></svg>推薦達人標章 7 天</div>
+      <div class="redeem-cost">3 點</div>
+    </div>
+    <div class="redeem-desc">頭像旁顯示推薦達人標章,讓案家知道你是活躍且受信任的順咖。</div>
+    <button class="redeem-btn" onclick="redeem(this,'staff',3,'推薦達人標章 7 天')">兌換</button>
+  </div>
+
+  <div class="section-label" style="color:var(--forest);margin-top:0.85rem;">
+    <span style="background:linear-gradient(180deg,var(--mint),var(--forest));"></span>案家專屬兌換(使用案家點數)
+  </div>
+
+  <div class="redeem-card client-card">
+    <span class="pool-tag">案家點數</span>
+    <div class="redeem-header">
+      <div class="redeem-title"><svg class="ico" style="color:var(--mint)"><use href="#i-pin"/></svg>任務單置頂 1 小時</div>
+      <div class="redeem-cost">5 點</div>
+    </div>
+    <div class="redeem-desc">你的任務單置頂顯示 1 小時,讓更多順咖優先看到,加速接單。最多累積至 72 小時。</div>
+    <button class="redeem-btn" onclick="redeem(this,'client',5,'任務置頂 1 小時')">兌換</button>
+  </div>
+
+  <div class="redeem-card client-card">
+    <span class="pool-tag">案家點數</span>
+    <div class="redeem-header">
+      <div class="redeem-title"><svg class="ico" style="color:var(--mint)"><use href="#i-bookmark"/></svg>優先顯示標章 3 天</div>
+      <div class="redeem-cost">3 點</div>
+    </div>
+    <div class="redeem-desc">案家頭像旁顯示優先標章,讓順咖知道你是活躍案家,優先考慮接你的案子。</div>
+    <button class="redeem-btn" onclick="redeem(this,'client',3,'優先顯示標章 3 天')">兌換</button>
+  </div>
+
+  <div style="font-size:0.78rem;color:var(--ink-light);text-align:center;margin-top:0.85rem;line-height:1.75;">
+    點數有效期限為獲得後 1 年內,逾期歸零<br>兌換後立即生效,不可退換
+  </div>
+</div>
+
+<script>
+var staffPts = 5, clientPts = 3;
+
+function switchTab(n, el) {
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  ['tab0','tab1','tab2'].forEach(function(id, i){
+    document.getElementById(id).style.display = i === n ? 'block' : 'none';
+  });
+}
+
+function copyTo(text, msg) {
+  var el = document.getElementById('copy-msg');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function(){ show(el, msg); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta); show(el, msg);
+  }
+}
+function show(el, msg){ el.textContent = msg; setTimeout(function(){ el.textContent = ''; }, 3000); }
+
+function shareLink(code) {
+  var url = 'https://quyixia.tw/join?ref=' + code;
+  if (navigator.share) {
+    navigator.share({ title: '去一下平台', text: '推薦你加入去一下!', url: url });
+  } else {
+    copyTo(url, '連結已複製,可貼上分享!');
+  }
+}
+
+function redeem(btn, pool, cost, name) {
+  var pts = pool === 'staff' ? staffPts : clientPts;
+  var elId = pool === 'staff' ? 'staff-pts' : 'client-pts';
+  if (pts < cost) { alert((pool==='staff'?'順咖':'案家') + '點數不足,目前只有 ' + pts + ' 點'); return; }
+  if (pool === 'staff') staffPts -= cost;
+  else clientPts -= cost;
+  document.getElementById(elId).textContent = pool === 'staff' ? staffPts : clientPts;
+  btn.textContent = '已兌換 ✓';
+  btn.disabled = true;
+  alert('「' + name + '」兌換成功!');
+}
+
+function copyScript(btn, type) {
+  var card = btn.closest('.script-card');
+  var text = card.querySelector('.script-text').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function(){
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<svg><use href="#i-check"/></svg>已複製';
+      btn.style.background = 'linear-gradient(135deg,var(--mint),var(--forest))';
+      btn.style.color = '#fff';
+      btn.style.borderColor = 'transparent';
+      setTimeout(function(){
+        btn.innerHTML = orig;
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 2000);
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('話術已複製!');
+  }
+}
+</script>
+</body>
+</html>

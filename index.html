@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>去一下 QU YI XIA · 什麼都幫你去一下</title>
+<style>
+/* ===================================================================
+   去一下 · 全站設計系統 v2(活潑現代 · 思源黑體 Medium · 一字綠)
+   =================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  /* 金色系 */
+  --honey:#FFB84D;
+  --amber:#EF9F27;
+  --amber-deep:#BA7517;
+  --amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;
+  --champagne-soft:#FFFCF5;
+  --cream:#FAEEDA;
+
+  /* 綠色系 */
+  --forest:#2F6048;
+  --mint:#5FB58E;
+  --mint-pale:#E8F5EE;
+
+  /* 文字 */
+  --ink:#3D2914;
+  --ink-soft:#8B7355;
+  --ink-light:#B8A485;
+
+  /* 系統 */
+  --warn:#E89544;
+  --warn-pale:#FFF1E0;
+  --danger:#D9534F;
+  --danger-pale:#FCE8E7;
+  --line-green:#06C755;
+
+  /* 介面 */
+  --bg:var(--champagne-soft);
+  --border:#FFE9B8;
+  --border-soft:#F5EBD8;
+  --shadow-sm:0 2px 8px rgba(186,117,23,0.06);
+  --shadow:0 4px 20px rgba(239,159,39,0.08);
+  --shadow-lg:0 8px 30px rgba(239,159,39,0.15);
+  --radius:14px;
+  --radius-lg:20px;
+  --radius-xl:24px;
+}
+
+html,body{overflow-x:hidden;}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
+
+/* 品牌字 · 思源黑體 Medium · 一字綠 */
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+/* ===================================================================
+   頂部導覽
+   =================================================================== */
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,252,245,0.88);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid rgba(255,233,184,0.5);}
+.nav-inner{max-width:1200px;margin:0 auto;padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.nav-brand{display:flex;align-items:baseline;text-decoration:none;}
+.nav-brand .brand{font-size:1.4rem;}
+.nav-links{display:flex;align-items:center;gap:6px;}
+.nav-link{padding:8px 16px;border-radius:99px;font-size:0.85rem;font-weight:500;cursor:pointer;font-family:inherit;text-decoration:none;color:var(--ink-soft);transition:all 0.2s;border:1.5px solid transparent;}
+.nav-link:hover{background:var(--champagne);color:var(--amber-deep);}
+.nav-cta{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-weight:600;box-shadow:0 4px 14px rgba(239,159,39,0.3);}
+.nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(239,159,39,0.4);background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;}
+
+@media (max-width:640px){
+  .nav-inner{padding:12px 16px;}
+  .nav-brand .brand{font-size:1.2rem;}
+  .nav-link{padding:6px 10px;font-size:0.78rem;}
+}
+
+/* ===================================================================
+   Hero
+   =================================================================== */
+.hero{position:relative;padding:7rem 2rem 4rem;overflow:hidden;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 55%,var(--mint-pale) 100%);}
+.hero-blob-1{position:absolute;top:-100px;right:-100px;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.2) 0%,transparent 70%);pointer-events:none;}
+.hero-blob-2{position:absolute;bottom:-120px;left:-100px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.18) 0%,transparent 70%);pointer-events:none;}
+.hero-grid{position:relative;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.05fr 0.95fr;gap:3rem;align-items:center;}
+
+.hero-pill{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);padding:7px 14px;border-radius:99px;font-size:0.78rem;color:var(--ink-soft);margin-bottom:1.5rem;box-shadow:0 2px 8px rgba(186,117,23,0.05);}
+.hero-pill .live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--mint);animation:blink 1.5s infinite;box-shadow:0 0 0 3px rgba(95,181,142,0.2);}
+.hero-pill strong{color:var(--forest);font-weight:600;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+.hero-title{font-size:3.6rem;font-weight:600;line-height:1.15;letter-spacing:-1.5px;color:var(--ink);margin-bottom:1rem;}
+.hero-title .em{font-weight:500;display:inline-block;}
+.hero-title .em .qu,.hero-title .em .xia{color:var(--amber-darker);}
+.hero-title .em .yi{color:var(--forest);}
+.hero-sub{font-size:1.05rem;color:var(--ink-soft);line-height:1.7;margin-bottom:2rem;max-width:480px;}
+
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:2rem;}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;padding:0.95rem 1.85rem;border-radius:99px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:all 0.25s;box-shadow:0 6px 20px rgba(239,159,39,0.35);}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(239,159,39,0.45);}
+.btn-primary svg{width:1.05em;height:1.05em;fill:currentColor;}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--amber-deep);border:1.5px solid var(--amber);padding:0.95rem 1.85rem;border-radius:99px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;transition:all 0.2s;}
+.btn-secondary:hover{background:var(--champagne);transform:translateY(-2px);}
+
+.hero-stats{display:flex;gap:0;background:#fff;border:1px solid var(--border);border-radius:18px;padding:14px 4px;max-width:440px;box-shadow:var(--shadow);}
+.hs-item{flex:1;text-align:center;padding:4px 12px;border-right:1px dashed var(--border-soft);}
+.hs-item:last-child{border-right:none;}
+.hs-num{font-size:1.5rem;font-weight:600;color:var(--amber-deep);display:inline-flex;align-items:center;gap:6px;line-height:1.1;}
+.hs-num .live-dot{width:7px;height:7px;border-radius:50%;background:var(--mint);animation:blink 1.5s infinite;box-shadow:0 0 0 3px rgba(95,181,142,0.2);}
+.hs-label{font-size:0.72rem;color:var(--ink-light);margin-top:4px;letter-spacing:0.5px;}
+
+/* Hero 視覺(右側) */
+.hero-visual{position:relative;height:480px;}
+.hv-circle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,#fff 30%,var(--champagne) 70%,transparent 100%);box-shadow:0 20px 60px rgba(186,117,23,0.18),inset 0 0 0 1.5px var(--border);display:flex;align-items:center;justify-content:center;}
+.hv-logo-big{font-weight:500;font-size:3.2rem;letter-spacing:-2px;line-height:1;color:var(--amber-darker);display:flex;flex-direction:column;align-items:center;}
+.hv-logo-big .qu,.hv-logo-big .xia{color:var(--amber-darker);}
+.hv-logo-big .yi{color:var(--forest);}
+.hv-logo-big small{display:block;font-size:0.7rem;letter-spacing:0.5em;color:var(--amber-deep);margin-top:14px;font-weight:500;}
+
+.hv-card{position:absolute;background:#fff;border-radius:14px;padding:10px 14px 10px 10px;box-shadow:0 8px 26px rgba(186,117,23,0.15);display:flex;align-items:center;gap:10px;font-size:0.82rem;animation:hvFloat 6s ease-in-out infinite;border:1px solid var(--border);}
+.hv-card-1{top:30px;left:0;animation-delay:0s;}
+.hv-card-2{top:130px;right:-10px;animation-delay:-2s;}
+.hv-card-3{bottom:90px;left:-10px;animation-delay:-4s;}
+.hv-card-4{bottom:10px;right:30px;animation-delay:-1s;}
+@keyframes hvFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.hv-avatar{width:36px;height:36px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--amber-deep);font-weight:600;font-size:0.95rem;flex-shrink:0;box-shadow:0 2px 8px rgba(186,117,23,0.15),inset 0 0 0 1px var(--border);}
+.hv-name{font-weight:600;font-size:0.82rem;color:var(--ink);}
+.hv-task{font-size:0.7rem;color:var(--ink-soft);margin-top:1px;}
+.hv-tag{background:var(--champagne);color:var(--amber-deep);padding:2px 8px;border-radius:99px;font-size:0.66rem;font-weight:600;}
+.hv-card-1 .hv-tag{background:var(--mint-pale);color:var(--forest);}
+
+@media (max-width:900px){
+  .hero{padding:6rem 1.5rem 3rem;}
+  .hero-grid{grid-template-columns:1fr;gap:2rem;}
+  .hero-title{font-size:2.6rem;}
+  .hero-visual{height:380px;order:-1;}
+  .hv-circle{width:260px;height:260px;}
+  .hv-logo-big{font-size:2.4rem;}
+}
+@media (max-width:480px){
+  .hero-title{font-size:2.1rem;}
+  .hero-sub{font-size:0.95rem;}
+  .hero-stats{padding:10px 0;}
+  .hs-num{font-size:1.25rem;}
+}
+
+/* ===================================================================
+   跑馬燈
+   =================================================================== */
+.marquee{background:#fff;border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;padding:14px 0;}
+.marquee-track{display:flex;gap:36px;animation:marqueeMove 30s linear infinite;white-space:nowrap;width:max-content;}
+@keyframes marqueeMove{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+.marquee-item{font-size:0.88rem;color:var(--ink-soft);font-weight:500;display:inline-flex;align-items:center;gap:6px;}
+.marquee-item svg{width:0.95em;height:0.95em;fill:var(--amber);}
+.marquee-item .hot{color:var(--amber-deep);font-weight:600;}
+
+/* ===================================================================
+   區塊通用
+   =================================================================== */
+.section{padding:4rem 1.5rem 2rem;}
+.section-wrap{max-width:1100px;margin:0 auto;}
+.section-head{text-align:center;margin-bottom:2.5rem;}
+.section-tag{display:inline-block;font-size:0.7rem;color:var(--amber-deep);background:var(--champagne);padding:5px 14px;border-radius:99px;letter-spacing:2px;font-weight:600;margin-bottom:1rem;}
+.section-title-big{font-size:2.2rem;font-weight:600;color:var(--ink);letter-spacing:-1px;margin-bottom:0.75rem;line-height:1.25;}
+.section-title-big .em{font-weight:500;}
+.section-title-big .em .qu,.section-title-big .em .xia{color:var(--amber-darker);}
+.section-title-big .em .yi{color:var(--forest);}
+.section-desc{font-size:0.95rem;color:var(--ink-soft);max-width:560px;margin:0 auto;}
+
+@media (max-width:480px){
+  .section{padding:3rem 1.25rem 1.5rem;}
+  .section-title-big{font-size:1.7rem;}
+}
+
+/* ===================================================================
+   幫誰去一下(book-card)
+   =================================================================== */
+.book-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.25rem;}
+.book-card{position:relative;background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:22px 18px;text-decoration:none;color:inherit;transition:all 0.25s;overflow:hidden;cursor:pointer;}
+.book-card::before{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.12) 0%,transparent 70%);transition:all 0.3s;}
+.book-card:hover{transform:translateY(-4px);border-color:var(--amber);box-shadow:0 12px 30px rgba(239,159,39,0.2);}
+.book-card:hover::before{width:140px;height:140px;}
+.book-card:hover .book-arrow{opacity:1;transform:translate(0,0);}
+.book-arrow{position:absolute;top:18px;right:18px;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.95rem;opacity:0;transform:translate(-8px,8px);transition:all 0.25s;font-weight:600;}
+.book-iconwrap{position:relative;width:54px;height:54px;border-radius:16px;background:linear-gradient(135deg,var(--champagne),#fff);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.book-iconwrap svg{width:28px;height:28px;fill:var(--amber-deep);}
+.book-name{font-size:1.1rem;font-weight:600;color:var(--ink);margin-bottom:6px;}
+.book-desc{font-size:0.8rem;color:var(--ink-soft);line-height:1.65;margin-bottom:12px;}
+.book-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.book-tag{font-size:0.68rem;color:var(--amber-deep);background:var(--champagne);padding:3px 9px;border-radius:99px;font-weight:500;}
+.book-hint{text-align:center;font-size:0.78rem;color:var(--ink-light);margin-top:1rem;}
+
+@media (max-width:760px){.book-grid{grid-template-columns:repeat(2,1fr);}}
+
+/* ===================================================================
+   四步驟
+   =================================================================== */
+.howto-wrap{background:#fff;border:1px solid var(--border);border-radius:24px;padding:2.5rem 2rem;box-shadow:var(--shadow);}
+.howto-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;}
+.howto-step{text-align:center;position:relative;}
+.howto-step:not(:last-child)::after{content:'→';position:absolute;top:18px;right:-12px;color:var(--ink-light);font-size:1.2rem;}
+.howto-num{width:44px;height:44px;margin:0 auto 12px;border-radius:50%;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.1rem;box-shadow:0 6px 14px rgba(239,159,39,0.3);}
+.howto-title{font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:8px;}
+.howto-desc{font-size:0.82rem;color:var(--ink-soft);line-height:1.65;}
+
+@media (max-width:760px){
+  .howto-grid{grid-template-columns:repeat(2,1fr);gap:2rem;}
+  .howto-step::after{display:none;}
+}
+
+/* ===================================================================
+   信任徽章
+   =================================================================== */
+.trust-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;}
+.trust-item{background:#fff;border:1px solid var(--border);border-radius:16px;padding:18px 14px;text-align:center;transition:all 0.2s;}
+.trust-item:hover{transform:translateY(-2px);border-color:var(--amber);box-shadow:var(--shadow);}
+.trust-icon{width:48px;height:48px;margin:0 auto 10px;border-radius:14px;display:flex;align-items:center;justify-content:center;}
+.trust-icon svg{width:24px;height:24px;}
+.ti-1{background:var(--champagne);}.ti-1 svg{fill:var(--amber-deep);}
+.ti-2{background:var(--mint-pale);}.ti-2 svg{fill:var(--forest);}
+.ti-3{background:var(--danger-pale);}.ti-3 svg{fill:var(--danger);}
+.ti-4{background:var(--champagne);}.ti-4 svg{fill:var(--amber);}
+.ti-5{background:linear-gradient(135deg,var(--honey),var(--amber));}.ti-5 svg{fill:#fff;}
+.trust-name{font-size:0.88rem;font-weight:600;color:var(--ink);margin-bottom:4px;}
+.trust-desc{font-size:0.72rem;color:var(--ink-soft);line-height:1.55;}
+
+@media (max-width:760px){.trust-grid{grid-template-columns:repeat(2,1fr);}}
+
+/* ===================================================================
+   順咖卡(首頁三張預覽)
+   =================================================================== */
+.staff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.staff-card{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:20px;transition:all 0.2s;cursor:pointer;}
+.staff-card:hover{transform:translateY(-3px);border-color:var(--amber);box-shadow:0 12px 30px rgba(239,159,39,0.15);}
+.staff-top{display:flex;align-items:center;gap:14px;margin-bottom:14px;}
+.staff-avatar{width:54px;height:54px;border-radius:50%;background:#fff;color:var(--amber-deep);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:1.5rem;flex-shrink:0;box-shadow:0 4px 14px rgba(186,117,23,0.18),inset 0 0 0 1.5px var(--border);}
+.staff-info{flex:1;min-width:0;}
+.staff-name{font-size:1.05rem;font-weight:600;color:var(--ink);margin-bottom:3px;}
+.staff-rating{font-size:0.78rem;color:var(--ink-soft);display:inline-flex;align-items:center;gap:5px;}
+.staff-rating .star{color:var(--amber);}
+.staff-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.s-badge{display:inline-flex;align-items:center;gap:3px;font-size:0.66rem;font-weight:600;padding:3px 8px;border-radius:99px;}
+.s-badge svg{width:0.85em;height:0.85em;fill:currentColor;}
+.sb-v{background:var(--champagne);color:var(--amber-deep);}
+.sb-s{background:var(--mint-pale);color:var(--forest);}
+.sb-c{background:var(--danger-pale);color:var(--danger);}
+.sb-r{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;}
+.sb-n{background:var(--warn-pale);color:var(--warn);}
+.staff-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.s-tag{font-size:0.7rem;color:var(--ink-soft);background:var(--champagne-soft);border:1px solid var(--border-soft);padding:3px 9px;border-radius:99px;}
+
+.staff-more-row{text-align:center;margin-top:1.5rem;}
+.view-more{display:inline-flex;align-items:center;gap:6px;color:var(--amber-deep);font-weight:600;font-size:0.92rem;text-decoration:none;padding:10px 18px;border-radius:99px;background:#fff;border:1.5px solid var(--border);transition:all 0.2s;}
+.view-more:hover{background:var(--champagne);border-color:var(--amber);}
+.view-more svg{width:1em;height:1em;fill:currentColor;}
+
+@media (max-width:760px){.staff-grid{grid-template-columns:1fr;}}
+
+/* ===================================================================
+   招募順咖
+   =================================================================== */
+.recruit{background:linear-gradient(135deg,var(--forest) 0%,#1F4A36 100%);border-radius:28px;padding:3rem 2rem;position:relative;overflow:hidden;}
+.recruit::before{content:'';position:absolute;top:-100px;right:-100px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.25) 0%,transparent 70%);}
+.recruit::after{content:'';position:absolute;bottom:-80px;left:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.18) 0%,transparent 70%);}
+.recruit-inner{position:relative;max-width:680px;margin:0 auto;text-align:center;color:#fff;}
+.recruit-tag{display:inline-block;font-size:0.7rem;background:rgba(255,255,255,0.15);color:#fff;padding:5px 14px;border-radius:99px;letter-spacing:2px;font-weight:600;margin-bottom:1rem;border:1px solid rgba(255,255,255,0.2);}
+.recruit-title{font-size:2.2rem;font-weight:600;letter-spacing:-1px;margin-bottom:0.75rem;line-height:1.2;}
+.recruit-sub{font-size:1rem;opacity:0.85;line-height:1.7;margin-bottom:1.75rem;}
+
+.r-tabs{display:inline-flex;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);border-radius:99px;padding:4px;margin-bottom:1.5rem;flex-wrap:wrap;gap:2px;}
+.r-tab{padding:8px 16px;font-size:0.82rem;font-weight:500;color:rgba(255,255,255,0.7);cursor:pointer;border-radius:99px;transition:all 0.2s;}
+.r-tab.on{background:#fff;color:var(--forest);font-weight:600;}
+
+.r-content{text-align:left;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:1.5rem 1.75rem;margin-bottom:1.5rem;}
+.r-content h4{font-size:1.05rem;font-weight:600;margin-bottom:8px;color:var(--honey);}
+.r-content p{font-size:0.88rem;line-height:1.75;opacity:0.9;}
+
+.r-perks{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:1.75rem;}
+.r-perk{font-size:0.78rem;background:rgba(255,255,255,0.12);padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,0.15);}
+
+.recruit-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;padding:1rem 2rem;border-radius:99px;font-size:1rem;font-weight:600;text-decoration:none;transition:all 0.25s;box-shadow:0 8px 24px rgba(239,159,39,0.4);}
+.recruit-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(239,159,39,0.5);}
+.recruit-btn svg{width:1.05em;height:1.05em;fill:currentColor;}
+
+@media (max-width:600px){
+  .recruit{padding:2.5rem 1.25rem;}
+  .recruit-title{font-size:1.7rem;}
+}
+
+/* ===================================================================
+   Footer
+   =================================================================== */
+.footer{background:#fff;border-top:1px solid var(--border);padding:2.5rem 1.5rem 2rem;text-align:center;}
+.footer-brand{display:flex;align-items:baseline;justify-content:center;margin-bottom:14px;}
+.footer-brand .brand{font-size:1.3rem;}
+.footer-name{display:none;}
+.footer-text{font-size:0.78rem;color:var(--ink-light);line-height:1.75;}
+</style>
+</head>
+<body>
+
+<!-- SVG icon defs -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></symbol>
+  <symbol id="i-heart-cross" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></symbol>
+  <symbol id="i-pet" viewBox="0 0 24 24"><path d="M4.5 9.5C5.88 9.5 7 8.38 7 7s-1.12-2.5-2.5-2.5S2 5.62 2 7s1.12 2.5 2.5 2.5zm5-3C10.88 6.5 12 5.38 12 4s-1.12-2.5-2.5-2.5S7 2.62 7 4s1.12 2.5 2.5 2.5zm5 0C15.88 6.5 17 5.38 17 4s-1.12-2.5-2.5-2.5S12 2.62 12 4s1.12 2.5 2.5 2.5zm5 3C20.88 9.5 22 8.38 22 7s-1.12-2.5-2.5-2.5S17 5.62 17 7s1.12 2.5 2.5 2.5zm-2.5 4.5c0-2.05-1.83-3.71-4-5.5-1.3-1.07-2.7-1.07-4 0-2.17 1.79-4 3.45-4 5.5 0 1.93 1.4 3.5 3.5 3.5.85 0 1.71-.21 2.5-.59.79.38 1.65.59 2.5.59 2.1 0 3.5-1.57 3.5-3.5z"/></symbol>
+  <symbol id="i-kid" viewBox="0 0 24 24"><path d="M12 2C9.79 2 8 3.79 8 6s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 10c-3.31 0-6 2.69-6 6v4h12v-4c0-3.31-2.69-6-6-6zm-1-3.5h2v1h-2zm-1-2h4v1h-4z"/></symbol>
+  <symbol id="i-elder" viewBox="0 0 24 24"><path d="M12 4a3 3 0 11-3 3 3 3 0 013-3m0 1.9A1.1 1.1 0 1013.1 7 1.1 1.1 0 0012 5.9m0 5.1a8 8 0 017.5 5.32L20 18H4l.5-1.68A8 8 0 0112 11m0 1.9a6.05 6.05 0 00-5.16 2.85L6.6 16h10.8l-.24-.25A6.05 6.05 0 0012 12.9z"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 2s-5 6.5-5 11a5 5 0 0010 0c0-2-1.5-4-1.5-4S15 12 14 14c0-3-2-7-2-12z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"/></symbol>
+</defs>
+</svg>
+
+<!-- 頂部導覽 -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">
+      <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="03_staff_apply.html" class="nav-link">加入順咖</a>
+      <a href="13_login.html" class="nav-link">登入/註冊</a>
+      <a href="04_order_form.html" class="nav-link nav-cta">立刻預約</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-blob-1"></div>
+  <div class="hero-blob-2"></div>
+  <div class="hero-grid">
+    <div>
+      <div class="hero-pill">
+        <span class="live-dot"></span>
+        現在有 <strong id="online-now">23</strong> 位順咖在線
+      </div>
+      <h1 class="hero-title">
+        什麼都幫你<br>
+        <span class="em"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span>
+      </h1>
+      <p class="hero-sub">代排、遛狗、陪看醫生、幫長輩備餐<br>真人媒合,簡單下單,離你最近的順咖會主動聯絡你。</p>
+      <div class="hero-ctas">
+        <a href="04_order_form.html" class="btn-primary">
+          我要預約服務
+          <svg><use href="#i-arrow"/></svg>
+        </a>
+        <a href="02_staff_list.html" class="btn-secondary">看順咖介紹</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hs-item">
+          <div class="hs-num"><span class="live-dot"></span><span id="online-now-2">23</span></div>
+          <div class="hs-label">目前在線</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-num">38</div>
+          <div class="hs-label">今日完成</div>
+        </div>
+        <div class="hs-item">
+          <div class="hs-num">+12</div>
+          <div class="hs-label">本週新成員</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="hv-circle">
+        <div class="hv-logo-big"><span><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span><small>QU YI XIA</small></div>
+      </div>
+      <div class="hv-card hv-card-1">
+        <div class="hv-avatar">芳</div>
+        <div>
+          <div class="hv-name">小芳 接單了</div>
+          <div class="hv-task">陪長輩看醫生</div>
+        </div>
+        <span class="hv-tag">進行中</span>
+      </div>
+      <div class="hv-card hv-card-2">
+        <div class="hv-avatar">凱</div>
+        <div>
+          <div class="hv-name">阿凱完成 17 件</div>
+          <div class="hv-task">遛狗 · 中和</div>
+        </div>
+        <span class="hv-tag">5.0</span>
+      </div>
+      <div class="hv-card hv-card-3">
+        <div class="hv-avatar">雯</div>
+        <div>
+          <div class="hv-name">小雯 已驗</div>
+          <div class="hv-task">備餐 · 三重</div>
+        </div>
+        <span class="hv-tag">急救</span>
+      </div>
+      <div class="hv-card hv-card-4">
+        <div class="hv-avatar" style="color:var(--forest);box-shadow:0 2px 8px rgba(47,96,72,0.15),inset 0 0 0 1px var(--mint);">+</div>
+        <div>
+          <div class="hv-name">本週新加入</div>
+          <div class="hv-task">12 位順咖</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 跑馬燈 -->
+<div class="marquee">
+  <div class="marquee-track">
+    <span class="marquee-item"><svg class="icon"><use href="#i-flame"/></svg><span class="hot">本週熱門</span></span>
+    <span class="marquee-item">遛狗</span>
+    <span class="marquee-item">代排隊</span>
+    <span class="marquee-item">陪逛街</span>
+    <span class="marquee-item">陪打遊戲</span>
+    <span class="marquee-item">打掃</span>
+    <span class="marquee-item">代購</span>
+    <span class="marquee-item">陪看醫生</span>
+    <span class="marquee-item">幫長輩備餐</span>
+    <span class="marquee-item"><svg class="icon"><use href="#i-spark"/></svg>限時免刊登費</span>
+    <span class="marquee-item"><svg class="icon"><use href="#i-flame"/></svg><span class="hot">本週熱門</span></span>
+    <span class="marquee-item">遛狗</span>
+    <span class="marquee-item">代排隊</span>
+    <span class="marquee-item">陪逛街</span>
+    <span class="marquee-item">陪打遊戲</span>
+    <span class="marquee-item">打掃</span>
+    <span class="marquee-item">代購</span>
+    <span class="marquee-item">陪看醫生</span>
+    <span class="marquee-item">幫長輩備餐</span>
+    <span class="marquee-item"><svg class="icon"><use href="#i-spark"/></svg>限時免刊登費</span>
+  </div>
+</div>
+
+<!-- 幫誰去一下 -->
+<section class="section">
+  <div class="section-wrap">
+    <div class="section-head">
+      <div class="section-tag">START HERE</div>
+      <h2 class="section-title-big">幫誰<span class="em"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span>?</h2>
+      <p class="section-desc">選一個對象開始,下一步會幫你列出最適合的服務</p>
+    </div>
+    <div class="book-grid">
+      <a href="04_order_form.html?for=self" class="book-card">
+        <div class="book-arrow">→</div>
+        <div class="book-iconwrap"><svg><use href="#i-person"/></svg></div>
+        <div class="book-name">幫我自己</div>
+        <div class="book-desc">代排、代購、跑腿<br>陪伴、打掃、雜事</div>
+        <div class="book-tags"><span class="book-tag">代排</span><span class="book-tag">陪逛街</span></div>
+      </a>
+      <a href="04_order_form.html?for=pet" class="book-card">
+        <div class="book-arrow">→</div>
+        <div class="book-iconwrap"><svg><use href="#i-pet"/></svg></div>
+        <div class="book-name">幫毛小孩</div>
+        <div class="book-desc">遛狗、餵食<br>寵物接送</div>
+        <div class="book-tags"><span class="book-tag">遛狗</span><span class="book-tag">寵物接送</span></div>
+      </a>
+      <a href="04_order_form.html?for=kid" class="book-card">
+        <div class="book-arrow">→</div>
+        <div class="book-iconwrap"><svg><use href="#i-kid"/></svg></div>
+        <div class="book-name">幫小朋友</div>
+        <div class="book-desc">接送、陪伴<br>陪寫功課</div>
+        <div class="book-tags"><span class="book-tag">接送</span><span class="book-tag">陪伴</span></div>
+      </a>
+      <a href="04_order_form.html?for=elder" class="book-card">
+        <div class="book-arrow">→</div>
+        <div class="book-iconwrap"><svg><use href="#i-elder"/></svg></div>
+        <div class="book-name">幫家裡長輩</div>
+        <div class="book-desc">陪看醫生、陪伴<br>備餐、生活協助</div>
+        <div class="book-tags"><span class="book-tag">陪看醫生</span><span class="book-tag">備餐</span></div>
+      </a>
+    </div>
+    <div class="book-hint">點任一張卡片開始下單 · 不用註冊也能先看</div>
+  </div>
+</section>
+
+<!-- 怎麼運作 -->
+<section class="section" style="padding-top:1rem;">
+  <div class="section-wrap">
+    <div class="howto-wrap">
+      <div class="section-head" style="margin-bottom:2rem;">
+        <div class="section-tag">HOW IT WORKS</div>
+        <h2 class="section-title-big">四步驟搞定</h2>
+      </div>
+      <div class="howto-grid">
+        <div class="howto-step">
+          <div class="howto-num">1</div>
+          <div class="howto-title">說你要幹嘛</div>
+          <div class="howto-desc">從清單選,<br>或自己寫想要的事</div>
+        </div>
+        <div class="howto-step">
+          <div class="howto-num">2</div>
+          <div class="howto-title">填時間地點</div>
+          <div class="howto-desc">說清楚在哪、<br>什麼時候、要多久</div>
+        </div>
+        <div class="howto-step">
+          <div class="howto-num">3</div>
+          <div class="howto-title">等順咖接</div>
+          <div class="howto-desc">附近的順咖看到後<br>主動聯絡你</div>
+        </div>
+        <div class="howto-step">
+          <div class="howto-num">4</div>
+          <div class="howto-title">完成收單</div>
+          <div class="howto-desc">事情搞定、雙方<br>確認、互相評價</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 信任徽章 -->
+<section class="section" style="padding-top:1rem;">
+  <div class="section-wrap">
+    <div class="section-head" style="margin-bottom:2rem;">
+      <div class="section-tag">TRUST</div>
+      <h2 class="section-title-big">順咖怎麼來的?</h2>
+      <p class="section-desc">每個順咖都通過層層驗證,徽章告訴你他過了哪些關</p>
+    </div>
+    <div class="trust-grid">
+      <div class="trust-item">
+        <div class="trust-icon ti-1"><svg><use href="#i-check"/></svg></div>
+        <div class="trust-name">實名認證</div>
+        <div class="trust-desc">身分證已驗</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon ti-2"><svg><use href="#i-shield"/></svg></div>
+        <div class="trust-name">安心鄰居</div>
+        <div class="trust-desc">良民證已驗</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon ti-3"><svg><use href="#i-heart-cross"/></svg></div>
+        <div class="trust-name">急救通過</div>
+        <div class="trust-desc">CPR/AED 認證</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon ti-4"><svg><use href="#i-star"/></svg></div>
+        <div class="trust-name">有證人員</div>
+        <div class="trust-desc">護理師 / 職能治療師<br>月嫂 / 保母等</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-icon ti-5"><svg><use href="#i-crown"/></svg></div>
+        <div class="trust-name">專業照服員</div>
+        <div class="trust-desc">資歷豐富已驗</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 順咖介紹 -->
+<section class="section" id="staff-sec" style="padding-top:1rem;">
+  <div class="section-wrap">
+    <div class="section-head">
+      <div class="section-tag">MEET OUR PEOPLE</div>
+      <h2 class="section-title-big">順咖介紹</h2>
+      <p class="section-desc">真人實名,評分公開,可以挑你喜歡的順咖</p>
+    </div>
+    <div class="staff-grid">
+      <div class="staff-card">
+        <div class="staff-top">
+          <div class="staff-avatar">芳</div>
+          <div class="staff-info">
+            <div class="staff-name">小芳</div>
+            <div class="staff-rating"><svg class="icon star"><use href="#i-star"/></svg>4.9 · 已完成 23 件</div>
+          </div>
+        </div>
+        <div class="staff-badges">
+          <span class="s-badge sb-v"><svg><use href="#i-check"/></svg>實名</span>
+          <span class="s-badge sb-s"><svg><use href="#i-shield"/></svg>良民</span>
+          <span class="s-badge sb-r"><svg><use href="#i-crown"/></svg>專業照服</span>
+        </div>
+        <div class="staff-tags"><span class="s-tag">陪伴</span><span class="s-tag">陪看醫生</span><span class="s-tag">備餐</span></div>
+      </div>
+
+      <div class="staff-card">
+        <div class="staff-top">
+          <div class="staff-avatar">凱</div>
+          <div class="staff-info">
+            <div class="staff-name">阿凱</div>
+            <div class="staff-rating"><svg class="icon star"><use href="#i-star"/></svg>4.8 · 已完成 17 件</div>
+          </div>
+        </div>
+        <div class="staff-badges">
+          <span class="s-badge sb-v"><svg><use href="#i-check"/></svg>實名</span>
+          <span class="s-badge sb-s"><svg><use href="#i-shield"/></svg>良民</span>
+        </div>
+        <div class="staff-tags"><span class="s-tag">遛狗</span><span class="s-tag">代排隊</span><span class="s-tag">陪打遊戲</span></div>
+      </div>
+
+      <div class="staff-card">
+        <div class="staff-top">
+          <div class="staff-avatar">雯</div>
+          <div class="staff-info">
+            <div class="staff-name">小雯</div>
+            <div class="staff-rating"><svg class="icon star"><use href="#i-star"/></svg>5.0 · 已完成 31 件</div>
+          </div>
+        </div>
+        <div class="staff-badges">
+          <span class="s-badge sb-v"><svg><use href="#i-check"/></svg>實名</span>
+          <span class="s-badge sb-s"><svg><use href="#i-shield"/></svg>良民</span>
+          <span class="s-badge sb-c"><svg><use href="#i-heart-cross"/></svg>急救</span>
+          <span class="s-badge sb-n"><svg><use href="#i-star"/></svg>有證</span>
+        </div>
+        <div class="staff-tags"><span class="s-tag">打掃</span><span class="s-tag">陪逛街</span><span class="s-tag">陪吃飯</span></div>
+      </div>
+    </div>
+    <div class="staff-more-row">
+      <a href="02_staff_list.html" class="view-more">查看全部順咖
+        <svg><use href="#i-arrow"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- 招募順咖 -->
+<section class="section" style="padding-top:1rem;">
+  <div class="section-wrap">
+    <div class="recruit">
+      <div class="recruit-inner">
+        <div class="recruit-tag">JOIN US</div>
+        <h2 class="recruit-title">下班後賺自己的</h2>
+        <p class="recruit-sub">你的時間值錢<br>自己排班、自己接單、自己定價</p>
+
+        <div class="r-tabs">
+          <div class="r-tab on" onclick="switchTab(this,'tab-general')">一般民眾</div>
+          <div class="r-tab" onclick="switchTab(this,'tab-cna')">照服員 / 居服員</div>
+          <div class="r-tab" onclick="switchTab(this,'tab-student')">學生 / 自由業</div>
+        </div>
+
+        <div class="r-content" id="tab-general" style="display:block;">
+          <h4>有空就接,沒空就拒</h4>
+          <p>不用打卡、不用面試、不用底薪壓力。下班後想多賺一份、假日空檔順便跑一單,都可以。從代排隊、遛狗、陪逛街開始接,慢慢累積評價。</p>
+        </div>
+        <div class="r-content" id="tab-cna" style="display:none;">
+          <h4>本業之外的副業選擇</h4>
+          <p>白天有正職?沒問題。可以設定不接單時段保護本業,只在下班、週末或空班接案。有照服員證可以解鎖「家裡長輩」的高單價任務,平均單價會比一般任務高。我們不會問你在哪間機構上班。</p>
+        </div>
+        <div class="r-content" id="tab-student" style="display:none;">
+          <h4>比家教自由,比打工彈性</h4>
+          <p>沒有最低時數要求,今天想跑就跑,期中考週可以全部關掉。陪打遊戲、陪逛街、代排這類任務特別適合學生。離家近的單可以走路或騎 YouBike 接。</p>
+        </div>
+
+        <div class="r-perks">
+          <span class="r-perk">免費刊登</span>
+          <span class="r-perk">自己定價</span>
+          <span class="r-perk">彈性接單</span>
+          <span class="r-perk">不影響本業</span>
+        </div>
+
+        <a href="03_staff_apply.html" class="recruit-btn">
+          我要加入
+          <svg><use href="#i-arrow"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-brand">
+    <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span>
+  </div>
+  <div class="footer-text">
+    去一下平台 · 真人媒合服務<br>
+    順咖與案家自行約定,平台不介入服務內容
+  </div>
+</footer>
+
+<script>
+var online = 23;
+setInterval(function(){
+  var delta = Math.floor(Math.random() * 3) - 1;
+  online = Math.max(1, online + delta);
+  var els = document.querySelectorAll('#online-now, #online-now-2');
+  els.forEach(function(el){ el.textContent = online; });
+}, 4000);
+
+function switchTab(btn, contentId) {
+  document.querySelectorAll('.r-tab').forEach(function(t){ t.classList.remove('on'); });
+  btn.classList.add('on');
+  document.querySelectorAll('.r-content').forEach(function(c){ c.style.display = 'none'; });
+  var target = document.getElementById(contentId);
+  if (target) target.style.display = 'block';
+}
+</script>
+</body>
+</html>

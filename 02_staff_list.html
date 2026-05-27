@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>順咖介紹 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;
+  --amber:#EF9F27;
+  --amber-deep:#BA7517;
+  --amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;
+  --champagne-soft:#FFFCF5;
+  --forest:#2F6048;
+  --forest-deep:#1F4A36;
+  --mint:#5FB58E;
+  --mint-pale:#E8F5EE;
+  --border-mint:rgba(95,181,142,0.3);
+  --ink:#3D2914;
+  --ink-soft:#8B7355;
+  --ink-light:#B8A485;
+  --border:#FFE9B8;
+  --border-soft:#F5EBD8;
+  --warn:#E89544;
+  --warn-pale:#FFF1E0;
+  --danger:#D9534F;
+  --danger-pale:#FCE8E7;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--champagne-soft);color:var(--ink);line-height:1.55;}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
+
+/* 品牌字 */
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+/* === 頁頭 === */
+.page-header{position:relative;padding:3rem 1.5rem 1.85rem;text-align:center;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 60%,var(--mint-pale) 100%);overflow:hidden;}
+.page-header::before{content:'';position:absolute;top:-80px;right:-100px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.18) 0%,transparent 70%);}
+.page-header::after{content:'';position:absolute;bottom:-100px;left:-80px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.15) 0%,transparent 70%);}
+.page-header > *{position:relative;z-index:1;}
+.page-title{font-size:1.85rem;font-weight:600;color:var(--ink);letter-spacing:-0.5px;line-height:1.25;}
+.page-sub{font-size:0.92rem;color:var(--ink-soft);margin-top:0.65rem;line-height:1.7;}
+.total-count{display:inline-flex;align-items:center;gap:6px;margin-top:1rem;font-size:0.82rem;color:var(--amber-deep);background:#fff;padding:6px 14px;border-radius:99px;border:1px solid var(--border);box-shadow:0 2px 8px rgba(186,117,23,0.06);}
+.total-count .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);animation:blink 1.5s infinite;box-shadow:0 0 0 3px rgba(95,181,142,0.2);}
+.total-count strong{color:var(--amber-darker);font-weight:600;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* === Pool tabs (A/B 雙池分流) === */
+.pool-tabs{display:flex;background:#fff;border-bottom:1px solid var(--border);padding:0 1rem;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.pool-tabs::-webkit-scrollbar{display:none;}
+.p-tab{padding:1rem 1.25rem;font-size:0.9rem;color:var(--ink-soft);font-weight:500;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;}
+.p-tab:hover{color:var(--amber-deep);}
+.p-tab.on{color:var(--amber-darker);border-bottom-color:var(--amber);font-weight:600;}
+.p-tab .ico{width:18px;height:18px;}
+.p-tab .count{font-size:0.7rem;background:var(--champagne);color:var(--amber-deep);padding:2px 8px;border-radius:99px;font-weight:600;}
+.p-tab.on .count{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;}
+
+/* === 篩選列 === */
+.filter-bar{background:#fff;padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);}
+.filter-section{margin-bottom:1rem;}
+.filter-section:last-child{margin-bottom:0;}
+.filter-label{font-size:0.72rem;color:var(--ink-light);margin-bottom:8px;letter-spacing:1.5px;font-weight:600;text-transform:uppercase;}
+
+.badge-filters{display:flex;gap:7px;flex-wrap:wrap;}
+.bf{display:inline-flex;align-items:center;gap:5px;font-size:0.78rem;padding:6px 12px;border-radius:99px;cursor:pointer;border:1.5px solid transparent;transition:all 0.2s;font-weight:600;}
+.bf svg{width:0.9em;height:0.9em;fill:currentColor;}
+.bf-verified{background:var(--champagne);color:var(--amber-deep);border-color:var(--border);}
+.bf-safe{background:var(--mint-pale);color:var(--forest);border-color:rgba(95,181,142,0.3);}
+.bf-cpr{background:var(--danger-pale);color:var(--danger);border-color:rgba(217,83,79,0.2);}
+.bf-cna{background:var(--warn-pale);color:var(--warn);border-color:rgba(232,149,68,0.25);}
+.bf-senior{background:#FCE4F2;color:#A8367C;border-color:rgba(168,54,124,0.2);}
+.bf.on{box-shadow:0 0 0 3px rgba(239,159,39,0.25);transform:translateY(-1px);}
+.bf:hover{transform:translateY(-1px);}
+
+.cat-filters{display:flex;gap:7px;flex-wrap:wrap;}
+.cf{font-size:0.8rem;padding:6px 14px;border-radius:99px;background:#fff;color:var(--ink);border:1.5px solid var(--border);cursor:pointer;transition:all 0.2s;font-weight:500;}
+.cf:hover{background:var(--champagne);border-color:var(--amber);}
+.cf.on{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(239,159,39,0.3);}
+
+.sort-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.sort-group{display:flex;gap:8px;align-items:center;}
+.sort-group .lbl{font-size:0.78rem;color:var(--ink-soft);font-weight:500;}
+.sort-sel{padding:7px 32px 7px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:0.82rem;background:#fff;color:var(--ink);font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='%238B7355'><path d='M7 10l5 5 5-5z'/></svg>");background-repeat:no-repeat;background-position:right 10px center;}
+.sort-sel:focus{outline:none;border-color:var(--amber);}
+.result-count{font-size:0.82rem;color:var(--ink-soft);}
+.result-count strong{color:var(--amber-darker);font-weight:600;}
+
+/* === 順咖卡片 === */
+.staff-wrap{padding:1.5rem 1.5rem 3rem;max-width:1200px;margin:0 auto;}
+.staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+
+.staff-card{position:relative;background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:20px 18px 18px;text-align:center;transition:all 0.25s;cursor:pointer;overflow:hidden;}
+.staff-card::before{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.08) 0%,transparent 70%);transition:all 0.3s;}
+.staff-card:hover{transform:translateY(-4px);border-color:var(--amber);box-shadow:0 14px 32px rgba(239,159,39,0.18);}
+.staff-card:hover::before{width:140px;height:140px;}
+
+.online-mark{position:absolute;top:14px;right:14px;display:inline-flex;align-items:center;gap:4px;font-size:0.66rem;color:var(--forest);font-weight:600;z-index:1;background:var(--mint-pale);padding:3px 9px;border-radius:99px;}
+.online-mark .dot{width:6px;height:6px;border-radius:50%;background:var(--mint);}
+.online-mark.off{color:var(--ink-light);background:#F0EBE0;}
+.online-mark.off .dot{background:var(--ink-light);}
+
+/* 頭像 C 風格(白底金字 + 米金細邊) */
+.avatar{position:relative;width:64px;height:64px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:1.4rem;color:var(--amber-deep);margin:0 auto 0.85rem;box-shadow:0 4px 14px rgba(186,117,23,0.18),inset 0 0 0 1.5px var(--border);z-index:1;}
+
+.staff-name{position:relative;font-weight:600;font-size:1rem;color:var(--ink);z-index:1;}
+.staff-name .new{color:var(--forest);font-size:0.7rem;font-weight:600;margin-left:3px;background:var(--mint-pale);padding:1px 6px;border-radius:99px;}
+
+.staff-rating{position:relative;font-size:0.82rem;color:var(--amber-deep);margin-top:5px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;border-radius:99px;padding:3px 10px;transition:background 0.15s;z-index:1;font-weight:600;}
+.staff-rating:hover{background:var(--champagne);}
+.staff-rating svg{fill:var(--amber);}
+
+.staff-done{position:relative;font-size:0.72rem;color:var(--ink-light);margin-top:3px;z-index:1;}
+
+.staff-rate{position:relative;margin-top:8px;display:inline-flex;align-items:center;gap:4px;font-size:0.78rem;color:var(--forest);background:var(--mint-pale);padding:4px 10px;border-radius:99px;border:1px solid var(--border-mint);font-weight:600;z-index:1;}
+.staff-rate .rate-label{font-size:0.66rem;color:var(--ink-soft);font-weight:500;background:transparent;border:none;padding:0;}
+.staff-rate .rate-num{color:var(--forest-deep);font-weight:700;}
+.staff-rate .rate-unit{font-size:0.66rem;color:var(--ink-soft);font-weight:500;}
+
+.badge-row{position:relative;display:flex;justify-content:center;gap:4px;margin-top:10px;flex-wrap:wrap;z-index:1;}
+.badge{font-size:0.62rem;padding:2px 7px;border-radius:99px;font-weight:600;display:inline-flex;align-items:center;gap:3px;}
+.badge svg{width:0.85em;height:0.85em;fill:currentColor;}
+.b-verified{background:var(--champagne);color:var(--amber-deep);}
+.b-safe{background:var(--mint-pale);color:var(--forest);}
+.b-cpr{background:var(--danger-pale);color:var(--danger);}
+.b-cna{background:var(--warn-pale);color:var(--warn);}
+.b-senior{background:#FCE4F2;color:#A8367C;}
+
+.mini-tags{position:relative;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:10px;z-index:1;}
+.mtag{font-size:0.68rem;background:var(--champagne-soft);color:var(--ink-soft);padding:3px 9px;border-radius:99px;border:1px solid var(--border-soft);}
+
+.card-cta{position:relative;margin-top:1rem;background:#fff;border:1.5px solid var(--amber);color:var(--amber-deep);padding:9px 0;width:100%;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;z-index:1;}
+.card-cta:hover{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(239,159,39,0.3);}
+
+.no-result{text-align:center;padding:4rem 1rem;color:var(--ink-soft);font-size:0.92rem;}
+.no-result-icon{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--champagne),var(--mint-pale));display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.no-result-icon svg{width:36px;height:36px;fill:var(--amber);}
+.no-result strong{display:block;color:var(--ink);font-size:1.05rem;margin-bottom:6px;font-weight:600;}
+
+.footer{text-align:center;font-size:0.78rem;color:var(--ink-light);padding:1.75rem 2rem;background:#fff;border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+<a href="index.html" class="home-fab" title="回首頁"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-1.5 16L6 12.5l1.4-1.4 3.1 3.1 6.1-6.1L18 9.5l-7.5 7.5z"/></symbol>
+  <symbol id="i-heart-cross" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></symbol>
+  <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M19 8c-1.66 0-3 1.34-3 3 0 1.31.84 2.41 2 2.83V15c0 2.21-1.79 4-4 4s-4-1.79-4-4v-.18c2.84-.48 5-2.94 5-5.92V3h-4v2h2v4c0 2.21-1.79 4-4 4S4 11.21 4 9V5h2V3H2v6c0 2.98 2.16 5.44 5 5.92V15c0 3.31 2.69 6 6 6s6-2.69 6-6v-1.17c1.16-.42 2-1.52 2-2.83 0-1.66-1.34-3-3-3z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.51 4.51 0 0 1 9.5 14z"/></symbol>
+</defs>
+</svg>
+
+<div class="page-header">
+  <div class="page-title">順咖介紹</div>
+  <div class="page-sub">看看誰能幫你 · 篩選你需要的條件</div>
+  <div class="total-count">
+    <span class="dot"></span>
+    <span>本平台共 <strong id="total-num">47</strong> 位順咖 · 目前 <strong id="online-num">23</strong> 位在線</span>
+  </div>
+</div>
+
+<div class="pool-tabs">
+  <div class="p-tab on" data-pool="all" onclick="switchPool(this)">
+    <svg class="ico"><use href="#i-people"/></svg>
+    全部順咖 <span class="count">47</span>
+  </div>
+  <div class="p-tab" data-pool="general" onclick="switchPool(this)">
+    <svg class="ico"><use href="#i-people"/></svg>
+    一般跑腿 <span class="count">35</span>
+  </div>
+  <div class="p-tab" data-pool="care" onclick="switchPool(this)">
+    <svg class="ico"><use href="#i-stethoscope"/></svg>
+    照服員專區 <span class="count">12</span>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-section">
+    <div class="filter-label">徽章篩選</div>
+    <div class="badge-filters">
+      <span class="bf bf-verified" data-badge="verified" onclick="toggleBadge(this)"><svg><use href="#i-check"/></svg>實名</span>
+      <span class="bf bf-safe" data-badge="safe" onclick="toggleBadge(this)"><svg><use href="#i-shield"/></svg>良民</span>
+      <span class="bf bf-cpr" data-badge="cpr" onclick="toggleBadge(this)"><svg><use href="#i-heart-cross"/></svg>急救</span>
+      <span class="bf bf-cna" data-badge="cna" onclick="toggleBadge(this)"><svg><use href="#i-star"/></svg>照服員</span>
+      <span class="bf bf-senior" data-badge="senior" onclick="toggleBadge(this)"><svg><use href="#i-crown"/></svg>資深照服</span>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <div class="filter-label">擅長類別</div>
+    <div class="cat-filters">
+      <span class="cf on" data-cat="all" onclick="toggleCat(this)">全部</span>
+      <span class="cf" data-cat="errand" onclick="toggleCat(this)">代排 · 代購</span>
+      <span class="cf" data-cat="pet" onclick="toggleCat(this)">寵物</span>
+      <span class="cf" data-cat="clean" onclick="toggleCat(this)">打掃</span>
+      <span class="cf" data-cat="companion" onclick="toggleCat(this)">陪伴 · 陪逛</span>
+      <span class="cf" data-cat="game" onclick="toggleCat(this)">陪打遊戲</span>
+      <span class="cf" data-cat="elder" onclick="toggleCat(this)">長輩照顧</span>
+      <span class="cf" data-cat="kid" onclick="toggleCat(this)">兒童接送</span>
+    </div>
+  </div>
+
+  <div class="filter-section">
+    <div class="sort-row">
+      <div class="sort-group">
+        <span class="lbl">排序</span>
+        <select class="sort-sel" id="sort-sel" onchange="renderStaff()">
+          <option value="rating">評分高到低</option>
+          <option value="done">完成件數多到少</option>
+          <option value="rate-asc">期望時薪低到高</option>
+          <option value="rate-desc">期望時薪高到低</option>
+          <option value="new">最近新加入</option>
+          <option value="online">在線狀態</option>
+        </select>
+      </div>
+      <div class="result-count">符合條件:<strong id="count-num">47</strong> 位</div>
+    </div>
+  </div>
+</div>
+
+<div class="staff-wrap">
+  <div class="staff-grid" id="staff-grid"></div>
+  <div class="no-result" id="no-result" style="display:none;">
+    <div class="no-result-icon"><svg><use href="#i-search"/></svg></div>
+    <strong>沒有符合條件的順咖</strong>
+    試試放寬篩選條件
+  </div>
+</div>
+
+<div class="footer">
+  順咖資料為平台認證資訊 · 點擊卡片查看完整介紹與接單時段
+</div>
+
+<script>
+/* 順咖資料庫,pool=care 表示照服員,其餘為一般 */
+var staffList = [
+  {name:'小芳', avatar:'芳', rating:4.9, done:23, online:true, new:false, pool:'care', hourlyRate:350, cats:['companion','elder','clean'], tags:['陪伴','陪看醫生','備餐'], badges:['verified','safe','senior','cna']},
+  {name:'阿凱', avatar:'凱', rating:4.8, done:17, online:true, new:false, pool:'general', hourlyRate:250, cats:['pet','errand','game'], tags:['遛狗','代排隊','陪打遊戲'], badges:['verified','safe']},
+  {name:'小雯', avatar:'雯', rating:5.0, done:31, online:true, new:false, pool:'care', hourlyRate:400, cats:['clean','companion','elder'], tags:['打掃','陪逛街','陪吃飯'], badges:['verified','safe','cpr','cna']},
+  {name:'大明', avatar:'明', rating:4.7, done:14, online:false, new:false, pool:'care', hourlyRate:350, cats:['elder','companion'], tags:['就醫陪同','備餐','服藥提醒'], badges:['verified','safe','cna']},
+  {name:'小玲', avatar:'玲', rating:4.9, done:28, online:true, new:false, pool:'general', hourlyRate:300, cats:['pet','clean'], tags:['寵物','打掃','到府陪伴'], badges:['verified','safe','cpr']},
+  {name:'阿翔', avatar:'翔', rating:4.6, done:9, online:false, new:false, pool:'general', hourlyRate:250, cats:['errand','game'], tags:['搶票','代排','陪打遊戲'], badges:['verified']},
+  {name:'小慧', avatar:'慧', rating:4.95, done:42, online:true, new:false, pool:'care', hourlyRate:450, cats:['elder','clean','companion'], tags:['長輩陪伴','備餐','打掃'], badges:['verified','safe','cpr','cna','senior']},
+  {name:'阿傑', avatar:'傑', rating:4.5, done:6, online:true, new:true, pool:'general', hourlyRate:200, cats:['errand','pet'], tags:['代購','遛狗','代取件'], badges:['verified','safe']},
+  {name:'May', avatar:'M', rating:4.85, done:19, online:false, new:false, pool:'general', hourlyRate:300, cats:['companion','kid'], tags:['陪伴聊天','陪逛街','接送小孩'], badges:['verified','safe','cpr']},
+  {name:'阿德', avatar:'德', rating:4.7, done:12, online:true, new:false, pool:'general', hourlyRate:250, cats:['kid','errand'], tags:['放學接送','陪寫功課','代購'], badges:['verified','safe']},
+  {name:'小婷', avatar:'婷', rating:4.95, done:35, online:true, new:false, pool:'care', hourlyRate:500, cats:['elder','companion'], tags:['失智陪伴','備餐','就醫'], badges:['verified','safe','cpr','cna','senior']},
+  {name:'阿宏', avatar:'宏', rating:4.4, done:4, online:false, new:true, pool:'general', hourlyRate:200, cats:['errand','clean'], tags:['代排','搬運','打掃'], badges:['verified']}
+];
+
+var currentPool = 'all';
+var currentCat = 'all';
+var selectedBadges = [];
+
+function switchPool(el) {
+  document.querySelectorAll('.p-tab').forEach(function(t){ t.classList.remove('on'); });
+  el.classList.add('on');
+  currentPool = el.getAttribute('data-pool');
+  renderStaff();
+}
+
+function toggleBadge(el) {
+  var b = el.getAttribute('data-badge');
+  el.classList.toggle('on');
+  if (selectedBadges.indexOf(b) > -1) {
+    selectedBadges = selectedBadges.filter(function(x){ return x !== b; });
+  } else {
+    selectedBadges.push(b);
+  }
+  renderStaff();
+}
+
+function toggleCat(el) {
+  document.querySelectorAll('.cf').forEach(function(c){ c.classList.remove('on'); });
+  el.classList.add('on');
+  currentCat = el.getAttribute('data-cat');
+  renderStaff();
+}
+
+var badgeMap = {
+  verified: {cls:'b-verified', icon:'i-check', name:'實名'},
+  safe: {cls:'b-safe', icon:'i-shield', name:'良民'},
+  cpr: {cls:'b-cpr', icon:'i-heart-cross', name:'急救'},
+  cna: {cls:'b-cna', icon:'i-star', name:'照服員'},
+  senior: {cls:'b-senior', icon:'i-crown', name:'資深照服'}
+};
+
+function renderStaff() {
+  var filtered = staffList.filter(function(s){
+    if (currentPool === 'general' && s.pool !== 'general') return false;
+    if (currentPool === 'care' && s.pool !== 'care') return false;
+    if (currentCat !== 'all' && s.cats.indexOf(currentCat) === -1) return false;
+    if (selectedBadges.length > 0) {
+      for (var i = 0; i < selectedBadges.length; i++) {
+        if (s.badges.indexOf(selectedBadges[i]) === -1) return false;
+      }
+    }
+    return true;
+  });
+
+  var sortBy = document.getElementById('sort-sel').value;
+  filtered.sort(function(a, b){
+    if (sortBy === 'rating') return b.rating - a.rating;
+    if (sortBy === 'done') return b.done - a.done;
+    if (sortBy === 'rate-asc') return a.hourlyRate - b.hourlyRate;
+    if (sortBy === 'rate-desc') return b.hourlyRate - a.hourlyRate;
+    if (sortBy === 'new') return (b.new ? 1 : 0) - (a.new ? 1 : 0);
+    if (sortBy === 'online') return (b.online ? 1 : 0) - (a.online ? 1 : 0);
+    return 0;
+  });
+
+  document.getElementById('count-num').textContent = filtered.length;
+  var grid = document.getElementById('staff-grid');
+  var nores = document.getElementById('no-result');
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '';
+    nores.style.display = 'block';
+    return;
+  }
+  nores.style.display = 'none';
+
+  grid.innerHTML = filtered.map(function(s){
+    var badges = s.badges.map(function(b){
+      var bm = badgeMap[b];
+      return '<span class="badge '+bm.cls+'"><svg><use href="#'+bm.icon+'"/></svg>'+bm.name+'</span>';
+    }).join('');
+    var tags = s.tags.map(function(t){ return '<span class="mtag">'+t+'</span>'; }).join('');
+    var onlineMark = s.online
+      ? '<span class="online-mark"><span class="dot"></span>在線</span>'
+      : '<span class="online-mark off"><span class="dot"></span>離線</span>';
+    return '<div class="staff-card" onclick="window.location.href=\'04_order_form.html?staff='+encodeURIComponent(s.name)+'\'">' +
+      onlineMark +
+      '<div class="avatar">'+s.avatar+'</div>' +
+      '<div class="staff-name">'+s.name+(s.new?' <span class="new">新</span>':'')+'</div>' +
+      '<div class="staff-rating" onclick="event.stopPropagation(); window.location.href=\'05_review.html?view=fang\'" title="查看評價"><svg class="icon"><use href="#i-star"/></svg>'+s.rating.toFixed(1)+'</div>' +
+      '<div class="staff-done">已完成 '+s.done+' 件</div>' +
+      '<div class="staff-rate" title="順咖填的期望時薪,實際金額由案家出價"><span class="rate-label">期望時薪</span><span class="rate-num">$'+s.hourlyRate+'</span><span class="rate-unit">/時</span></div>' +
+      '<div class="badge-row">'+badges+'</div>' +
+      '<div class="mini-tags">'+tags+'</div>' +
+      '<button class="card-cta">指定她下單</button>' +
+    '</div>';
+  }).join('');
+}
+
+renderStaff();
+</script>
+</body>
+</html>

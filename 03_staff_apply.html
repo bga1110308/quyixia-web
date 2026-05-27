@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我要加入 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;
+  --amber:#EF9F27;
+  --amber-deep:#BA7517;
+  --amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;
+  --champagne-soft:#FFFCF5;
+  --forest:#2F6048;
+  --forest-deep:#1F4A36;
+  --mint:#5FB58E;
+  --mint-pale:#E8F5EE;
+  --ink:#3D2914;
+  --ink-soft:#8B7355;
+  --ink-light:#B8A485;
+  --border:#FFE9B8;
+  --border-soft:#F5EBD8;
+  --border-mint:rgba(95,181,142,0.3);
+  --warn:#E89544;
+  --warn-pale:#FFF1E0;
+  --danger:#D9534F;
+  --danger-pale:#FCE8E7;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:#F2F7F4;color:var(--ink);line-height:1.6;}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
+
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border-mint);color:var(--forest);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(47,96,72,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--mint-pale);transform:scale(1.05);border-color:var(--mint);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+/* === 頁頭(順咖綠調) === */
+.page-header{position:relative;padding:3rem 1.5rem 1.85rem;text-align:center;background:linear-gradient(135deg,var(--mint-pale) 0%,#fff 55%,var(--champagne) 100%);overflow:hidden;}
+.page-header::before{content:'';position:absolute;top:-80px;right:-100px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.18) 0%,transparent 70%);}
+.page-header::after{content:'';position:absolute;bottom:-100px;left:-80px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.15) 0%,transparent 70%);}
+.page-header > *{position:relative;z-index:1;}
+.page-title{font-size:1.85rem;font-weight:600;color:var(--ink);letter-spacing:-0.5px;line-height:1.3;}
+.page-sub{font-size:0.92rem;color:var(--ink-soft);margin-top:0.75rem;line-height:1.75;}
+.perks-row{display:flex;justify-content:center;gap:7px;margin-top:1rem;flex-wrap:wrap;}
+.perk{background:#fff;color:var(--forest);font-size:0.78rem;padding:5px 12px;border-radius:99px;border:1px solid var(--border-mint);display:inline-flex;align-items:center;gap:4px;font-weight:600;}
+.perk svg{width:0.95em;height:0.95em;fill:currentColor;}
+
+.form-wrap{padding:1.5rem 1.25rem 3rem;max-width:720px;margin:0 auto;}
+
+/* === 步驟條 === */
+.progress{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1.5px solid var(--border-soft);border-radius:16px;padding:1rem;margin-bottom:1.25rem;gap:6px;}
+.pr-step{flex:1;text-align:center;font-size:0.72rem;color:var(--ink-light);}
+.pr-step .num{display:inline-block;width:28px;height:28px;border-radius:50%;background:#F0EBE0;color:var(--ink-light);font-weight:600;line-height:28px;font-size:0.82rem;margin-bottom:5px;}
+.pr-step.on .num{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;box-shadow:0 3px 10px rgba(47,96,72,0.3);}
+.pr-step.on .lbl{color:var(--ink);font-weight:600;}
+
+/* === 區塊卡 === */
+.section-card{background:#fff;border:1.5px solid var(--border-soft);border-radius:18px;padding:1.5rem 1.4rem;margin-bottom:1rem;box-shadow:0 2px 8px rgba(47,96,72,0.04);}
+.sec-title{font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:0.55rem;display:flex;align-items:center;gap:8px;}
+.sec-title::before{content:'';display:block;width:4px;height:18px;background:linear-gradient(180deg,var(--mint),var(--forest));border-radius:2px;}
+.sec-hint{font-size:0.82rem;color:var(--ink-soft);margin:0 0 1.1rem;line-height:1.7;}
+
+/* === 欄位 === */
+.field{margin-bottom:1.1rem;}
+.field label{display:block;font-size:0.85rem;color:var(--ink);margin-bottom:7px;font-weight:600;}
+.field label .req{color:var(--danger);margin-left:3px;}
+.field label .opt{color:var(--ink-light);font-weight:400;font-size:0.74rem;margin-left:5px;}
+.field input,.field select,.field textarea{width:100%;padding:0.8rem 1rem;border:2px solid var(--border-soft);border-radius:12px;font-size:0.92rem;background:var(--champagne-soft);color:var(--ink);font-family:inherit;transition:all 0.2s;}
+.field textarea{min-height:90px;resize:vertical;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--mint);background:#fff;box-shadow:0 0 0 4px rgba(95,181,142,0.15);}
+.field select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='%238B7355'><path d='M7 10l5 5 5-5z'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.hint{font-size:0.74rem;color:var(--ink-light);margin-top:5px;line-height:1.55;}
+
+/* === 三類身份卡 === */
+.identity-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1rem;}
+.id-card{background:#fff;border:2px solid var(--border-soft);border-radius:16px;padding:1.1rem 0.75rem;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;}
+.id-card::before{content:'';position:absolute;top:-20px;right:-20px;width:60px;height:60px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.1) 0%,transparent 70%);transition:all 0.3s;}
+.id-card:hover{transform:translateY(-2px);border-color:var(--mint);box-shadow:0 6px 18px rgba(47,96,72,0.12);}
+.id-card:hover::before{width:100px;height:100px;}
+.id-card.on{background:linear-gradient(135deg,var(--mint-pale),#fff 70%);border-color:var(--forest);box-shadow:0 6px 18px rgba(47,96,72,0.18);}
+.id-icon{width:42px;height:42px;margin:0 auto 8px;color:var(--forest);position:relative;}
+.id-card.on .id-icon{color:var(--forest-deep);}
+.id-icon svg{width:100%;height:100%;fill:currentColor;}
+.id-name{font-size:0.95rem;font-weight:600;color:var(--ink);position:relative;}
+.id-desc{font-size:0.72rem;color:var(--ink-light);margin-top:4px;line-height:1.5;position:relative;}
+
+/* === 證照勾選展開區 === */
+.cert-pick{background:var(--champagne-soft);border:1px dashed var(--amber);border-radius:14px;padding:1.1rem 1.2rem;margin-top:1rem;display:none;animation:expandIn 0.25s ease;}
+@keyframes expandIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.cert-pick.show{display:block;}
+.cert-pick-title{font-size:0.92rem;font-weight:600;color:var(--amber-darker);margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+.cert-pick-title .icon{color:var(--amber);}
+.cert-pick-hint{font-size:0.78rem;color:var(--ink-soft);margin-bottom:0.95rem;line-height:1.65;}
+.cert-pick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
+.cert-pick-item{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:0.7rem 0.85rem;cursor:pointer;font-size:0.82rem;color:var(--ink);display:flex;align-items:center;gap:8px;transition:all 0.2s;font-weight:500;}
+.cert-pick-item:hover{background:var(--champagne);}
+.cert-pick-item.on{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;box-shadow:0 3px 10px rgba(239,159,39,0.3);}
+.cpi-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border);background:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.cert-pick-item.on .cpi-check{background:#fff;border-color:#fff;color:var(--amber);}
+.cpi-check svg{width:12px;height:12px;fill:currentColor;opacity:0;}
+.cert-pick-item.on .cpi-check svg{opacity:1;}
+
+/* === 提示框 === */
+.reassure-box{background:var(--mint-pale);border:1px solid var(--border-mint);border-left:3px solid var(--mint);border-radius:12px;padding:0.95rem 1.1rem;margin-top:1rem;font-size:0.82rem;color:var(--forest);line-height:1.7;display:flex;gap:10px;align-items:flex-start;}
+.reassure-box .ico{width:18px;height:18px;color:var(--forest);flex-shrink:0;margin-top:2px;}
+.reassure-box .ico svg{width:100%;height:100%;fill:currentColor;}
+.reassure-box strong{display:block;color:var(--forest-deep);font-weight:600;margin-bottom:3px;}
+
+.unavail-banner{background:var(--warn-pale);border:1px solid rgba(232,149,68,0.3);border-left:3px solid var(--warn);border-radius:12px;padding:0.95rem 1.1rem;margin-bottom:1.1rem;font-size:0.82rem;color:#9c5e22;line-height:1.7;display:flex;gap:10px;align-items:flex-start;}
+.unavail-banner .ico{width:18px;height:18px;color:var(--warn);flex-shrink:0;margin-top:2px;}
+.unavail-banner .ico svg{width:100%;height:100%;fill:currentColor;}
+.unavail-banner strong{display:block;color:#9c5e22;font-weight:600;margin-bottom:3px;}
+
+/* === 任務類別 === */
+.cat-allon-bar{background:var(--mint-pale);border:1px solid var(--border-mint);border-radius:12px;padding:0.7rem 1rem;margin-bottom:0.85rem;font-size:0.82rem;color:var(--forest);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.cat-allon-bar a{color:var(--forest);text-decoration:underline;cursor:pointer;font-weight:600;font-size:0.78rem;}
+.cat-allon-bar a:hover{color:var(--forest-deep);}
+
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;}
+.cat-item{background:#fff;border:1.5px solid var(--border-soft);border-radius:12px;padding:0.75rem 0.85rem;cursor:pointer;font-size:0.85rem;color:var(--ink);display:flex;align-items:center;gap:8px;transition:all 0.2s;position:relative;font-weight:500;}
+.cat-item:hover{background:var(--mint-pale);border-color:var(--mint);}
+.cat-item.on{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(47,96,72,0.3);}
+.cat-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--border);background:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.cat-item.on .cat-check{background:#fff;border-color:#fff;color:var(--forest);}
+.cat-check svg{width:12px;height:12px;fill:currentColor;opacity:0;}
+.cat-item.on .cat-check svg{opacity:1;}
+.cat-item.locked{background:#FBF5E7;color:var(--ink-light);cursor:not-allowed;border-style:dashed;}
+.cat-item.locked:hover{background:#FBF5E7;}
+.cat-locked-mark{margin-left:auto;font-size:0.66rem;color:var(--warn);display:inline-flex;align-items:center;gap:3px;font-weight:600;background:var(--warn-pale);padding:2px 7px;border-radius:99px;}
+.cat-locked-mark svg{width:0.85em;height:0.85em;fill:currentColor;}
+
+/* === 不可上班時段 === */
+.day-block{background:#fff;border:1.5px solid var(--border-soft);border-radius:14px;padding:0.95rem 1.1rem;margin-bottom:9px;transition:all 0.2s;}
+.day-block.has-unavail{border-color:var(--warn);background:linear-gradient(135deg,#fff,var(--warn-pale) 100%);}
+.day-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.day-name{font-size:0.95rem;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px;}
+.day-name .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);}
+.day-block.has-unavail .day-name .dot{background:var(--warn);}
+.day-toggle{background:#fff;border:1px solid var(--border);color:var(--amber-deep);padding:5px 11px;border-radius:99px;font-size:0.72rem;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;font-weight:500;transition:all 0.15s;}
+.day-toggle:hover{background:var(--champagne);}
+.day-toggle svg{width:0.9em;height:0.9em;fill:currentColor;}
+
+.day-empty{font-size:0.78rem;color:var(--mint);background:var(--mint-pale);border:1px dashed var(--mint);border-radius:8px;padding:7px 11px;display:block;font-weight:500;}
+.day-block.has-unavail .day-empty{display:none;}
+
+.slots-wrap{margin-bottom:8px;}
+.slot-row{display:flex;align-items:center;gap:6px;margin-bottom:7px;background:#fff;border:1px solid var(--border-soft);border-radius:10px;padding:7px 10px;}
+.slot-label{font-size:0.74rem;color:var(--warn);font-weight:600;background:var(--warn-pale);padding:2px 8px;border-radius:99px;}
+.slot-from,.slot-to{flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;background:#fff;font-family:inherit;color:var(--ink);min-width:80px;}
+.slot-dash{color:var(--ink-light);font-weight:600;}
+.slot-remove{background:transparent;border:none;color:var(--danger);font-size:1.2rem;cursor:pointer;padding:0 6px;line-height:1;font-family:inherit;}
+.slot-remove:hover{color:#A8302C;}
+
+.slot-add{background:#fff;border:1.5px dashed var(--amber);color:var(--amber-deep);padding:8px 14px;border-radius:10px;font-size:0.82rem;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;font-weight:600;transition:all 0.15s;}
+.slot-add:hover{background:var(--champagne);}
+.slot-add svg{width:0.95em;height:0.95em;fill:currentColor;}
+
+/* === 證照卡 === */
+.cert-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:11px;}
+.cert-card{background:#fff;border:1.5px solid var(--border-soft);border-radius:14px;padding:1.1rem 0.85rem 0.9rem;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;}
+.cert-card:hover{transform:translateY(-2px);border-color:var(--amber);box-shadow:0 6px 18px rgba(239,159,39,0.12);}
+.cert-card.uploaded{background:linear-gradient(135deg,var(--mint-pale),#fff 70%);border-color:var(--mint);}
+.cert-status{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:#F0EBE0;color:var(--ink-light);display:flex;align-items:center;justify-content:center;}
+.cert-card.uploaded .cert-status{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;box-shadow:0 2px 6px rgba(47,96,72,0.3);}
+.cert-status svg{width:12px;height:12px;fill:currentColor;}
+.cert-ico{width:42px;height:42px;margin:0 auto 9px;color:var(--amber-deep);background:linear-gradient(135deg,var(--champagne),#fff);border:1px solid var(--border);border-radius:12px;display:flex;align-items:center;justify-content:center;}
+.cert-card.uploaded .cert-ico{color:var(--forest);background:linear-gradient(135deg,var(--mint-pale),#fff);border-color:var(--border-mint);}
+.cert-ico svg{width:22px;height:22px;fill:currentColor;}
+.cert-name{font-size:0.9rem;font-weight:600;color:var(--ink);}
+.cert-desc{font-size:0.7rem;color:var(--ink-light);margin-top:4px;line-height:1.5;}
+.cert-unlock{margin-top:8px;font-size:0.65rem;color:var(--forest);background:var(--mint-pale);border:1px solid var(--border-mint);padding:3px 9px;border-radius:99px;display:inline-flex;align-items:center;gap:3px;font-weight:600;}
+.cert-unlock svg{width:0.85em;height:0.85em;fill:currentColor;}
+
+/* 性別其他欄 */
+.other-name-row{display:none;margin-top:9px;}
+.other-name-row.show{display:block;animation:expandIn 0.25s ease;}
+
+/* 距離 */
+.range-row{display:flex;align-items:center;gap:10px;}
+.range-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--mint-pale),#fff);border:1px solid var(--border-mint);color:var(--forest);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.range-icon svg{width:20px;height:20px;fill:currentColor;}
+
+/* === 條款區 === */
+.terms-row{display:flex;gap:10px;padding:1rem 1.1rem;background:#fff;border:1px dashed var(--border);border-radius:14px;margin:1.25rem 0 1rem;font-size:0.85rem;color:var(--ink);align-items:flex-start;}
+.terms-row input[type=checkbox]{appearance:none;-webkit-appearance:none;width:20px;height:20px;border:2px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;position:relative;flex-shrink:0;margin-top:1px;transition:all 0.15s;}
+.terms-row input[type=checkbox]:checked{background:var(--forest);border-color:var(--forest);}
+.terms-row input[type=checkbox]:checked::after{content:'';position:absolute;left:5px;top:1px;width:6px;height:11px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);}
+.terms-row input[type=checkbox]:disabled{cursor:not-allowed;opacity:0.6;background:#F5EBD8;}
+.terms-row label{cursor:pointer;line-height:1.7;flex:1;}
+.terms-row a{color:var(--forest);text-decoration:underline;font-weight:600;cursor:pointer;}
+.terms-row a.read{color:var(--forest);}
+.terms-row a.read::after{content:'✓';margin-left:3px;}
+.unread-hint{display:block;font-size:0.72rem;color:var(--warn);margin-top:5px;}
+.unread-hint.hide{display:none;}
+
+.submit-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;border:none;padding:1.05rem;border-radius:14px;font-size:1.05rem;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(47,96,72,0.35);transition:all 0.2s;}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(47,96,72,0.45);}
+.submit-note{text-align:center;font-size:0.78rem;color:var(--ink-light);margin-top:1rem;line-height:1.7;}
+
+/* === Modal === */
+.modal-overlay{position:fixed;inset:0;background:rgba(61,41,20,0.6);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:20px;max-width:600px;width:100%;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,0.3);}
+.modal-header{padding:1.25rem 1.5rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:1.1rem;font-weight:600;color:var(--ink);}
+.modal-close{background:none;border:none;color:var(--ink-soft);font-size:1.5rem;cursor:pointer;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.modal-close:hover{background:var(--champagne);color:var(--amber-deep);}
+
+.modal-body{padding:1.25rem 1.5rem;overflow-y:auto;flex:1;color:var(--ink);font-size:0.88rem;line-height:1.85;}
+.modal-body h3{font-size:0.95rem;font-weight:600;color:var(--forest);margin:1.25rem 0 0.5rem;display:flex;align-items:center;gap:8px;}
+.modal-body h3:first-of-type{margin-top:0.5rem;}
+.modal-body h3 .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;font-size:0.78rem;font-weight:700;}
+.modal-body p{margin-bottom:0.65rem;}
+.modal-body p strong{color:var(--forest-deep);font-weight:600;}
+.modal-body ul{list-style:none;padding-left:1.25rem;margin-bottom:0.85rem;}
+.modal-body ul li{position:relative;padding-left:1rem;margin-bottom:0.5rem;}
+.modal-body ul li::before{content:'';position:absolute;left:0;top:11px;width:5px;height:5px;border-radius:50%;background:var(--mint);}
+.modal-body ul li strong{color:var(--forest-deep);}
+.modal-body .highlight{background:var(--warn-pale);border-left:3px solid var(--warn);padding:0.85rem 1rem;border-radius:8px;margin:0.65rem 0;font-size:0.84rem;line-height:1.75;}
+.modal-body .highlight strong{color:#9c5e22;}
+
+.modal-footer{padding:1rem 1.5rem 1.25rem;border-top:1px solid var(--border);background:var(--champagne-soft);}
+.read-prog{display:flex;align-items:center;gap:10px;margin-bottom:0.85rem;font-size:0.74rem;color:var(--ink-soft);}
+.read-prog-label{font-weight:600;display:inline-flex;align-items:center;gap:4px;}
+.read-prog-label svg{width:0.95em;height:0.95em;fill:currentColor;}
+.read-prog-track{flex:1;height:6px;background:var(--border);border-radius:99px;overflow:hidden;}
+.read-prog-fill{height:100%;background:linear-gradient(90deg,var(--mint),var(--forest));border-radius:99px;transition:width 0.2s;}
+.read-prog-text{font-weight:600;color:var(--forest);min-width:42px;text-align:right;display:inline-flex;align-items:center;gap:3px;justify-content:flex-end;}
+.read-prog-text .done-mark{opacity:0;display:inline-flex;align-items:center;}
+.read-prog-text .done-mark svg{width:0.95em;height:0.95em;fill:var(--forest);}
+.read-prog-text.done .done-mark{opacity:1;}
+
+.modal-confirm{width:100%;padding:0.9rem;border:none;border-radius:12px;background:#E5DCC8;color:var(--ink-light);font-size:0.94rem;font-weight:600;cursor:not-allowed;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;}
+.modal-confirm.ready{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;cursor:pointer;}
+.modal-confirm.ready:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(47,96,72,0.3);}
+.modal-confirm svg{width:1.05em;height:1.05em;fill:currentColor;}
+
+.footer{text-align:center;font-size:0.78rem;color:var(--ink-light);padding:1.75rem 2rem;background:#fff;border-top:1px solid var(--border-soft);}
+
+@media(max-width:600px){
+  .identity-grid{grid-template-columns:1fr;}
+  .row2{grid-template-columns:1fr;}
+  .pr-step .lbl{font-size:0.68rem;}
+  .page-title{font-size:1.5rem;}
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-1.5 16L6 12.5l1.4-1.4 3.1 3.1 6.1-6.1L18 9.5l-7.5 7.5z"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+  <symbol id="i-id" viewBox="0 0 24 24"><path d="M20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 8c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 10H3v-1c0-2 4-3.1 6-3.1s6 1.1 6 3.1v1zm5-7h-5V9h5v2zm0-3h-5V6h5v2z"/></symbol>
+  <symbol id="i-heart-cross" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41 0.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></symbol>
+  <symbol id="i-lock-open" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></symbol>
+  <symbol id="i-bike" viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6h3v2h-3.4l1.4 4 2 1.4V14h-3v-1.86l-1.86-1.3-2.14 5.66-1.96-.74L9.5 11l-1-2-3 1-1-2.5L9 5l2 5h4z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="page-header">
+  <div class="page-title">我要加入順咖</div>
+  <div class="page-sub">填完送出,最快 24 小時內審核完成<br>有空就接、沒空就拒,自己掌握時間</div>
+  <div class="perks-row">
+    <span class="perk"><svg><use href="#i-check"/></svg>免費刊登</span>
+    <span class="perk"><svg><use href="#i-check"/></svg>自己定價</span>
+    <span class="perk"><svg><use href="#i-check"/></svg>彈性接單</span>
+    <span class="perk"><svg><use href="#i-check"/></svg>不影響本業</span>
+  </div>
+</div>
+
+<div class="form-wrap">
+
+  <div class="progress">
+    <div class="pr-step on"><span class="num">1</span><div class="lbl">身份</div></div>
+    <div class="pr-step on"><span class="num">2</span><div class="lbl">基本資料</div></div>
+    <div class="pr-step on"><span class="num">3</span><div class="lbl">能接什麼</div></div>
+    <div class="pr-step on"><span class="num">4</span><div class="lbl">不可上班時段</div></div>
+    <div class="pr-step on"><span class="num">5</span><div class="lbl">證照上傳</div></div>
+  </div>
+
+  <!-- Step 1: 三類身份 -->
+  <div class="section-card">
+    <div class="sec-title">你是哪類人?</div>
+    <div class="sec-hint">選擇身份,專業類別可進一步勾選你持有的證照。可隨時調整。</div>
+    <div class="identity-grid">
+      <div class="id-card" data-id="general" onclick="pickIdentity(this)">
+        <div class="id-icon"><svg><use href="#i-person"/></svg></div>
+        <div class="id-name">一般民眾</div>
+        <div class="id-desc">代排、遛狗、陪伴等任務</div>
+      </div>
+      <div class="id-card" data-id="cna" onclick="pickIdentity(this)">
+        <div class="id-icon"><svg><use href="#i-crown"/></svg></div>
+        <div class="id-name">專業照服</div>
+        <div class="id-desc">照服員 / 居服員</div>
+      </div>
+      <div class="id-card" data-id="cert" onclick="pickIdentity(this)">
+        <div class="id-icon"><svg><use href="#i-star"/></svg></div>
+        <div class="id-name">有證人員</div>
+        <div class="id-desc">護理師、職能、月嫂等</div>
+      </div>
+    </div>
+
+    <!-- 專業照服 → 證照勾選 -->
+    <div class="cert-pick" id="cert-pick-cna">
+      <div class="cert-pick-title"><svg class="icon"><use href="#i-crown"/></svg>勾選你持有的照服類證照</div>
+      <div class="cert-pick-hint">勾選後上傳證件,可解鎖長輩照顧、身體照顧類的高單價任務</div>
+      <div class="cert-pick-grid">
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>照顧服務員單一級</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>居家服務員</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>長照人員資格</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>失智症照護訓練</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>身心障礙者訓練</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>其他相關訓練</div>
+      </div>
+    </div>
+
+    <!-- 有證人員 → 證照勾選 -->
+    <div class="cert-pick" id="cert-pick-cert">
+      <div class="cert-pick-title"><svg class="icon"><use href="#i-star"/></svg>勾選你持有的專業證照</div>
+      <div class="cert-pick-hint">可複選,審核時請上傳對應證件影本</div>
+      <div class="cert-pick-grid">
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>護理師 / 護士</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>職能治療師</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>物理治療師</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>語言治療師</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>社工師</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>營養師</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>月嫂 / 月子保母</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>保母人員技術士</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>急救員 / EMT</div>
+        <div class="cert-pick-item" onclick="toggleCertPick(this)"><span class="cpi-check"><svg><use href="#i-check"/></svg></span>其他醫護背景</div>
+      </div>
+    </div>
+
+    <div class="reassure-box" id="cna-reassure" style="display:none;">
+      <span class="ico"><svg><use href="#i-shield"/></svg></span>
+      <div>
+        <strong>給專業人員的話</strong>
+        我們不會問你在哪間機構上班,也不會聯繫你的雇主。下面可以設定不可上班時段,保護你的正職班表。
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: 基本資料 -->
+  <div class="section-card">
+    <div class="sec-title">基本資料</div>
+    <div class="row2">
+      <div class="field">
+        <label>真實姓名<span class="req">*</span></label>
+        <input type="text" placeholder="與身分證相同">
+        <div class="hint">僅供平台審核,不會公開</div>
+      </div>
+      <div class="field">
+        <label>暱稱<span class="req">*</span></label>
+        <input type="text" placeholder="例:小芳、阿凱">
+        <div class="hint">案家會看到的稱呼</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>手機號碼<span class="req">*</span></label>
+        <input type="tel" placeholder="0912-345-678">
+        <div class="hint">驗證後不會公開</div>
+      </div>
+      <div class="field">
+        <label>年齡<span class="req">*</span></label>
+        <select>
+          <option value="">請選擇</option>
+          <option>18-25</option>
+          <option>26-35</option>
+          <option>36-45</option>
+          <option>46-55</option>
+          <option>56-65</option>
+          <option>65 以上</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>性別<span class="req">*</span></label>
+      <select id="gender-sel" onchange="onGenderChange(this)">
+        <option value="male" selected>男</option>
+        <option value="female">女</option>
+        <option value="other">其他</option>
+      </select>
+      <div class="other-name-row" id="other-name-row">
+        <input type="text" placeholder="請稱呼我 XXX" id="other-name-input">
+        <div class="hint">案家會看到這個稱呼方式</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>居住地址<span class="req">*</span></label>
+      <div class="row2" style="margin-bottom:8px;">
+        <select id="city-sel">
+          <option value="">縣市</option>
+          <option>台北市</option><option>新北市</option><option>桃園市</option><option>台中市</option><option>高雄市</option><option>基隆市</option><option>新竹市</option><option>新竹縣</option><option>宜蘭縣</option><option>苗栗縣</option><option>彰化縣</option><option>南投縣</option><option>雲林縣</option><option>嘉義市</option><option>嘉義縣</option><option>台南市</option><option>屏東縣</option><option>花蓮縣</option><option>台東縣</option><option>澎湖縣</option><option>金門縣</option><option>連江縣</option>
+        </select>
+        <input type="text" placeholder="行政區(例:板橋區)">
+      </div>
+      <div class="row2" style="margin-bottom:8px;">
+        <input type="text" placeholder="路 / 街(例:文化路)">
+        <input type="text" placeholder="段(例:一段,可留空)">
+      </div>
+      <div class="row2">
+        <input type="text" placeholder="號(例:188 號)">
+        <input type="text" placeholder="樓 / 室(例:5 樓之 2)">
+      </div>
+      <div class="hint">系統會優先派發附近的任務給你,完整地址不會公開</div>
+    </div>
+
+    <div class="field">
+      <label>能跑多遠?<span class="req">*</span></label>
+      <div class="range-row">
+        <div class="range-icon"><svg><use href="#i-bike"/></svg></div>
+        <select>
+          <option value="">請選擇</option>
+          <option>走路 10 分鐘內(同社區)</option>
+          <option>騎車 15 分鐘內(同行政區)</option>
+          <option>騎車 30 分鐘內(鄰近區域)</option>
+          <option>開車 1 小時內(跨縣市)</option>
+          <option>看任務內容再決定</option>
+        </select>
+      </div>
+      <div class="hint">以居住地為中心計算</div>
+    </div>
+
+    <div class="field">
+      <label>簡短自我介紹 <span class="opt">(選填)</span></label>
+      <textarea placeholder="例:白天上班的上班族,假日有空。會煮飯、會狗狗、住板橋..."></textarea>
+      <div class="hint">案家會看到,越具體越容易被選中</div>
+    </div>
+  </div>
+
+  <!-- Step 3: 能接哪些任務 -->
+  <div class="section-card">
+    <div class="sec-title">能接哪些任務</div>
+    <div class="sec-hint">預設全部接,不想接的取消勾選即可。身體照顧類需要照服員身份才能解鎖。</div>
+
+    <div class="cat-allon-bar">
+      <span>已預設全部接案,你可以調整</span>
+      <a onclick="toggleAllCats()">全選 / 全不選</a>
+    </div>
+
+    <div class="cat-grid" id="cat-grid">
+      <div class="cat-item on" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>代排隊 · 搶票</span>
+      </div>
+      <div class="cat-item on" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>代購 · 代取件</span>
+      </div>
+      <div class="cat-item on" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>遛狗 · 寵物</span>
+      </div>
+      <div class="cat-item on" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>打掃</span>
+      </div>
+      <div class="cat-item on" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>陪逛街 · 陪吃飯</span>
+      </div>
+      <div class="cat-item on" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>陪伴聊天</span>
+      </div>
+      <div class="cat-item on" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>陪打遊戲</span>
+      </div>
+      <div class="cat-item on" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>兒童接送 · 陪寫功課</span>
+      </div>
+      <div class="cat-item on" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>陪看醫生</span>
+      </div>
+      <div class="cat-item locked" id="cat-bath" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>協助洗澡</span>
+        <span class="cat-locked-mark"><svg><use href="#i-lock"/></svg>需照服員證</span>
+      </div>
+      <div class="cat-item locked" id="cat-turn" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>翻身擦澡</span>
+        <span class="cat-locked-mark"><svg><use href="#i-lock"/></svg>需照服員證</span>
+      </div>
+      <div class="cat-item locked" id="cat-med" onclick="toggleCat(this)">
+        <span class="cat-check"><svg><use href="#i-check"/></svg></span>
+        <span>服藥提醒</span>
+        <span class="cat-locked-mark"><svg><use href="#i-lock"/></svg>需照服員證</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: 不可上班時段 -->
+  <div class="section-card">
+    <div class="sec-title">不可上班時段</div>
+    <div class="sec-hint">預設早上 6 點到晚上 8 點都可接案。如果某些時段不能接(例:正職班表、家庭時間),在下面填入「不可上班」的開始與結束時間。每天可不同。</div>
+
+    <div class="unavail-banner">
+      <span class="ico"><svg><use href="#i-info"/></svg></span>
+      <div>
+        <strong>怎麼填?</strong>
+        每天最多可加 4 個不可上班時段。例如週一 8:00-17:00 是正職、19:00-21:00 是家庭時間,就加兩段。沒填代表整天都能接。
+      </div>
+    </div>
+
+    <div id="days-area"></div>
+
+    <div class="reassure-box" style="margin-top:1.1rem;">
+      <span class="ico"><svg><use href="#i-shield"/></svg></span>
+      <div>
+        <strong>後台會自動統計</strong>
+        每週你接案的時數會在後台「我的接案紀錄」自動呈現,不用自己估算。
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 5: 證照與驗證 -->
+  <div class="section-card">
+    <div class="sec-title">證照與驗證</div>
+    <div class="sec-hint">上傳越多證件,能接的任務越多、單價越高。最少需要實名認證才能上線。</div>
+
+    <div class="cert-grid">
+      <div class="cert-card" onclick="uploadCert(this)">
+        <div class="cert-status"><svg><use href="#i-check"/></svg></div>
+        <div class="cert-ico"><svg><use href="#i-id"/></svg></div>
+        <div class="cert-name">實名認證</div>
+        <div class="cert-desc">身分證正反面</div>
+        <div class="cert-unlock"><svg><use href="#i-lock-open"/></svg>必填</div>
+      </div>
+      <div class="cert-card" onclick="uploadCert(this)">
+        <div class="cert-status"><svg><use href="#i-check"/></svg></div>
+        <div class="cert-ico"><svg><use href="#i-shield"/></svg></div>
+        <div class="cert-name">良民證</div>
+        <div class="cert-desc">警察局核發<br>近 6 個月內</div>
+        <div class="cert-unlock"><svg><use href="#i-lock-open"/></svg>解鎖長輩 / 兒童任務</div>
+      </div>
+      <div class="cert-card" onclick="uploadCert(this)">
+        <div class="cert-status"><svg><use href="#i-check"/></svg></div>
+        <div class="cert-ico"><svg><use href="#i-heart-cross"/></svg></div>
+        <div class="cert-name">CPR / AED</div>
+        <div class="cert-desc">急救認證證書</div>
+        <div class="cert-unlock"><svg><use href="#i-lock-open"/></svg>解鎖急救徽章</div>
+      </div>
+      <div class="cert-card" onclick="uploadCert(this, true)">
+        <div class="cert-status"><svg><use href="#i-check"/></svg></div>
+        <div class="cert-ico"><svg><use href="#i-star"/></svg></div>
+        <div class="cert-name">照服員 / 專業證</div>
+        <div class="cert-desc">勞動部、衛福部核發</div>
+        <div class="cert-unlock"><svg><use href="#i-lock-open"/></svg>解鎖身體照顧高單價</div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top:1.3rem;">
+      <label>收款資訊 <span class="opt">(可審核通過後再填)</span></label>
+      <div class="row2">
+        <select>
+          <option value="">銀行</option>
+          <option>玉山銀行</option>
+          <option>中國信託</option>
+          <option>國泰世華</option>
+          <option>第一銀行</option>
+          <option>台新銀行</option>
+          <option>其他</option>
+        </select>
+        <input type="text" placeholder="帳號(後 5 碼也可)">
+      </div>
+      <div class="hint">案家完成付款後,平台會將款項轉入此帳戶</div>
+    </div>
+
+    <div class="reassure-box">
+      <span class="ico"><svg><use href="#i-lock"/></svg></span>
+      <div>
+        <strong>你的資料怎麼保護</strong>
+        所有證件僅供平台審核,不會公開給案家。案家只會看到你的徽章(例:「專業照服」「有證」),看不到證件本身。
+      </div>
+    </div>
+  </div>
+
+  <div class="terms-row">
+    <input type="checkbox" id="agree" disabled onchange="handleAgreeChange(this)">
+    <label for="agree">
+      我已閱讀並同意 <a id="link-terms" onclick="openModal('modal-terms')">順咖條款</a> 與 <a id="link-privacy" onclick="openModal('modal-privacy')">隱私權政策</a>,了解平台不介入服務內容、由我與案家自行約定。
+      <span class="unread-hint" id="unread-hint">請先點開並閱讀完兩份文件,才能勾選同意</span>
+    </label>
+  </div>
+
+  <button class="submit-btn" onclick="handleSubmit()">送出申請</button>
+  <div class="submit-note">送出後將在 24 小時內審核完成,結果會以簡訊通知<br>有問題隨時聯繫客服</div>
+
+</div>
+
+<!-- 順咖條款 Modal -->
+<div class="modal-overlay" id="modal-terms" onclick="if(event.target===this)closeModal('modal-terms')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">順咖服務條款</div>
+      <button class="modal-close" onclick="closeModal('modal-terms')">×</button>
+    </div>
+    <div class="modal-body" id="modal-terms-body" onscroll="trackScroll(this,'terms')">
+      <p style="color:var(--ink-light);font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
+
+      <h3><span class="num">1</span>平台性質</h3>
+      <p>「去一下」(以下稱本平台)為<strong>資訊媒合服務平台</strong>,提供順咖與案家自由聯繫之資訊管道。本平台不參與、不介入順咖實際提供之服務內容,亦非順咖之雇主。</p>
+      <div class="highlight">
+        順咖與案家係雙方獨立之契約關係,由雙方自行協商服務內容、時間、地點與報酬,本平台不負服務品質之擔保責任。
+      </div>
+
+      <h3><span class="num">2</span>順咖身分認定</h3>
+      <p>順咖加入本平台即同意:</p>
+      <ul>
+        <li>與本平台<strong>無僱傭、僱用或代理關係</strong></li>
+        <li>係以獨立承攬人身分提供服務</li>
+        <li>自負所得稅、勞健保等相關費用</li>
+        <li>因服務所生之一切法律責任由順咖自負,與本平台無涉</li>
+      </ul>
+
+      <h3><span class="num">3</span>服務分類與資格</h3>
+      <p>本平台服務分為兩類:</p>
+      <ul>
+        <li><strong>一般跑腿類</strong>:代排、遛狗、陪伴、打掃等,凡通過實名認證之順咖均可接單</li>
+        <li><strong>身體照顧類</strong>:協助洗澡、翻身擦澡、服藥提醒等,依《長期照顧服務法》規定,<strong>必須由領有照顧服務員技術士證之順咖提供</strong></li>
+      </ul>
+      <p>順咖不得越級接單,違者本平台得立即停權並追究法律責任。</p>
+
+      <h3><span class="num">4</span>保險責任</h3>
+      <div class="highlight">
+        本平台<strong>不為順咖或案家投保任何保險</strong>。建議雙方自行評估風險並投保意外險。服務過程中發生意外、損失、糾紛,由雙方自行協調或循司法途徑解決,本平台不負連帶賠償責任。
+      </div>
+
+      <h3><span class="num">5</span>平台收費與金流</h3>
+      <div class="highlight">
+        <strong>本平台不抽成、不經手案家與順咖之間的服務報酬</strong>。本平台僅向使用者收取功能性服務費(以點數扣抵),不向順咖抽取任何服務費比例。
+      </div>
+      <ul>
+        <li>服務報酬由案家於 LINE 群內與順咖協議,並直接支付給順咖,本平台不介入</li>
+        <li>順咖之發票開立、稅務申報、勞健保等,由順咖自行依法處理</li>
+        <li>順咖須付平台月費 100 點(新人首月免費),用於上架曝光與接單資格維持</li>
+        <li>第 2 張(含)以上之額外證件審核每張 50 點</li>
+        <li>順咖不得引導案家私下交易、繞過平台下單流程,違者停權</li>
+      </ul>
+
+      <h3><span class="num">6</span>順咖義務</h3>
+      <ul>
+        <li>據實提供個人資料與證件</li>
+        <li>準時到達服務地點,無法準時須提前告知案家</li>
+        <li>不得對案家為任何騷擾、欺騙、暴力、性侵害行為</li>
+        <li>不得攜帶非經案家同意之第三人進入服務場所</li>
+        <li>不得竊取、損毀案家財物</li>
+        <li>不得對案家隱私、財務狀況進行任何形式之刺探或傳播</li>
+      </ul>
+
+      <h3><span class="num">7</span>違規處置與信用分</h3>
+      <p>順咖如有下列情形,本平台得逕行停權、終止合作關係,並保留法律追訴權:</p>
+      <ul>
+        <li>提供不實資料、偽造證件</li>
+        <li>未經授權接超出資格之服務(如無照服員證接身體照顧)</li>
+        <li>30 天滾動視窗內取消已接訂單累計 3 次以上(暫停接單 7 天)</li>
+        <li>30 天滾動視窗內取消已接訂單累計 5 次以上(強制下架)</li>
+        <li>累積評價低於 3.5 星</li>
+        <li>遭多次投訴或檢舉</li>
+        <li>違反第 6 條任一項義務</li>
+        <li>引導案家私下交易、繞過平台下單流程</li>
+      </ul>
+      <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--ink-light);">⓵ 順咖接單後取消會扣信用分,可於「我的帳戶」查詢狀態。客服判定為「順咖無故違約」者,案家全額退還 50 點,順咖加重扣分。</p>
+
+      <h3><span class="num">8</span>智慧財產與資料使用</h3>
+      <ul>
+        <li>順咖上傳之大頭照、自介、評價內容,授權本平台於平台內公開展示</li>
+        <li>本平台得使用順咖之服務紀錄統計數據(去識別化後)作為平台優化、研究、行銷用途</li>
+        <li>順咖證件影本僅供本平台審核使用,不對外公開</li>
+      </ul>
+
+      <h3><span class="num">9</span>條款修改</h3>
+      <p>本平台保留隨時修改本條款之權利。修改後將以簡訊或站內通知告知,<strong>順咖繼續使用平台即視為同意修改後條款</strong>。如不同意,得停止使用。</p>
+
+      <h3><span class="num">10</span>準據法與管轄</h3>
+      <p>本條款之解釋、效力、履行及與本條款有關之爭議,均以中華民國法律為準據法,並以<strong>台灣新北地方法院</strong>為第一審管轄法院。</p>
+
+      <p style="margin-top:1.5rem;padding-top:1rem;border-top:1px dashed var(--border);color:var(--ink-light);font-size:0.78rem;">
+        以上條款由大天使長照有限公司附設新北市私立大天使居家長照機構(「去一下」平台營運者)擬定。
+      </p>
+    </div>
+    <div class="modal-footer">
+      <div class="read-prog">
+        <span class="read-prog-label"><svg><use href="#i-book"/></svg>閱讀進度</span>
+        <div class="read-prog-track"><div class="read-prog-fill" id="terms-progress" style="width:0%;"></div></div>
+        <span class="read-prog-text" id="terms-progress-text"><span class="done-mark"><svg><use href="#i-check"/></svg></span><span id="terms-progress-num">0%</span></span>
+      </div>
+      <button class="modal-confirm" id="terms-confirm" onclick="confirmRead('terms')">請將內容拉至最底才能確認</button>
+    </div>
+  </div>
+</div>
+
+<!-- 隱私權政策 Modal -->
+<div class="modal-overlay" id="modal-privacy" onclick="if(event.target===this)closeModal('modal-privacy')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">隱私權政策</div>
+      <button class="modal-close" onclick="closeModal('modal-privacy')">×</button>
+    </div>
+    <div class="modal-body" id="modal-privacy-body" onscroll="trackScroll(this,'privacy')">
+      <p style="color:var(--ink-light);font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
+
+      <h3><span class="num">1</span>資料蒐集範圍</h3>
+      <p>本平台為提供媒合服務,將蒐集以下資料:</p>
+      <ul>
+        <li><strong>基本身分</strong>:真實姓名、暱稱、性別、年齡、聯絡電話</li>
+        <li><strong>身分驗證</strong>:身分證影本、良民證、照服員證、CPR 證書</li>
+        <li><strong>服務資料</strong>:可服務區域、可接單時段、接案紀錄、評價</li>
+        <li><strong>使用紀錄</strong>:登入紀錄、IP 位址、瀏覽行為</li>
+      </ul>
+      <p style="font-size:0.78rem;color:var(--ink-light);margin-top:0.5rem;">⓵ 本平台不蒐集順咖之銀行帳戶,服務報酬由案家直接支付給順咖,平台不經手金流。</p>
+
+      <h3><span class="num">2</span>資料使用目的</h3>
+      <ul>
+        <li>身分審核、確保平台安全</li>
+        <li>媒合順咖與案家</li>
+        <li>提供客戶服務、處理爭議</li>
+        <li>平台優化與功能改善</li>
+        <li>法令遵循(如配合司法調查)</li>
+      </ul>
+
+      <h3><span class="num">3</span>資料公開原則</h3>
+      <div class="highlight">
+        證件、身分證、真實姓名、電話<strong>絕對不會公開給其他使用者</strong>。案家僅能看到順咖的暱稱、徽章、評分與服務紀錄。聯絡方式(電話、LINE ID)僅在訂單成功媒合後,於自動建立之 LINE 群內顯示。
+      </div>
+
+      <h3><span class="num">4</span>資料保存期限</h3>
+      <ul>
+        <li>帳號使用中:持續保存</li>
+        <li>停止使用後:基本資料保存 5 年(符合稅法、長照法規)</li>
+        <li>證件影本:審核完成後 90 天加密刪除</li>
+        <li>點數加值與發票紀錄:依稅法規定保存 7 年</li>
+      </ul>
+
+      <h3><span class="num">5</span>資料當事人權利</h3>
+      <p>依個人資料保護法,您有權:</p>
+      <ul>
+        <li>查詢或請求閱覽個人資料</li>
+        <li>請求複製本</li>
+        <li>請求補充或更正</li>
+        <li>請求停止蒐集、處理、利用</li>
+        <li>請求刪除(除法令要求保存者外)</li>
+      </ul>
+      <p>請以電子郵件至客服信箱辦理。本平台將於 30 日內處理。</p>
+
+      <h3><span class="num">6</span>第三方資料分享</h3>
+      <p>本平台不會將您的個人資料販售、出租、交換給第三方,除非:</p>
+      <ul>
+        <li>取得您事前同意</li>
+        <li>司法機關依法律程序要求</li>
+        <li>為保護平台、其他使用者之合法權益</li>
+        <li>點數加值之金流服務商(限刷卡與發票必要資訊)</li>
+        <li>簡訊服務商(限發送驗證碼必要資訊)</li>
+      </ul>
+
+      <h3><span class="num">7</span>Cookie 使用</h3>
+      <p>本平台使用 Cookie 追蹤登入狀態與使用偏好。您可於瀏覽器停用 Cookie,但部分功能將無法使用。</p>
+
+      <h3><span class="num">8</span>資料安全</h3>
+      <ul>
+        <li>所有個人資料以加密方式儲存</li>
+        <li>點數加值之金流資訊使用 SSL 加密傳輸</li>
+        <li>採用權限管理,僅授權人員可存取</li>
+        <li>本平台已採取合理之資安措施,但不保證百分之百無資料外洩風險</li>
+      </ul>
+
+      <h3><span class="num">9</span>政策修改</h3>
+      <p>本政策得隨時修改。重大修改將以簡訊或站內通知告知。繼續使用平台視為同意修改後政策。</p>
+
+      <h3><span class="num">10</span>聯絡方式</h3>
+      <p>如對本政策有任何疑問,請聯繫:</p>
+      <p>大天使長照有限公司附設新北市私立大天使居家長照機構<br>客服信箱:service@quyixia.tw</p>
+
+      <p style="margin-top:1.5rem;padding-top:1rem;border-top:1px dashed var(--border);color:var(--ink-light);font-size:0.78rem;">
+        本政策依《個人資料保護法》、《長期照顧服務法》相關規定擬定。
+      </p>
+    </div>
+    <div class="modal-footer">
+      <div class="read-prog">
+        <span class="read-prog-label"><svg><use href="#i-book"/></svg>閱讀進度</span>
+        <div class="read-prog-track"><div class="read-prog-fill" id="privacy-progress" style="width:0%;"></div></div>
+        <span class="read-prog-text" id="privacy-progress-text"><span class="done-mark"><svg><use href="#i-check"/></svg></span><span id="privacy-progress-num">0%</span></span>
+      </div>
+      <button class="modal-confirm" id="privacy-confirm" onclick="confirmRead('privacy')">請將內容拉至最底才能確認</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  去一下平台 · 順咖招募中
+</div>
+
+<script>
+/* === 身份切換(傳遞到 07_verification 用 sessionStorage)=== */
+function pickIdentity(el) {
+  document.querySelectorAll('.id-card').forEach(function(t){ t.classList.remove('on'); });
+  el.classList.add('on');
+  var id = el.getAttribute('data-id');
+
+  /* 存入 sessionStorage 給 07_verification 用 */
+  try { sessionStorage.setItem('applyIdentity', id); } catch(e){}
+
+  document.getElementById('cert-pick-cna').classList.remove('show');
+  document.getElementById('cert-pick-cert').classList.remove('show');
+
+  if (id === 'cna') {
+    document.getElementById('cert-pick-cna').classList.add('show');
+  } else if (id === 'cert') {
+    document.getElementById('cert-pick-cert').classList.add('show');
+  }
+
+  document.getElementById('cna-reassure').style.display = (id === 'cna' || id === 'cert') ? 'flex' : 'none';
+
+  /* 照服員身份 → 解鎖身體照顧類 */
+  var bodyCatLocked = (id !== 'cna');
+  ['cat-bath','cat-turn','cat-med'].forEach(function(cid){
+    var c = document.getElementById(cid);
+    if (!c) return;
+    if (bodyCatLocked) {
+      c.classList.add('locked');
+      c.classList.remove('on');
+    } else {
+      c.classList.remove('locked');
+    }
+  });
+}
+
+/* === 證照勾選 toggle === */
+function toggleCertPick(el) {
+  el.classList.toggle('on');
+}
+
+/* === 性別:選其他展開稱呼欄 === */
+function onGenderChange(sel) {
+  var row = document.getElementById('other-name-row');
+  if (sel.value === 'other') {
+    row.classList.add('show');
+    setTimeout(function(){
+      document.getElementById('other-name-input').focus();
+    }, 80);
+  } else {
+    row.classList.remove('show');
+  }
+}
+
+/* === 任務類別勾選 === */
+function toggleCat(el) {
+  if (el.classList.contains('locked')) return;
+  el.classList.toggle('on');
+}
+function toggleAllCats() {
+  var items = document.querySelectorAll('#cat-grid .cat-item:not(.locked)');
+  var allOn = Array.prototype.every.call(items, function(i){ return i.classList.contains('on'); });
+  items.forEach(function(i){
+    if (allOn) i.classList.remove('on');
+    else i.classList.add('on');
+  });
+}
+
+/* === 不可上班時段 === */
+var dayNames = ['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
+function buildHourOptions(selected) {
+  var html = '';
+  for (var h = 0; h <= 24; h++) {
+    var v = (h < 10 ? '0' : '') + h + ':00';
+    html += '<option value="'+v+'"'+(v===selected?' selected':'')+'>'+v+'</option>';
+  }
+  return html;
+}
+
+function buildDays() {
+  var area = document.getElementById('days-area');
+  area.innerHTML = '';
+  dayNames.forEach(function(name, idx){
+    var block = document.createElement('div');
+    block.className = 'day-block';
+    block.setAttribute('data-day', idx);
+    block.innerHTML =
+      '<div class="day-head">' +
+        '<div class="day-name"><span class="dot"></span>'+name+'</div>' +
+        '<button class="day-toggle" onclick="copyToAllDays('+idx+')" title="把這天的設定套用到每一天"><svg><use href="#i-doc"/></svg>套用到全部</button>' +
+      '</div>' +
+      '<div class="slots-wrap" id="slots-'+idx+'"></div>' +
+      '<div class="day-empty" id="empty-'+idx+'">沒設定 = 整天都可接案</div>' +
+      '<button class="slot-add" onclick="addSlot('+idx+')"><svg><use href="#i-plus"/></svg>新增不可上班時段</button>';
+    area.appendChild(block);
+  });
+}
+
+function addSlot(dayIdx, fromHour, toHour) {
+  var wrap = document.getElementById('slots-'+dayIdx);
+  var existing = wrap.querySelectorAll('.slot-row').length;
+  if (existing >= 4) {
+    alert('每天最多 4 個不可上班時段');
+    return;
+  }
+  var row = document.createElement('div');
+  row.className = 'slot-row';
+  row.innerHTML =
+    '<span class="slot-label">不可</span>' +
+    '<select class="slot-from" onchange="markDayHasUnavail('+dayIdx+')">'+buildHourOptions(fromHour || '08:00')+'</select>' +
+    '<span class="slot-dash">~</span>' +
+    '<select class="slot-to" onchange="markDayHasUnavail('+dayIdx+')">'+buildHourOptions(toHour || '17:00')+'</select>' +
+    '<button class="slot-remove" onclick="removeSlot(this,'+dayIdx+')" title="刪除這段">×</button>';
+  wrap.appendChild(row);
+  markDayHasUnavail(dayIdx);
+}
+
+function removeSlot(btn, dayIdx) {
+  btn.closest('.slot-row').remove();
+  markDayHasUnavail(dayIdx);
+}
+
+function markDayHasUnavail(dayIdx) {
+  var block = document.querySelector('.day-block[data-day="'+dayIdx+'"]');
+  var rows = block.querySelectorAll('.slot-row');
+  var empty = document.getElementById('empty-'+dayIdx);
+  if (rows.length > 0) {
+    block.classList.add('has-unavail');
+    empty.style.display = 'none';
+  } else {
+    block.classList.remove('has-unavail');
+    empty.style.display = 'block';
+  }
+}
+
+function copyToAllDays(sourceIdx) {
+  var sourceRows = document.querySelectorAll('#slots-'+sourceIdx+' .slot-row');
+  if (sourceRows.length === 0) {
+    if (!confirm('這天沒有設定不可上班時段,確定要把「整天都可接」套用到全部嗎?')) return;
+  }
+  var data = [];
+  sourceRows.forEach(function(r){
+    data.push({
+      from: r.querySelector('.slot-from').value,
+      to: r.querySelector('.slot-to').value
+    });
+  });
+  for (var i = 0; i < 7; i++) {
+    if (i === sourceIdx) continue;
+    document.getElementById('slots-'+i).innerHTML = '';
+    data.forEach(function(d){ addSlot(i, d.from, d.to); });
+    if (data.length === 0) markDayHasUnavail(i);
+  }
+}
+
+/* === 證件上傳 === */
+function uploadCert(el, isCna) {
+  el.classList.toggle('uploaded');
+  if (isCna) {
+    var unlocked = el.classList.contains('uploaded');
+    ['cat-bath','cat-turn','cat-med'].forEach(function(id){
+      var c = document.getElementById(id);
+      if (!c) return;
+      if (unlocked) {
+        c.classList.remove('locked');
+      } else {
+        c.classList.add('locked');
+        c.classList.remove('on');
+      }
+    });
+  }
+}
+
+/* === 條款 Modal === */
+var readStatus = { terms: false, privacy: false };
+
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+  document.body.style.overflow = 'hidden';
+  var key = id === 'modal-terms' ? 'terms' : 'privacy';
+  var body = document.getElementById('modal-' + key + '-body');
+  setTimeout(function(){ trackScroll(body, key); }, 50);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function trackScroll(el, key) {
+  var scrolled = el.scrollTop + el.clientHeight;
+  var total = el.scrollHeight;
+  var pct = total > el.clientHeight ? Math.min(100, Math.round(scrolled / total * 100)) : 100;
+  document.getElementById(key + '-progress').style.width = pct + '%';
+  document.getElementById(key + '-progress-num').textContent = pct + '%';
+
+  if (pct >= 95) {
+    var textWrap = document.getElementById(key + '-progress-text');
+    textWrap.classList.add('done');
+    var btn = document.getElementById(key + '-confirm');
+    if (!btn.classList.contains('ready')) {
+      btn.classList.add('ready');
+      btn.innerHTML = '<svg><use href="#i-check"/></svg>我已讀完,確認同意';
+    }
+  }
+}
+
+function confirmRead(key) {
+  var btn = document.getElementById(key + '-confirm');
+  if (!btn.classList.contains('ready')) return;
+
+  readStatus[key] = true;
+  var link = document.getElementById('link-' + key);
+  if (link) link.classList.add('read');
+
+  closeModal('modal-' + key);
+
+  if (readStatus.terms && readStatus.privacy) {
+    var cb = document.getElementById('agree');
+    cb.disabled = false;
+    document.getElementById('unread-hint').classList.add('hide');
+  }
+}
+
+function handleAgreeChange(cb) {
+  if (cb.checked && (!readStatus.terms || !readStatus.privacy)) {
+    cb.checked = false;
+    alert('請先點開並閱讀完兩份文件');
+  }
+}
+
+function handleSubmit() {
+  if (!readStatus.terms || !readStatus.privacy) {
+    alert('請先閱讀順咖條款與隱私權政策');
+    return;
+  }
+  if (!document.getElementById('agree').checked) {
+    alert('請勾選同意條款');
+    return;
+  }
+  alert('申請已送出!接下來請完成帳號認證。');
+  window.location.href = '07_verification.html';
+}
+
+/* === 初始化 === */
+buildDays();
+</script>
+</body>
+</html>
