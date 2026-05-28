@@ -124,28 +124,96 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .b-cna{background:var(--warn-pale);color:var(--warn);}
 .b-senior{background:#FCE4F2;color:#A8367C;}
 
-.stat-row{display:grid;grid-template-columns:1fr 2fr;gap:1.25rem;align-items:center;}
 .big-rating{text-align:center;}
 .big-num{font-size:2.6rem;font-weight:700;color:var(--amber-deep);line-height:1;letter-spacing:-1px;}
 .big-stars{color:var(--amber);font-size:1rem;margin-top:5px;letter-spacing:1px;}
 .big-stars svg{width:1em;height:1em;fill:currentColor;vertical-align:-0.15em;}
 .big-count{font-size:0.74rem;color:var(--ink-light);margin-top:4px;}
 
-.rating-bars{display:flex;flex-direction:column;gap:6px;}
-.rb-row{display:flex;align-items:center;gap:8px;font-size:0.74rem;color:var(--ink-soft);}
-.rb-label{width:14px;text-align:right;font-weight:600;}
-.rb-track{flex:1;height:7px;background:var(--champagne-soft);border-radius:99px;overflow:hidden;border:1px solid var(--border-soft);}
-.rb-fill{height:100%;background:linear-gradient(90deg,var(--honey),var(--amber));border-radius:99px;transition:width 0.3s;}
-.rb-count{width:30px;text-align:right;color:var(--amber-deep);font-weight:600;}
 
-.most-tags{display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;font-size:0.74rem;color:var(--ink-light);padding-top:12px;border-top:1px dashed var(--border);}
 .r-tag{display:inline-block;padding:3px 10px;background:var(--champagne);color:var(--amber-deep);border-radius:99px;font-weight:500;font-size:0.7rem;}
+
+/* === 模式 C:身份識別徽章 === */
+.role-tab{display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:99px;font-size:0.78rem;font-weight:600;margin-bottom:14px;}
+.role-tab .role-dot{width:8px;height:8px;border-radius:50%;}
+.role-tab.view-staff{background:var(--mint-pale);color:var(--forest);}
+.role-tab.view-staff .role-dot{background:var(--forest);}
+.role-tab.view-client{background:var(--champagne);color:var(--amber-darker);}
+.role-tab.view-client .role-dot{background:var(--amber);}
+/* 身份配色:大數字/星等 */
+.big-num.view-staff{color:var(--forest);}
+.big-stars.view-staff{color:var(--mint);}
+.big-num.view-client{color:var(--amber-deep);}
+.big-stars.view-client{color:var(--amber);}
+.big-rating-mini{text-align:center;flex-shrink:0;}
+.big-rating-mini .big-num{font-size:2.1rem;}
+.big-rating-mini .big-stars{font-size:0.8rem;}
+.stat-overview.view-staff{border-color:rgba(95,181,142,0.4);}
+.stat-overview.view-client{border-color:var(--border);}
+
+/* === 鎖區容器 === */
+.lock-area{position:relative;background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.35rem;margin-bottom:1rem;overflow:hidden;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.lock-area.view-staff{border-color:rgba(95,181,142,0.4);}
+.lock-area .lock-mask{display:none;}
+.lock-area.is-locked .lock-mask{display:flex;}
+.lock-area.is-locked .locked-content{filter:blur(7px);pointer-events:none;user-select:none;opacity:0.55;}
+
+/* 遮罩 */
+.lock-mask{position:absolute;inset:0;background:rgba(255,252,245,0.62);backdrop-filter:blur(2px);align-items:center;justify-content:center;text-align:center;padding:1.5rem;}
+.lock-mask-inner{max-width:280px;}
+.lock-ico{width:38px;height:38px;fill:var(--amber);margin-bottom:10px;}
+.lock-title{font-size:1.05rem;font-weight:600;color:var(--ink);margin-bottom:6px;}
+.lock-desc{font-size:0.8rem;color:var(--ink-soft);line-height:1.7;margin-bottom:14px;}
+.unlock-btn{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;padding:0.7rem 1.8rem;border-radius:10px;font-size:0.92rem;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 6px 18px rgba(239,159,39,0.32);transition:all 0.2s;}
+.unlock-btn:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(239,159,39,0.42);}
+.unlock-btn:active{transform:translateY(0);}
+.lock-note{font-size:0.68rem;color:var(--ink-light);margin-top:10px;}
+
+/* 分項星等 */
+.sub-list{display:flex;flex-direction:column;gap:11px;}
+.sub-row{display:flex;align-items:center;gap:11px;}
+.sub-label{width:74px;font-size:0.8rem;color:var(--ink-soft);flex-shrink:0;}
+.sub-track{flex:1;height:8px;background:var(--champagne-soft);border-radius:99px;overflow:hidden;border:1px solid var(--border-soft);}
+.sub-fill{height:100%;border-radius:99px;transition:width 0.4s;}
+.sub-fill.view-staff{background:linear-gradient(90deg,var(--mint),var(--forest));}
+.sub-fill.view-client{background:linear-gradient(90deg,var(--honey),var(--amber));}
+.sub-val{width:30px;text-align:right;font-weight:600;font-size:0.86rem;color:var(--ink);}
+
+/* 紅旗統計 */
+.flag-list{display:flex;flex-direction:column;gap:8px;}
+.flag-row{display:flex;align-items:center;gap:9px;padding:0.7rem 0.85rem;border-radius:11px;font-size:0.8rem;}
+.flag-ico{width:15px;height:15px;flex-shrink:0;}
+.flag-label{flex:1;color:var(--ink);}
+.flag-stat{font-weight:600;font-size:0.78rem;white-space:nowrap;}
+.flag-pct{margin-left:3px;font-size:0.72rem;}
+.flag-clean{background:var(--mint-pale);}
+.flag-clean .flag-ico{fill:var(--mint);}
+.flag-clean .flag-stat{color:var(--forest);}
+.flag-hit{background:#FDECEC;}
+.flag-hit .flag-ico{fill:#E5484D;}
+.flag-hit .flag-label{color:#9B2C2C;}
+.flag-hit .flag-stat{color:#E5484D;}
+
+/* 信用分 */
+.credit-box{display:flex;align-items:stretch;gap:14px;background:var(--champagne-soft);border:1px solid var(--border);border-radius:14px;padding:1rem 1.1rem;}
+.credit-score{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-right:14px;border-right:1px dashed var(--border);flex-shrink:0;}
+.cs-num{font-size:2.1rem;font-weight:700;line-height:1;letter-spacing:-1px;}
+.credit-score.view-staff .cs-num{color:var(--forest);}
+.credit-score.view-client .cs-num{color:var(--amber-deep);}
+.cs-unit{font-size:0.7rem;color:var(--ink-light);margin-top:4px;}
+.credit-detail{flex:1;display:flex;justify-content:space-around;align-items:center;}
+.cd-item{text-align:center;}
+.cd-num{display:block;font-size:1.15rem;font-weight:600;color:var(--ink);}
+.cd-lbl{display:block;font-size:0.7rem;color:var(--ink-light);margin-top:2px;}
 
 /* 評價清單 */
 .review-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:1.1rem;margin-bottom:10px;transition:all 0.2s;}
 .review-card:hover{border-color:var(--amber);box-shadow:0 4px 14px rgba(239,159,39,0.12);}
 .reviewer-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .r-avatar{width:36px;height:36px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:0.9rem;color:var(--amber-deep);box-shadow:0 2px 6px rgba(186,117,23,0.12),inset 0 0 0 1px var(--border);flex-shrink:0;}
+.r-avatar.masked{background:var(--champagne-soft);color:var(--ink-light);}
+.r-avatar.masked svg{width:16px;height:16px;fill:var(--ink-light);}
+.admin-eye{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:99px;background:var(--mint-pale);color:var(--forest);font-size:0.62rem;font-weight:600;vertical-align:1px;}
 .r-name{font-size:0.88rem;font-weight:600;color:var(--ink);}
 .r-date{font-size:0.7rem;color:var(--ink-light);}
 .r-stars{color:var(--amber);font-size:0.9rem;letter-spacing:1px;}
@@ -174,7 +242,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 @media (max-width:480px){
   .page-title{font-size:1.4rem;}
-  .stat-row{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -326,7 +393,22 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   <div class="form-wrap">
     <div class="stat-overview" id="stat-overview"></div>
-    <div class="sec-title" style="margin-bottom:0.85rem;">所有評價</div>
+
+    <!-- 鎖區:分項星等+紅旗統計+信用分,一次解鎖全開 -->
+    <div class="lock-area is-locked" id="lock-area">
+      <div class="locked-content" id="locked-content"></div>
+      <div class="lock-mask">
+        <div class="lock-mask-inner">
+          <svg class="lock-ico"><use href="#i-shield"/></svg>
+          <div class="lock-title">🔒 解鎖完整評價</div>
+          <div class="lock-desc">分項評分 · 行為紀錄 · 信用分,一次全開</div>
+          <button class="unlock-btn" onclick="unlockReview()">解鎖查看</button>
+          <div class="lock-note">Demo 示範:點擊直接顯示,不會扣點</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec-title" style="margin-bottom:0.85rem;">文字評價</div>
     <div id="review-list"></div>
   </div>
 </div>
@@ -372,15 +454,27 @@ var demoTask = {
   pool: 'B'
 };
 
+// ⚠️ Demo 寫死示範。接 Supabase 後:subRatings 由分項星等平均算出、flags 由紅旗題統計、credit 由完成單數/棄單/準時率計算。
 var staffReviewsData = {
   fang: {
     name: '小芳',
     avatar: '芳',
+    role: 'staff',        // staff=順咖(綠) / client=案家(金)
     cna: true,
     rating: 4.9,
     count: 23,
-    distribution: [88, 10, 2, 0, 0],
-    topTags: ['準時到場 (18)', '細心負責 (15)', '會再找她 (12)'],
+    // 分項星等(順咖):準時到達/服務用心/溝通態度/完成度
+    subRatings: [
+      { label: '準時到達', value: 4.9 },
+      { label: '服務用心', value: 4.8 },
+      { label: '溝通態度', value: 5.0 },
+      { label: '完成度', value: 4.9 }
+    ],
+    // 紅旗統計(順咖端只有一題紅旗:未經同意額外收費)
+    flags: [
+      { label: '未經同意的額外收費或索取', count: 0, total: 23, danger: true }
+    ],
+    credit: { score: 98, done: 23, abandon: 0, ontime: 96 },
     reviews: [
       { reviewer: '王', name: '王小姐(案家)', date: '2025/05/20', stars: 5, comment: '小芳很細心又準時,陪我媽媽看醫生整個過程都很有耐心。會再找她!', tags: ['準時到場', '細心負責', '會再找她'] },
       { reviewer: '李', name: '李先生(案家)', date: '2025/05/15', stars: 4, comment: '溝通順暢,服務細心,整體滿意。', tags: ['態度親切', '溝通順暢'] }
@@ -389,17 +483,42 @@ var staffReviewsData = {
   me: {
     name: '我',
     avatar: '我',
+    role: 'client',
     cna: false,
     rating: 4.8,
     count: 12,
-    distribution: [75, 17, 8, 0, 0],
-    topTags: ['案主好溝通 (10)', '準時付款 (9)', '說明清楚 (7)'],
+    // 分項星等(案家):尊重順咖/溝通清楚/付款乾脆
+    subRatings: [
+      { label: '尊重順咖', value: 4.9 },
+      { label: '溝通清楚', value: 4.7 },
+      { label: '付款乾脆', value: 4.8 }
+    ],
+    // 紅旗統計(案家端三題紅旗)
+    flags: [
+      { label: '提出訂單外的額外需求', count: 1, total: 12, danger: true },
+      { label: '要求超時服務', count: 0, total: 12, danger: true },
+      { label: '環境讓人不安全或不舒服', count: 0, total: 12, danger: true }
+    ],
+    credit: { score: 92, done: 12, abandon: 1, ontime: 100 },
     reviews: [
       { reviewer: '芳', name: '小芳(順咖)', date: '2025/05/20', stars: 5, comment: '客戶很客氣,家裡也很乾淨,溝通清楚。', tags: ['說明清楚', '環境整潔'] },
       { reviewer: '雯', name: '小雯(順咖)', date: '2025/05/15', stars: 3, comment: '案主臨時改需求,希望能提前說。', tags: ['臨時改需求'] }
     ]
   }
 };
+
+// ⚠️ Demo:用網址 ?admin=1 模擬後台帳號。接 Supabase 後改成「登入帳號的後台權限」判斷,不可用網址參數(否則人人可加 ?admin=1 看真名)
+var IS_ADMIN = new URLSearchParams(location.search).get('admin') === '1';
+
+// 評價人打碼:保留首字+角色,中間用 ○ 遮。例「王小姐(案家)」→「王○○(案家)」
+function maskName(name) {
+  var role = '';
+  var m = name.match(/[(（](.+?)[)）]\s*$/);
+  if (m) { role = '(' + m[1] + ')'; name = name.replace(/[(（].+?[)）]\s*$/, ''); }
+  var first = Array.from(name)[0] || '';
+  var masked = first + '○○';
+  return masked + role;
+}
 
 function init() {
   var params = new URLSearchParams(location.search);
@@ -473,52 +592,107 @@ function showView(key) {
   document.getElementById('view-title').textContent = data.name + ' 的評價紀錄';
   document.getElementById('view-sub').textContent = '共 ' + data.count + ' 則評價,平均 ' + data.rating.toFixed(1) + ' 星';
 
+  var isStaff = data.role === 'staff';
+  var roleClass = isStaff ? 'view-staff' : 'view-client';
+  var roleLabel = isStaff ? '順咖評價' : '案家評價';
+
   var badgesHTML = '<span class="badge-mini b-verified"><svg><use href="#i-check"/></svg>實名</span>' +
                    '<span class="badge-mini b-safe"><svg><use href="#i-shield"/></svg>良民</span>';
   if (data.cna) badgesHTML += '<span class="badge-mini b-cna"><svg><use href="#i-star-fill"/></svg>照服員</span>';
   if (data.rating >= 4.8 && data.count >= 20) badgesHTML += '<span class="badge-mini b-senior"><svg><use href="#i-crown"/></svg>資深</span>';
 
-  var bars = '';
-  for (var i = 0; i < 5; i++) {
-    bars += '<div class="rb-row">' +
-      '<span class="rb-label">' + (5-i) + '</span>' +
-      '<div class="rb-track"><div class="rb-fill" style="width:' + data.distribution[i] + '%;"></div></div>' +
-      '<span class="rb-count">' + Math.round(data.count * data.distribution[i] / 100) + '</span>' +
-    '</div>';
-  }
-
-  var topTagsHTML = data.topTags.map(function(t){ return '<span class="r-tag">' + t + '</span>'; }).join('');
-
   var fullStars = '';
   for (var i = 0; i < 5; i++) fullStars += '<svg><use href="#i-star-fill"/></svg>';
 
-  document.getElementById('stat-overview').innerHTML =
+  // 身份識別徽章 + 大平均(平均星等開放給所有人看)
+  var headHTML =
+    '<div class="role-tab ' + roleClass + '"><span class="role-dot"></span>' + roleLabel + '</div>' +
     '<div class="stat-head">' +
       '<div class="stat-avatar">' + data.avatar + '</div>' +
       '<div style="flex:1;">' +
         '<div class="stat-name">' + data.name + '</div>' +
         '<div class="badge-row">' + badgesHTML + '</div>' +
       '</div>' +
-    '</div>' +
-    '<div class="stat-row">' +
-      '<div class="big-rating">' +
-        '<div class="big-num">' + data.rating.toFixed(1) + '</div>' +
-        '<div class="big-stars">' + fullStars + '</div>' +
+      '<div class="big-rating-mini">' +
+        '<div class="big-num ' + roleClass + '">' + data.rating.toFixed(1) + '</div>' +
+        '<div class="big-stars ' + roleClass + '">' + fullStars + '</div>' +
         '<div class="big-count">' + data.count + ' 則評價</div>' +
       '</div>' +
-      '<div class="rating-bars">' + bars + '</div>' +
-    '</div>' +
-    '<div class="most-tags">最常被提到:' + topTagsHTML + '</div>';
+    '</div>';
+  document.getElementById('stat-overview').className = 'stat-overview ' + roleClass;
+  document.getElementById('stat-overview').innerHTML = headHTML;
+
+  // === 鎖區:分項星等 + 紅旗統計 + 信用分(一次解鎖全開) ===
+  // 分項星等
+  var subHTML = data.subRatings.map(function(s){
+    var pct = (s.value / 5 * 100).toFixed(0);
+    return '<div class="sub-row">' +
+      '<span class="sub-label">' + s.label + '</span>' +
+      '<div class="sub-track"><div class="sub-fill ' + roleClass + '" style="width:' + pct + '%;"></div></div>' +
+      '<span class="sub-val">' + s.value.toFixed(1) + '</span>' +
+    '</div>';
+  }).join('');
+
+  // 紅旗統計
+  var flagsHTML = data.flags.map(function(f){
+    var rate = f.total ? Math.round(f.count / f.total * 100) : 0;
+    var hit = f.count > 0;
+    return '<div class="flag-row ' + (hit ? 'flag-hit' : 'flag-clean') + '">' +
+      '<svg class="flag-ico"><use href="#i-flag"/></svg>' +
+      '<span class="flag-label">' + f.label + '</span>' +
+      '<span class="flag-stat">' + f.total + ' 筆中 ' + f.count + ' 筆<span class="flag-pct">(' + rate + '%)</span></span>' +
+    '</div>';
+  }).join('');
+
+  // 信用分
+  var c = data.credit;
+  var creditHTML =
+    '<div class="credit-box">' +
+      '<div class="credit-score ' + roleClass + '">' +
+        '<div class="cs-num">' + c.score + '</div>' +
+        '<div class="cs-unit">信用分</div>' +
+      '</div>' +
+      '<div class="credit-detail">' +
+        '<div class="cd-item"><span class="cd-num">' + c.done + '</span><span class="cd-lbl">完成單</span></div>' +
+        '<div class="cd-item"><span class="cd-num">' + c.abandon + '</span><span class="cd-lbl">棄單</span></div>' +
+        '<div class="cd-item"><span class="cd-num">' + c.ontime + '%</span><span class="cd-lbl">準時率</span></div>' +
+      '</div>' +
+    '</div>';
+
+  // 組裝鎖區內容
+  document.getElementById('locked-content').innerHTML =
+    '<div class="sec-title" style="margin:0 0 0.8rem;">分項評分</div>' +
+    '<div class="sub-list">' + subHTML + '</div>' +
+    '<div class="sec-title" style="margin:1.4rem 0 0.8rem;">行為紀錄</div>' +
+    '<div class="flag-list">' + flagsHTML + '</div>' +
+    '<div class="sec-title" style="margin:1.4rem 0 0.8rem;">信用分</div>' +
+    creditHTML;
+
+  // 遮罩預設蓋上(Demo:點解鎖直接掀開、不真扣點)
+  var locked = document.getElementById('lock-area');
+  locked.classList.add('is-locked');
+  locked.className = 'lock-area is-locked ' + roleClass;
 
   var listHTML = data.reviews.map(function(r){
     var stars = '';
     for (var s = 0; s < 5; s++) stars += s < r.stars ? '★' : '☆';
     var tagsHTML = r.tags.map(function(t){ return '<span class="r-tag">' + t + '</span>'; }).join('');
+
+    // 評價人打碼:一般人看遮姓名(保留首字+角色),只有後台帳號看真名
+    var avatarHTML, nameHTML;
+    if (IS_ADMIN) {
+      avatarHTML = '<div class="r-avatar">' + r.reviewer + '</div>';
+      nameHTML = '<div class="r-name">' + r.name + ' <span class="admin-eye">後台可見</span></div>';
+    } else {
+      avatarHTML = '<div class="r-avatar masked"><svg><use href="#i-shield"/></svg></div>';
+      nameHTML = '<div class="r-name">' + maskName(r.name) + '</div>';
+    }
+
     return '<div class="review-card">' +
       '<div class="reviewer-row">' +
-        '<div class="r-avatar">' + r.reviewer + '</div>' +
+        avatarHTML +
         '<div style="flex:1;">' +
-          '<div class="r-name">' + r.name + '</div>' +
+          nameHTML +
           '<div class="r-date">' + r.date + '</div>' +
         '</div>' +
         '<div class="r-stars">' + stars + '</div>' +
@@ -529,6 +703,11 @@ function showView(key) {
     '</div>';
   }).join('');
   document.getElementById('review-list').innerHTML = listHTML;
+}
+
+// Demo:解鎖直接掀開遮罩,不真扣點。接 Supabase 後改成「先檢查/扣點數→成功才解鎖」
+function unlockReview() {
+  document.getElementById('lock-area').classList.remove('is-locked');
 }
 
 var ratings = { staff: 0, client: 0 };
