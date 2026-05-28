@@ -35,22 +35,36 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 .wrap{max-width:480px;margin:1.5rem auto 0;}
 
-/* === 目前點數卡 === */
-.balance-card{position:relative;background:linear-gradient(135deg,var(--honey) 0%,var(--amber) 50%,var(--amber-deep) 100%);color:#fff;border-radius:20px;padding:1.85rem 1.65rem 1.5rem;box-shadow:0 14px 40px rgba(186,117,23,0.3);margin-bottom:1.25rem;overflow:hidden;}
-.balance-card::before{content:'';position:absolute;top:-40%;right:-15%;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,0.12);}
-.balance-card::after{content:'';position:absolute;bottom:-50%;left:-15%;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,0.08);}
+/* === 雙池點數卡 === */
+.balance-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:0.9rem;}
+.balance-card{position:relative;border-radius:20px;padding:1.4rem 1.25rem 1.3rem;color:#fff;overflow:hidden;}
+.balance-card::before{content:'';position:absolute;top:-40%;right:-20%;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.12);}
+.balance-card::after{content:'';position:absolute;bottom:-50%;left:-20%;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.08);}
 .balance-card > *{position:relative;}
-.balance-label{font-size:0.8rem;opacity:0.92;letter-spacing:1.5px;margin-bottom:8px;font-weight:500;display:flex;align-items:center;gap:6px;}
-.balance-label svg{width:1em;height:1em;fill:currentColor;}
-.balance-num{font-size:3rem;font-weight:700;letter-spacing:-2px;display:flex;align-items:baseline;gap:8px;}
-.balance-num .unit{font-size:1.1rem;opacity:0.85;font-weight:500;}
-.balance-tip{font-size:0.76rem;opacity:0.9;margin-top:10px;line-height:1.65;}
+/* 案家池=金色 */
+.balance-card.client{background:linear-gradient(135deg,var(--honey) 0%,var(--amber) 55%,var(--amber-deep) 100%);box-shadow:0 12px 32px rgba(186,117,23,0.3);}
+/* 順咖池=森林綠 */
+.balance-card.suncar{background:linear-gradient(135deg,var(--mint) 0%,var(--forest) 100%);box-shadow:0 12px 32px rgba(47,96,72,0.28);}
+.balance-label{font-size:0.76rem;opacity:0.95;letter-spacing:0.5px;margin-bottom:7px;font-weight:500;display:flex;align-items:center;gap:5px;}
+.balance-label svg{width:0.95em;height:0.95em;fill:currentColor;}
+.balance-num{font-size:2.1rem;font-weight:700;letter-spacing:-1px;display:flex;align-items:baseline;gap:5px;}
+.balance-num .unit{font-size:0.82rem;opacity:0.88;font-weight:500;}
+.balance-role{font-size:0.68rem;opacity:0.82;margin-top:6px;line-height:1.5;}
+.pool-tip{font-size:0.74rem;color:var(--ink-soft);text-align:center;margin-bottom:1.25rem;line-height:1.6;background:#fff;border:1.5px solid var(--border-soft);border-radius:12px;padding:0.7rem 0.9rem;}
+.pool-tip strong{color:var(--amber-deep);font-weight:700;}
 
 /* === 成功提示 === */
 .success-banner{background:linear-gradient(135deg,var(--mint-pale),#fff 100%);border:1.5px solid var(--mint);border-radius:14px;padding:0.95rem 1.1rem;margin-bottom:1.25rem;align-items:center;gap:10px;font-size:0.9rem;color:var(--forest);font-weight:600;display:none;}
 .success-banner.show{display:flex;animation:slideIn 0.4s ease;}
 @keyframes slideIn{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
 .success-banner svg{width:22px;height:22px;fill:var(--mint);flex-shrink:0;}
+
+/* === 加值對象切換 === */
+.pool-switch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.1rem;background:#fff;border:1.5px solid var(--border-soft);border-radius:14px;padding:5px;}
+.pool-switch button{border:none;background:transparent;font-family:inherit;font-size:0.86rem;font-weight:600;color:var(--ink-soft);padding:0.75rem 0.5rem;border-radius:10px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.pool-switch button svg{width:1em;height:1em;fill:currentColor;}
+.pool-switch button.active-client{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;box-shadow:0 4px 12px rgba(239,159,39,0.3);}
+.pool-switch button.active-suncar{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;box-shadow:0 4px 12px rgba(47,96,72,0.28);}
 
 /* === 方案標題 === */
 .section-title{font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:0.95rem;display:flex;align-items:center;gap:8px;}
@@ -106,18 +120,35 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <span id="success-text">儲值成功!</span>
   </div>
 
-  <!-- 目前點數 -->
-  <div class="balance-card">
-    <div class="balance-label"><svg><use href="#i-coin"/></svg>目前點數</div>
-    <div class="balance-num">
-      <span id="balance-num">0</span>
-      <span class="unit">點</span>
+  <!-- 目前點數(雙池) -->
+  <div class="balance-grid">
+    <div class="balance-card client">
+      <div class="balance-label"><svg><use href="#i-coin"/></svg>案家點數</div>
+      <div class="balance-num">
+        <span id="balance-client">0</span>
+        <span class="unit">點</span>
+      </div>
+      <div class="balance-role">用於刊登需求單、解鎖順咖評價</div>
     </div>
-    <div class="balance-tip">每張額外證件 50 點 · 點下方方案儲值</div>
+    <div class="balance-card suncar">
+      <div class="balance-label"><svg><use href="#i-coin"/></svg>順咖點數</div>
+      <div class="balance-num">
+        <span id="balance-suncar">0</span>
+        <span class="unit">點</span>
+      </div>
+      <div class="balance-role">用於加掛證照、置頂曝光、解鎖案家評價</div>
+    </div>
+  </div>
+  <div class="pool-tip">
+    案家點數與順咖點數<strong>分開計算、不可互轉</strong>。儲值時請選擇要加值哪一池。
   </div>
 
   <!-- 加值方案 -->
   <div class="section-title">選擇加值方案</div>
+  <div class="pool-switch">
+    <button type="button" id="sw-client" class="active-client" onclick="setPool('client')"><svg><use href="#i-coin"/></svg>加值案家點數</button>
+    <button type="button" id="sw-suncar" onclick="setPool('suncar')"><svg><use href="#i-coin"/></svg>加值順咖點數</button>
+  </div>
   <div class="plans">
     <div class="plan" onclick="goPay(100, 100, 0)">
       <div class="plan-pts">100<span class="pts-unit">點</span></div>
@@ -162,20 +193,53 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </div>
 
 <script>
-/* 從 sessionStorage 讀取目前點數 */
+/* 目前選擇加值哪一池:client(案家) / suncar(順咖),預設案家(主要付費方) */
+var currentPool = 'client';
+
+/* 從 sessionStorage 讀取雙池點數並顯示
+   Demo 權宜:正式接 Supabase 後改讀 client_points / suncar_points 兩欄位 */
 function refreshBalance() {
-  var pts = 0;
+  var c = 0, s = 0;
   try {
-    pts = parseInt(sessionStorage.getItem('userPoints') || '0', 10);
-    if (isNaN(pts)) pts = 0;
-  } catch(e) { pts = 0; }
-  document.getElementById('balance-num').textContent = pts;
+    c = parseInt(sessionStorage.getItem('clientPoints') || '0', 10);
+    s = parseInt(sessionStorage.getItem('suncarPoints') || '0', 10);
+    if (isNaN(c)) c = 0;
+    if (isNaN(s)) s = 0;
+  } catch(e) { c = 0; s = 0; }
+  document.getElementById('balance-client').textContent = c;
+  document.getElementById('balance-suncar').textContent = s;
 }
 
-/* 跳到刷卡頁 */
+/* 切換加值對象 */
+function setPool(pool) {
+  currentPool = pool;
+  var bc = document.getElementById('sw-client');
+  var bs = document.getElementById('sw-suncar');
+  if (pool === 'client') {
+    bc.classList.add('active-client');
+    bs.classList.remove('active-suncar');
+  } else {
+    bs.classList.add('active-suncar');
+    bc.classList.remove('active-client');
+  }
+}
+
+/* 跳到刷卡頁
+   returnTo:讓 17 付款成功後知道要回哪頁
+   pool:讓 17 / 16 知道加值到哪一池 */
 function goPay(pts, price, bonus) {
+  var returnTo = '';
   try {
-    sessionStorage.setItem('pendingPlan', JSON.stringify({pts:pts, price:price, bonus:bonus}));
+    returnTo = sessionStorage.getItem('credits_returnTo') || '';
+  } catch(e){}
+  try {
+    sessionStorage.setItem('pendingPlan', JSON.stringify({
+      pts: pts,
+      price: price,
+      bonus: bonus,
+      pool: currentPool,
+      returnTo: returnTo
+    }));
   } catch(e){}
   window.location.href = '17_payment.html';
 }
@@ -185,9 +249,11 @@ function checkSuccess() {
   var p = new URLSearchParams(window.location.search);
   if (p.get('success') === '1') {
     var addPts = parseInt(p.get('add') || '0', 10);
+    var pool = p.get('pool') || 'client';
+    var poolName = (pool === 'suncar') ? '順咖' : '案家';
     var banner = document.getElementById('success-banner');
     var txt = document.getElementById('success-text');
-    if (addPts > 0) txt.textContent = '儲值成功!本次共獲得 ' + addPts + ' 點';
+    if (addPts > 0) txt.textContent = '儲值成功!' + poolName + '點數共獲得 ' + addPts + ' 點';
     else txt.textContent = '儲值成功!';
     banner.classList.add('show');
     setTimeout(function(){

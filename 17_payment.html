@@ -330,13 +330,35 @@ function confirmPay() {
   if (!confirm('【Demo 模擬付款】\n\n付款方式:' + methodName + '\n本次獲得:' + currentPlan.pts + ' 點\n應付金額:NT$ ' + currentPlan.price + '\n\n按下確定後將模擬付款成功(實際不會扣款)')) return;
 
   try {
-    var cur = parseInt(sessionStorage.getItem('userPoints') || '0', 10);
+    /* 依加值對象寫進對應池:client→clientPoints / suncar→suncarPoints
+       Demo 權宜:正式接 Supabase 後改寫 client_points / suncar_points 欄位 */
+    var poolKey = (currentPlan.pool === 'suncar') ? 'suncarPoints' : 'clientPoints';
+    var cur = parseInt(sessionStorage.getItem(poolKey) || '0', 10);
     if (isNaN(cur)) cur = 0;
-    sessionStorage.setItem('userPoints', String(cur + currentPlan.pts));
+    sessionStorage.setItem(poolKey, String(cur + currentPlan.pts));
     sessionStorage.removeItem('pendingPlan');
   } catch(e){}
 
-  window.location.href = '16_buy_credits.html?success=1&add=' + currentPlan.pts;
+  var poolParam = (currentPlan.pool === 'suncar') ? 'suncar' : 'client';
+
+  /* 依 returnTo 決定跳哪頁
+     - 有 returnTo(從 07 過來):回原頁,清掉 credits_returnTo
+     - 沒 returnTo:回 16 顯示成功提示 */
+  var back = (currentPlan && currentPlan.returnTo) ? currentPlan.returnTo : '';
+  if (back) {
+    try { sessionStorage.removeItem('credits_returnTo'); } catch(e){}
+    var sep = back.indexOf('?') >= 0 ? '&' : '?';
+    var hashIdx = back.indexOf('#');
+    if (hashIdx >= 0) {
+      var path = back.substring(0, hashIdx);
+      var hash = back.substring(hashIdx);
+      window.location.href = path + sep + 'paid=1&add=' + currentPlan.pts + hash;
+    } else {
+      window.location.href = back + sep + 'paid=1&add=' + currentPlan.pts;
+    }
+    return;
+  }
+  window.location.href = '16_buy_credits.html?success=1&pool=' + poolParam + '&add=' + currentPlan.pts;
 }
 
 loadPlan();

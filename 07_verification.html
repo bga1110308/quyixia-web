@@ -885,7 +885,7 @@ function toggleVisibility(el) {
 /* 自訂證件 */
 var myPoints = 0;
 try {
-  myPoints = parseInt(sessionStorage.getItem('userPoints') || '0', 10);
+  myPoints = parseInt(sessionStorage.getItem('suncarPoints') || '0', 10);
   if (isNaN(myPoints)) myPoints = 0;
 } catch(e) { myPoints = 0; }
 var customCertCount = 0;
@@ -924,7 +924,7 @@ function addCustomCert() {
   if (!isFree) {
     var pts = 0;
     try {
-      pts = parseInt(sessionStorage.getItem('userPoints') || '0', 10);
+      pts = parseInt(sessionStorage.getItem('suncarPoints') || '0', 10);
       if (isNaN(pts)) pts = 0;
     } catch(e) { pts = 0; }
 
@@ -938,7 +938,7 @@ function addCustomCert() {
     if (!confirm('將扣除 '+POINTS_PER_CERT+' 點\n目前 '+pts+' 點 → 扣後剩 '+(pts-POINTS_PER_CERT)+' 點\n\n確定新增此證件嗎?')) return;
 
     try {
-      sessionStorage.setItem('userPoints', String(pts - POINTS_PER_CERT));
+      sessionStorage.setItem('suncarPoints', String(pts - POINTS_PER_CERT));
     } catch(e){}
     myPoints = pts - POINTS_PER_CERT;
   }
@@ -1025,7 +1025,7 @@ function closeBuyModal() {
 }
 function goToPayment(pts, price, bonus) {
   try {
-    sessionStorage.setItem('pendingPlan', JSON.stringify({pts:pts, price:price, bonus:bonus}));
+    sessionStorage.setItem('pendingPlan', JSON.stringify({pts:pts, price:price, bonus:bonus, pool:'suncar'}));
   } catch(e){}
   window.location.href = '17_payment.html';
 }
@@ -1125,7 +1125,7 @@ applyIdentityRule();
 /* 點數從 sessionStorage 同步 */
 function syncPointsFromStorage() {
   try {
-    var stored = parseInt(sessionStorage.getItem('userPoints') || '0', 10);
+    var stored = parseInt(sessionStorage.getItem('suncarPoints') || '0', 10);
     if (isNaN(stored)) stored = 0;
     myPoints = stored;
     updatePointsDisplay();
