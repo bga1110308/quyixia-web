@@ -357,6 +357,8 @@ function renderStaff() {
   });
 
   document.getElementById('count-num').textContent = filtered.length;
+  var totalEl = document.getElementById('total-num'); if (totalEl) totalEl.textContent = staffList.length;
+  var onlineEl = document.getElementById('online-num'); if (onlineEl) onlineEl.textContent = staffList.filter(function(s){ return s.online; }).length;
   var grid = document.getElementById('staff-grid');
   var nores = document.getElementById('no-result');
 
