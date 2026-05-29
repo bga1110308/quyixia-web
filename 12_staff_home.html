@@ -267,6 +267,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .cm-cancel{width:100%;background:#fff;border:1.5px solid var(--border);color:var(--ink-soft);padding:0.85rem;border-radius:12px;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:0.85rem;transition:all 0.2s;}
 .cm-cancel:hover{background:var(--champagne-soft);border-color:var(--amber);color:var(--amber-deep);}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 
@@ -297,23 +299,19 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <div class="role-strip">
   <svg><use href="#i-staff"/></svg>
   <span class="role-label">順咖工作台 · 接案賺錢中</span>
-  <a href="11_client_home.html" class="role-switch-link">切到案家端</a>
+  <span id="role-status" style="font-size:0.7rem;color:var(--amber-deep);background:var(--warn-pale);padding:3px 9px;border-radius:99px;font-weight:500;"></span>
+  <a href="11_client_home.html" class="role-switch-link" id="role-switch-link" style="display:none;">切到案家端</a>
 </div>
 
 <!-- HERO -->
 <div class="hero">
   <div class="hero-inner">
     <div class="hero-top">
-      <div class="h-avatar cna">芳</div>
+      <div class="h-avatar" id="h-avatar">·</div>
       <div class="h-info">
         <div class="h-greeting">嗨,今天辛苦了</div>
-        <div class="h-name">小芳<span class="h-rating"><svg><use href="#i-star"/></svg>4.9 · 23 件</span></div>
-        <div class="h-badges">
-          <span class="bm b-verified"><svg><use href="#i-check"/></svg>實名</span>
-          <span class="bm b-safe"><svg><use href="#i-shield"/></svg>良民</span>
-          <span class="bm b-cna"><svg><use href="#i-star"/></svg>照服員</span>
-          <span class="bm b-senior"><svg><use href="#i-crown"/></svg>資深</span>
-        </div>
+        <div class="h-name" id="h-name"><span id="h-nametext">載入中…</span><span class="h-rating" id="h-rating"></span></div>
+        <div class="h-badges" id="h-badges"></div>
       </div>
       <a href="crown_all_levels.html?count=8" class="crown-btn lv3" id="crown-btn" title="點看完整等級表">
         <svg class="crown-svg" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></svg>
@@ -372,21 +370,20 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
   <div class="stats-row">
     <div class="stat-card">
-      <div class="stat-num blue">5</div>
+      <div class="stat-num blue" id="stat-open">0</div>
       <div class="stat-label">可接任務</div>
-      <div class="stat-sub">附近 2 公里</div>
+      <div class="stat-sub">符合你的類別</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num blue">1</div>
+      <div class="stat-num blue" id="stat-active">0</div>
       <div class="stat-label">進行中</div>
     </div>
     <div class="stat-card">
-      <div class="stat-num green">8</div>
+      <div class="stat-num green" id="stat-month-done">0</div>
       <div class="stat-label">本月完成</div>
-      <div class="stat-sub">+3 較上月</div>
     </div>
     <div class="stat-card income">
-      <div class="stat-num green">$ 5,840</div>
+      <div class="stat-num green" id="stat-month-income">$ 0</div>
       <div class="stat-label">本月收入</div>
     </div>
   </div>
@@ -399,11 +396,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div class="income-detail">
     <div class="income-row">
       <span>點數餘額</span>
-      <strong>320 點</strong>
+      <strong id="acct-points">0 點</strong>
     </div>
     <div class="income-row income-paid">
       <span>信用分</span>
-      <strong>100 / 100 🟢</strong>
+      <strong id="acct-credit">100 / 100</strong>
     </div>
     <div class="income-row income-pending">
       <span>月費狀態(新人首月免費)</span>
@@ -417,101 +414,19 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
 
   <!-- 進行中 -->
+  <div id="active-section" style="display:none;">
   <div class="sec-h">
     <div class="sec-title">進行中的服務</div>
   </div>
-
-  <div class="order-card active-order" onclick="window.location.href='10_order_detail.html'">
-    <div class="oc-top">
-      <div style="flex:1;min-width:0;">
-        <div class="oc-id-row"><span class="oc-id">#0522</span> · 今天 10:00 開始</div>
-        <div class="oc-title">打掃整理<span class="pool-chip pool-A">一般</span></div>
-      </div>
-      <span class="status-tag s-active"><svg><use href="#i-radio"/></svg>服務中</span>
-    </div>
-    <div class="oc-meta">
-      <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>台北市大安區</span>
-      <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>剩 2 小時</span>
-      <span class="oc-meta-item"><svg><use href="#i-user"/></svg>陳小姐</span>
-    </div>
-    <div class="oc-bottom">
-      <div class="oc-actions">
-        <button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('陳小姐', '0922888666', 'client_chen')">聯絡</button>
-        <button class="btn btn-green" onclick="event.stopPropagation(); alert('已標記完成')">標記完成</button>
-      </div>
-      <div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ 800</span></div>
-    </div>
+  <div id="active-list"></div>
   </div>
 
   <!-- 可接任務 -->
   <div class="sec-h">
-    <div class="sec-title">可接任務<span class="badge">5 筆</span></div>
+    <div class="sec-title">可接任務<span class="badge" id="open-badge">0 筆</span></div>
   </div>
-
-  <div class="order-card preferred" onclick="window.location.href='10_order_detail.html'">
-    <div class="oc-top">
-      <div style="flex:1;min-width:0;">
-        <div class="oc-id-row"><span class="oc-id">#0525</span> · 明天 09:00</div>
-        <div class="oc-title">陪看醫生<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服員</span><span class="preferred-mark"><svg><use href="#i-star"/></svg>案家指定你</span></div>
-      </div>
-      <span class="status-tag s-open">等你接</span>
-    </div>
-    <div class="oc-meta">
-      <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>台北市信義區</span>
-      <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>3 小時</span>
-      <span class="oc-meta-item"><svg><use href="#i-user"/></svg>王小姐(女兒代訂)</span>
-    </div>
-    <div class="oc-desc">陪同高齡媽媽至台大醫院複診,協助掛號領藥,媽媽會講台語比較好。</div>
-    <div class="oc-bottom">
-      <div class="oc-actions">
-        <button class="btn btn-outline" onclick="event.stopPropagation(); alert('拒絕並讓案家找其他人')">婉拒</button>
-        <button class="btn btn-green" onclick="event.stopPropagation(); alert('已接單!系統將通知案家')">接下</button>
-      </div>
-      <div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ 600</span></div>
-    </div>
-  </div>
-
-  <div class="order-card open-order" onclick="window.location.href='10_order_detail.html'">
-    <div class="oc-top">
-      <div style="flex:1;min-width:0;">
-        <div class="oc-id-row"><span class="oc-id">#0524</span> · 明天 14:00</div>
-        <div class="oc-title">遛狗 + 餵寵物<span class="pool-chip pool-A">一般</span></div>
-      </div>
-      <span class="status-tag s-open">可接單</span>
-    </div>
-    <div class="oc-meta">
-      <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>新北市板橋區</span>
-      <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>1.5 小時</span>
-      <span class="oc-meta-item"><svg><use href="#i-user"/></svg>李先生</span>
-    </div>
-    <div class="oc-desc">一隻柴犬,溫馴不咬人,遛完順便補充飼料水。</div>
-    <div class="oc-bottom">
-      <div class="oc-actions">
-        <button class="btn btn-green" onclick="event.stopPropagation(); alert('已接單')">接單</button>
-      </div>
-      <div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ 350</span></div>
-    </div>
-  </div>
-
-  <div class="order-card open-order" onclick="window.location.href='10_order_detail.html'">
-    <div class="oc-top">
-      <div style="flex:1;min-width:0;">
-        <div class="oc-id-row"><span class="oc-id">#0523</span> · 後天 19:00</div>
-        <div class="oc-title">代購生鮮食材<span class="pool-chip pool-A">一般</span></div>
-      </div>
-      <span class="status-tag s-open">可接單</span>
-    </div>
-    <div class="oc-meta">
-      <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>台北市中山區</span>
-      <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>2 小時</span>
-    </div>
-    <div class="oc-bottom">
-      <div class="oc-actions">
-        <button class="btn btn-green" onclick="event.stopPropagation(); alert('已接單')">接單</button>
-      </div>
-      <div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ 280</span></div>
-    </div>
-  </div>
+  <div id="open-list"></div>
+  <div id="open-empty" class="income-hint" style="display:none;padding:1rem;text-align:center;">目前沒有符合你的可接任務</div>
 
   <!-- 接案歷史 -->
   <div class="sec-h">
@@ -519,71 +434,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
 
   <div class="filter-bar">
-    <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt">14</span></span>
-    <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt">8</span></span>
-    <span class="filter-tag" data-filter="rated" onclick="filterToggle(this)">已評價<span class="cnt">6</span></span>
+    <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt" id="hcnt-all">0</span></span>
+    <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt" id="hcnt-done">0</span></span>
   </div>
 
-  <div id="history-list">
-    <div class="order-card done-order" data-status="done rated" onclick="window.location.href='10_order_detail.html'">
-      <div class="oc-top">
-        <div style="flex:1;min-width:0;">
-          <div class="oc-id-row"><span class="oc-id">#0519</span> · 2025/05/20</div>
-          <div class="oc-title">備餐<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服員</span></div>
-        </div>
-        <span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>
-      </div>
-      <div class="oc-meta">
-        <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>台北市松山區</span>
-        <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>2 小時</span>
-        <span class="oc-meta-item"><svg style="color:var(--amber);"><use href="#i-star"/></svg>案家給 5.0</span>
-      </div>
-      <div class="oc-bottom">
-        <div class="oc-actions"></div>
-        <div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ 450</span></div>
-      </div>
-    </div>
-
-    <div class="order-card done-order" data-status="done rated" onclick="window.location.href='10_order_detail.html'">
-      <div class="oc-top">
-        <div style="flex:1;min-width:0;">
-          <div class="oc-id-row"><span class="oc-id">#0515</span> · 2025/05/15</div>
-          <div class="oc-title">代排隊<span class="pool-chip pool-A">一般</span></div>
-        </div>
-        <span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>
-      </div>
-      <div class="oc-meta">
-        <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>台北市信義區</span>
-        <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>3 小時</span>
-        <span class="oc-meta-item"><svg style="color:var(--amber);"><use href="#i-star"/></svg>案家給 4.8</span>
-      </div>
-      <div class="oc-bottom">
-        <div class="oc-actions"></div>
-        <div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ 800</span></div>
-      </div>
-    </div>
-
-    <div class="order-card done-order" data-status="done" onclick="window.location.href='10_order_detail.html'">
-      <div class="oc-top">
-        <div style="flex:1;min-width:0;">
-          <div class="oc-id-row"><span class="oc-id">#0508</span> · 2025/05/08</div>
-          <div class="oc-title">陪伴聊天<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服員</span></div>
-        </div>
-        <span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>
-      </div>
-      <div class="oc-meta">
-        <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>新北市中和區</span>
-        <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>4 小時</span>
-        <span class="oc-meta-item" style="color:var(--ink-light);">尚未評價</span>
-      </div>
-      <div class="oc-bottom">
-        <div class="oc-actions">
-          <button class="btn btn-outline" onclick="event.stopPropagation(); window.location.href='05_review.html?role=staff&orderId=0508'">評案家</button>
-        </div>
-        <div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ 900</span></div>
-      </div>
-    </div>
-  </div>
+  <div id="history-list"></div>
+  <div id="history-empty" class="income-hint" style="display:none;padding:1rem;text-align:center;">還沒有接案紀錄</div>
 
   <!-- 其他 -->
   <div class="sec-h">
@@ -630,11 +486,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="cm-title">聯絡 <strong id="cm-name">案家</strong></div>
     <div class="cm-subtitle">選擇要用什麼方式聯絡</div>
     <div class="contact-row">
-      <a id="cm-call" class="contact-btn call" href="tel:0911234567" onclick="closeContactModal()">
+      <a id="cm-call" class="contact-btn call" href="#" onclick="closeContactModal()">
         <span class="contact-icon">📞</span>
         <span>撥打電話</span>
       </a>
-      <a id="cm-line" class="contact-btn line" href="https://line.me/R/ti/p/~quyixia_demo" target="_blank" onclick="closeContactModal()">
+      <a id="cm-line" class="contact-btn line" href="#" target="_blank" onclick="closeContactModal()">
         <span class="contact-icon">💬</span>
         <span>LINE 聯絡</span>
       </a>
@@ -644,9 +500,134 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </div>
 
 <script>
+/* === 接 Supabase:順咖端讀真實資料 === */
+var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
+  function poolChip(pool){ return pool==='B' ? '<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服員</span>' : '<span class="pool-chip pool-A">一般</span>'; }
+  function shortNo(no){ if(!no) return ''; var m=String(no).match(/(\d{4})$/); return m ? '#'+m[1] : '#'+String(no).slice(-4); }
+  function fmtDate(ts){ if(!ts) return ''; var d=new Date(ts); return d.getFullYear()+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+  function hoursText(min){ if(!min) return ''; return (Math.round(min/60*10)/10)+' 小時'; }
+  function sameMonth(ts){ if(!ts) return false; var d=new Date(ts), n=new Date(); return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth(); }
+  function metaRow(o){ var loc=[o.service_district,o.service_address].filter(Boolean).join(' · '); return '<div class="oc-meta">'+(loc?'<span class="oc-meta-item"><svg><use href="#i-pin"/></svg>'+esc(loc)+'</span>':'')+(o.duration_minutes?'<span class="oc-meta-item"><svg><use href="#i-clock"/></svg>'+esc(hoursText(o.duration_minutes))+'</span>':'')+'</div>'; }
+  function head(o, tag){ return '<div class="oc-top"><div style="flex:1;min-width:0;"><div class="oc-id-row"><span class="oc-id">'+esc(shortNo(o.order_no))+'</span> · '+esc(fmtDate(o.service_time))+'</div><div class="oc-title">'+esc(o.service_type||'服務')+poolChip(o.pool)+'</div></div>'+tag+'</div>'; }
+  function price(o){ return '<div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'; }
+
+  function activeCard(o, clientName, clientPhone){
+    var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
+    return '<div class="order-card active-order" onclick="window.location.href=\'10_order_detail.html\'">'+head(o,'<span class="status-tag s-active"><svg><use href="#i-radio"/></svg>服務中</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-green" onclick="event.stopPropagation(); alert(\'標記完成功能稍後接上\')">標記完成</button></div>'+price(o)+'</div></div>';
+  }
+  function doneCard(o){
+    return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div></div>';
+  }
+  function openCard(o){
+    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html\'">'+head(o,'<span class="status-tag s-open">可接單</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); alert(\'接單功能稍後接上\')">接單</button></div>'+price(o)+'</div></div>';
+  }
+
+  async function init(){
+    if(typeof window.sb === 'undefined'){ console.error('supabase-init.js 未載入'); return; }
+    var ures = await sb.auth.getUser();
+    var user = (ures && ures.data) ? ures.data.user : null;
+    if(!user){ window.location.href = '13_login.html'; return; }
+
+    /* 本人 users */
+    var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score').eq('id', user.id).maybeSingle();
+    var u = prof.data || {};
+    var name = u.display_name || '順咖';
+    $('h-nametext').textContent = name;
+    var av = $('h-avatar'); av.textContent = firstChar(name); if(u.has_caregiver_cert){ av.classList.add('cna'); }
+    $('acct-points').textContent = (u.suncar_points||0) + ' 點';
+    $('acct-credit').textContent = (u.credit_score==null?100:u.credit_score) + ' / 100';
+    if(u.expected_rate){ $('rate-display').innerHTML = '$ ' + u.expected_rate + '<span class="unit">/時</span>'; }
+
+    var badges = '';
+    if(u.is_realname || u.is_verified){ badges += '<span class="bm b-verified"><svg><use href="#i-check"/></svg>實名</span>'; }
+    badges += u.has_caregiver_cert
+      ? '<span class="bm b-cna"><svg><use href="#i-star"/></svg>照服員</span>'
+      : '<span class="bm b-verified"><svg><use href="#i-staff"/></svg>一般順咖</span>';
+    $('h-badges').innerHTML = badges;
+
+    /* 角色狀態 */
+    var roles = await sb.from('user_roles').select('role,status').eq('user_id', user.id);
+    var rlist = roles.data || [];
+    var suncarRole = rlist.find(function(r){ return r.role==='suncar'; });
+    var clientRole = rlist.find(function(r){ return r.role==='client'; });
+    var statusMap = { active:'已通過', pending:'審核中', suspended:'已停用', rejected:'未通過' };
+    if(suncarRole){ $('role-status').textContent = '順咖 · '+(statusMap[suncarRole.status]||suncarRole.status); canAcceptJobs = (suncarRole.status==='active'); }
+    if(clientRole){ $('role-switch-link').style.display = ''; }
+
+    /* 上線開關狀態:未通過審核不開放接單 */
+    if(!canAcceptJobs){
+      isOnline = false;
+      $('online-toggle').classList.remove('on');
+      $('online-dot').classList.remove('on');
+      $('online-label').textContent = (suncarRole && suncarRole.status==='pending') ? '申請審核中 · 通過後才能接單' : '尚未開放接單';
+    }
+
+    /* 本人接的單(suncar_id = 我) */
+    var ores = await sb.from('orders').select('order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id').eq('suncar_id', user.id).order('service_time',{ascending:false});
+    var myOrders = ores.data || [];
+    var activeOrders = myOrders.filter(function(o){ return o.status==='active'; });
+    var doneOrders = myOrders.filter(function(o){ return o.status==='done'; });
+
+    /* 進行中服務需要案家聯絡資訊 */
+    var clientById = {};
+    var clientIds = activeOrders.map(function(o){ return o.client_id; }).filter(Boolean);
+    if(clientIds.length){
+      var cres = await sb.from('users').select('id,display_name,phone').in('id', clientIds);
+      (cres.data||[]).forEach(function(c){ clientById[c.id]=c; });
+    }
+
+    if(activeOrders.length){
+      $('active-list').innerHTML = activeOrders.map(function(o){ var c=clientById[o.client_id]||{}; return activeCard(o, c.display_name, c.phone); }).join('');
+      $('active-section').style.display = '';
+    }
+
+    /* 接案歷史 */
+    if(doneOrders.length){
+      $('history-list').innerHTML = doneOrders.map(doneCard).join('');
+      $('history-empty').style.display = 'none';
+    } else {
+      $('history-empty').style.display = '';
+    }
+    $('hcnt-all').textContent = doneOrders.length;
+    $('hcnt-done').textContent = doneOrders.length;
+
+    /* 本月統計 */
+    var monthDone = doneOrders.filter(function(o){ return sameMonth(o.service_time); });
+    var income = monthDone.reduce(function(s,o){ return s + (o.amount||0); }, 0);
+    $('stat-active').textContent = activeOrders.length;
+    $('stat-month-done').textContent = monthDone.length;
+    $('stat-month-income').textContent = '$ ' + income.toLocaleString();
+
+    /* 可接任務(媒合中且尚無人接,審核通過才查) */
+    if(canAcceptJobs){
+      var open = await sb.from('orders').select('order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount').eq('status','matching').is('suncar_id', null).order('service_time',{ascending:true});
+      var openOrders = (open.data || []).filter(function(o){ return o.pool==='A' || (o.pool==='B' && u.has_caregiver_cert); });
+      $('stat-open').textContent = openOrders.length;
+      $('open-badge').textContent = openOrders.length + ' 筆';
+      if(openOrders.length){
+        $('open-list').innerHTML = openOrders.map(openCard).join('');
+      } else {
+        $('open-empty').style.display = '';
+      }
+    } else {
+      $('stat-open').textContent = 0;
+      $('open-badge').textContent = '0 筆';
+      $('open-empty').textContent = '審核通過後才會看到可接任務';
+      $('open-empty').style.display = '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+
 /* 上線開關 */
 var isOnline = true;
 function toggleOnline() {
+  if (!canAcceptJobs) { alert('你的順咖申請審核中,通過後才能開放接單'); return; }
   isOnline = !isOnline;
   document.getElementById('online-toggle').classList.toggle('on', isOnline);
   document.getElementById('online-dot').classList.toggle('on', isOnline);
@@ -735,19 +716,7 @@ function closeContactModal() {
   document.body.style.overflow = '';
 }
 
-/* 從 sessionStorage 讀期望時薪 */
-function loadHourlyRate() {
-  var raw = sessionStorage.getItem('userProfile_staff');
-  var el = document.getElementById('rate-display');
-  if (!raw) return;
-  try {
-    var data = JSON.parse(raw);
-    if (data && data.hourlyRate) {
-      el.innerHTML = '$ ' + data.hourlyRate + '<span class="unit">/時</span>';
-    }
-  } catch(e) {}
-}
-loadHourlyRate();
+/* 期望時薪改由上方 init 從 users.expected_rate 讀取 */
 </script>
 
 </body>
