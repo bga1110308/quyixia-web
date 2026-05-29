@@ -961,6 +961,10 @@ async function submitOrder(payload, rateCheck) {
     var pts = (pr.data && pr.data.client_points != null) ? pr.data.client_points : 0;
     if (pts < 50) {
       alert('點數不足 50 點,先帶你去加值。目前點數:' + pts + ' 點');
+      try {
+        sessionStorage.setItem('pending_order', JSON.stringify(payload));
+        sessionStorage.setItem('credits_returnTo', '04_order_form.html?resume=1');
+      } catch(e){}
       window.location.href = '16_buy_credits.html';
       return;
     }
@@ -985,11 +989,15 @@ async function submitOrder(payload, rateCheck) {
     });
     if (ptx.error) console.error('point_transactions:', ptx.error);
 
-    var upd = await sb.from('users').update({ client_points: pts - 50 }).eq('id', user.id);
+    var remain = pts - 50;
+    var upd = await sb.from('users').update({ client_points: remain }).eq('id', user.id);
     if (upd.error) console.error('update points:', upd.error);
 
     /* 本機限流記一筆 */
     if (rateCheck) recordOrder(rateCheck);
+
+    try { sessionStorage.removeItem('pending_order'); } catch(e){}
+    alert('下單成功!已扣 50 點,目前剩餘 ' + remain + ' 點');
 
     window.location.href = '10_order_detail.html?id=' + newId;
   } catch (e) {
@@ -1171,6 +1179,21 @@ function handleRegAgreeChange(cb) {
 
 (function(){
   var params = new URLSearchParams(window.location.search);
+
+  /* 從加值頁回來:點數已補足,自動完成剛才未送出的訂單 */
+  if (params.get('resume') === '1' || params.get('paid') === '1') {
+    var savedRaw = null;
+    try { savedRaw = sessionStorage.getItem('pending_order'); } catch(e){}
+    if (savedRaw) {
+      try {
+        var savedPayload = JSON.parse(savedRaw);
+        alert('點數已足夠,正在幫你完成剛才的訂單');
+        submitOrder(savedPayload, null);
+        return;
+      } catch(e){}
+    }
+  }
+
   var f = params.get('for');
   if (f && serviceMap[f]) {
     var card = document.querySelector('.target-card[data-target="'+f+'"]');

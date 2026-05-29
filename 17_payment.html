@@ -107,6 +107,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .security-note{text-align:center;font-size:0.74rem;color:var(--ink-light);margin-top:0.95rem;line-height:1.65;display:inline-flex;align-items:center;justify-content:center;gap:5px;width:100%;}
 .security-note svg{width:14px;height:14px;fill:var(--forest);}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 
@@ -257,10 +259,10 @@ function loadPlan() {
     window.location.href = '16_buy_credits.html';
     return;
   }
-  var base = currentPlan.pts - currentPlan.bonus;
+  var base = currentPlan.received - currentPlan.bonus;
   document.getElementById('sum-base-pts').textContent = base;
   document.getElementById('sum-bonus').textContent = currentPlan.bonus;
-  document.getElementById('sum-total-pts').textContent = currentPlan.pts;
+  document.getElementById('sum-total-pts').textContent = currentPlan.received;
   document.getElementById('sum-price').textContent = currentPlan.price;
   document.getElementById('btn-price').textContent = currentPlan.price;
   if (currentPlan.bonus === 0) {
@@ -293,7 +295,7 @@ document.getElementById('card-exp').addEventListener('input', function(e){
   e.target.value = v;
 });
 
-function confirmPay() {
+async function confirmPay() {
   if (!currentPlan) return;
 
   if (!currentMethod) {
@@ -327,38 +329,61 @@ function confirmPay() {
     apple:'Apple Pay', linepay:'LINE Pay', card:'信用卡', jko:'街口支付', gpay:'Google Pay'
   }[currentMethod];
 
-  if (!confirm('【Demo 模擬付款】\n\n付款方式:' + methodName + '\n本次獲得:' + currentPlan.pts + ' 點\n應付金額:NT$ ' + currentPlan.price + '\n\n按下確定後將模擬付款成功(實際不會扣款)')) return;
+  if (!confirm('【Demo 模擬付款】\n\n付款方式:' + methodName + '\n實得點數:' + currentPlan.received + ' 點\n應付金額:NT$ ' + currentPlan.price + '\n\n按下確定後將模擬付款成功(實際不會扣款)')) return;
+
+  if (typeof window.sb === 'undefined') { alert('系統未就緒,請重新整理頁面'); return; }
+
+  var btn = document.getElementById('pay-btn');
+  btn.disabled = true;
 
   try {
-    /* 依加值對象寫進對應池:client→clientPoints / suncar→suncarPoints
-       Demo 權宜:正式接 Supabase 後改寫 client_points / suncar_points 欄位 */
-    var poolKey = (currentPlan.pool === 'suncar') ? 'suncarPoints' : 'clientPoints';
-    var cur = parseInt(sessionStorage.getItem(poolKey) || '0', 10);
-    if (isNaN(cur)) cur = 0;
-    sessionStorage.setItem(poolKey, String(cur + currentPlan.pts));
-    sessionStorage.removeItem('pendingPlan');
-  } catch(e){}
+    var ures = await sb.auth.getUser();
+    var user = (ures && ures.data) ? ures.data.user : null;
+    if (!user) { window.location.href = '13_login.html'; return; }
 
-  var poolParam = (currentPlan.pool === 'suncar') ? 'suncar' : 'client';
+    var isSuncar = (currentPlan.pool === 'suncar');
+    var col = isSuncar ? 'suncar_points' : 'client_points';
+    var poolName = isSuncar ? '順咖' : '案家';
 
-  /* 依 returnTo 決定跳哪頁
-     - 有 returnTo(從 07 過來):回原頁,清掉 credits_returnTo
-     - 沒 returnTo:回 16 顯示成功提示 */
-  var back = (currentPlan && currentPlan.returnTo) ? currentPlan.returnTo : '';
-  if (back) {
-    try { sessionStorage.removeItem('credits_returnTo'); } catch(e){}
-    var sep = back.indexOf('?') >= 0 ? '&' : '?';
-    var hashIdx = back.indexOf('#');
-    if (hashIdx >= 0) {
-      var path = back.substring(0, hashIdx);
-      var hash = back.substring(hashIdx);
-      window.location.href = path + sep + 'paid=1&add=' + currentPlan.pts + hash;
-    } else {
-      window.location.href = back + sep + 'paid=1&add=' + currentPlan.pts;
+    /* 讀目前餘額,加上實得點數 */
+    var pr = await sb.from('users').select(col).eq('id', user.id).maybeSingle();
+    var cur = (pr.data && pr.data[col] != null) ? pr.data[col] : 0;
+    var newBal = cur + currentPlan.received;
+
+    /* 更新餘額 */
+    var upd = {};
+    upd[col] = newBal;
+    var ru = await sb.from('users').update(upd).eq('id', user.id);
+    if (ru.error) { alert('加值失敗:' + ru.error.message); btn.disabled = false; return; }
+
+    /* 寫點數明細(只進不改) */
+    var rt = await sb.from('point_transactions').insert({
+      user_id: user.id,
+      pool: isSuncar ? 'suncar' : 'client',
+      change: currentPlan.received,
+      reason: '點數加值',
+      order_id: null
+    });
+    if (rt.error) console.error('point_transactions:', rt.error);
+
+    try { sessionStorage.removeItem('pendingPlan'); } catch(e){}
+
+    alert('儲值成功!' + poolName + '點數共獲得 ' + currentPlan.received + ' 點');
+
+    /* 有 returnTo(下單途中來加值):回原頁繼續完成訂單;否則回 16 顯示成功 */
+    var back = currentPlan.returnTo || '';
+    if (back) {
+      try { sessionStorage.removeItem('credits_returnTo'); } catch(e){}
+      var sep = back.indexOf('?') >= 0 ? '&' : '?';
+      window.location.href = back + sep + 'paid=1';
+      return;
     }
-    return;
+    window.location.href = '16_buy_credits.html?success=1&pool=' + (isSuncar ? 'suncar' : 'client') + '&add=' + currentPlan.received;
+  } catch(e) {
+    console.error(e);
+    alert('加值時發生錯誤,請稍後再試');
+    btn.disabled = false;
   }
-  window.location.href = '16_buy_credits.html?success=1&pool=' + poolParam + '&add=' + currentPlan.pts;
 }
 
 loadPlan();

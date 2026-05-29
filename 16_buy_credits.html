@@ -97,6 +97,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .back-btn:hover{background:var(--champagne);border-color:var(--amber);transform:translateY(-1px);}
 .back-btn svg{width:14px;height:14px;fill:currentColor;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 
@@ -150,44 +152,44 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <button type="button" id="sw-suncar" onclick="setPool('suncar')"><svg><use href="#i-coin"/></svg>加值順咖點數</button>
   </div>
   <div class="plans">
-    <div class="plan" onclick="goPay(100, 100, 0)">
+    <div class="plan" onclick="goPay(100, 0)">
       <div class="plan-pts">100<span class="pts-unit">點</span></div>
       <div class="plan-bonus empty">送 0 點</div>
       <div class="plan-price"><span class="tw">NT$</span>100</div>
-      <div class="plan-unit-price">每點 $1.00</div>
+      <div class="plan-unit-price">實得 100 點</div>
     </div>
-    <div class="plan" onclick="goPay(300, 280, 20)">
+    <div class="plan" onclick="goPay(300, 20)">
       <div class="plan-pts">300<span class="pts-unit">點</span></div>
       <div class="plan-bonus">送 20 點</div>
-      <div class="plan-price"><span class="tw">NT$</span>280</div>
-      <div class="plan-unit-price">每點 $0.93</div>
+      <div class="plan-price"><span class="tw">NT$</span>300</div>
+      <div class="plan-unit-price">實得 320 點</div>
     </div>
-    <div class="plan popular" onclick="goPay(500, 450, 50)">
+    <div class="plan popular" onclick="goPay(500, 50)">
       <div class="plan-badge">熱門</div>
       <div class="plan-pts">500<span class="pts-unit">點</span></div>
       <div class="plan-bonus">送 50 點</div>
-      <div class="plan-price"><span class="tw">NT$</span>450</div>
-      <div class="plan-unit-price">每點 $0.90</div>
+      <div class="plan-price"><span class="tw">NT$</span>500</div>
+      <div class="plan-unit-price">實得 550 點</div>
     </div>
-    <div class="plan" onclick="goPay(1000, 850, 150)">
+    <div class="plan" onclick="goPay(1000, 150)">
       <div class="plan-pts">1000<span class="pts-unit">點</span></div>
       <div class="plan-bonus">送 150 點</div>
-      <div class="plan-price"><span class="tw">NT$</span>850</div>
-      <div class="plan-unit-price">每點 $0.85</div>
+      <div class="plan-price"><span class="tw">NT$</span>1000</div>
+      <div class="plan-unit-price">實得 1150 點</div>
     </div>
   </div>
 
   <!-- 使用說明 -->
   <div class="info-list">
     <div class="info-list-title"><svg><use href="#i-info"/></svg>使用說明</div>
-    <div class="info-item"><span class="num">1.</span><span>新增第 1 張其他證件免費</span></div>
-    <div class="info-item"><span class="num">2.</span><span>第 2 張起每張需扣 <strong>50 點</strong></span></div>
-    <div class="info-item"><span class="num">3.</span><span>每帳號最多 <strong id="max-cert-num">5</strong> 張(後台可調整)</span></div>
+    <div class="info-item"><span class="num">1.</span><span>下單服務費每筆扣 <strong>50 點</strong></span></div>
+    <div class="info-item"><span class="num">2.</span><span>24 小時內無順咖接單,服務費 <strong>全額退還</strong></span></div>
+    <div class="info-item"><span class="num">3.</span><span>案家點數與順咖點數分開計算、不可互轉</span></div>
     <div class="info-item"><span class="num">4.</span><span>付款方式:Apple Pay、LINE Pay、信用卡、街口、Google Pay</span></div>
   </div>
 
-  <a href="07_verification.html" class="back-btn">
-    <svg><use href="#i-arrow-left"/></svg>返回證件上傳
+  <a href="javascript:history.back()" class="back-btn">
+    <svg><use href="#i-arrow-left"/></svg>返回
   </a>
 
 </div>
@@ -196,18 +198,16 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 /* 目前選擇加值哪一池:client(案家) / suncar(順咖),預設案家(主要付費方) */
 var currentPool = 'client';
 
-/* 從 sessionStorage 讀取雙池點數並顯示
-   Demo 權宜:正式接 Supabase 後改讀 client_points / suncar_points 兩欄位 */
-function refreshBalance() {
-  var c = 0, s = 0;
-  try {
-    c = parseInt(sessionStorage.getItem('clientPoints') || '0', 10);
-    s = parseInt(sessionStorage.getItem('suncarPoints') || '0', 10);
-    if (isNaN(c)) c = 0;
-    if (isNaN(s)) s = 0;
-  } catch(e) { c = 0; s = 0; }
-  document.getElementById('balance-client').textContent = c;
-  document.getElementById('balance-suncar').textContent = s;
+/* 從 Supabase 讀本人雙池點數 */
+async function refreshBalance() {
+  if (typeof window.sb === 'undefined') return;
+  var ures = await sb.auth.getUser();
+  var user = (ures && ures.data) ? ures.data.user : null;
+  if (!user) { window.location.href = '13_login.html'; return; }
+  var pr = await sb.from('users').select('client_points,suncar_points').eq('id', user.id).maybeSingle();
+  var u = pr.data || {};
+  document.getElementById('balance-client').textContent = (u.client_points != null ? u.client_points : 0);
+  document.getElementById('balance-suncar').textContent = (u.suncar_points != null ? u.suncar_points : 0);
 }
 
 /* 切換加值對象 */
@@ -225,17 +225,19 @@ function setPool(pool) {
 }
 
 /* 跳到刷卡頁
-   returnTo:讓 17 付款成功後知道要回哪頁
-   pool:讓 17 / 16 知道加值到哪一池 */
-function goPay(pts, price, bonus) {
+   payPts:刷卡金額(= 你選的點數,1 點 1 元)
+   bonus:額外贈點
+   received:實際入帳 = payPts + bonus */
+function goPay(payPts, bonus) {
+  var received = payPts + bonus;
   var returnTo = '';
   try {
     returnTo = sessionStorage.getItem('credits_returnTo') || '';
   } catch(e){}
   try {
     sessionStorage.setItem('pendingPlan', JSON.stringify({
-      pts: pts,
-      price: price,
+      price: payPts,
+      received: received,
       bonus: bonus,
       pool: currentPool,
       returnTo: returnTo
@@ -262,8 +264,11 @@ function checkSuccess() {
   }
 }
 
-refreshBalance();
-checkSuccess();
+async function init() {
+  await refreshBalance();
+  checkSuccess();
+}
+init();
 </script>
 </body>
 </html>
