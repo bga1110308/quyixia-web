@@ -426,7 +426,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 (function(){
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-  function firstChar(name){ name=(name||'').trim(); return name ? name.charAt(0) : '·'; }
+  function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var chars=Array.from(name); for(var i=0;i<chars.length;i++){ if(/[\p{L}\p{N}]/u.test(chars[i])) return chars[i]; } return chars[0]; }
   function greeting(){ var h=new Date().getHours(); if(h<5)return '嗨,夜深了'; if(h<11)return '嗨,早安'; if(h<14)return '嗨,午安'; if(h<18)return '嗨,午後好'; return '嗨,晚安'; }
 
   /* 訂單狀態對照:04_order_form 寫入 orders.status 時請沿用這四個值 */
