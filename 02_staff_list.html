@@ -145,6 +145,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 .footer{text-align:center;font-size:0.78rem;color:var(--ink-light);padding:1.75rem 2rem;background:#fff;border-top:1px solid var(--border);}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 <a href="index.html" class="home-fab" title="回首頁"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></a>
@@ -244,25 +246,25 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </div>
 
 <script>
-/* 順咖資料庫,pool=care 表示照服員,其餘為一般 */
-var staffList = [
-  {name:'小芳', avatar:'芳', rating:4.9, done:23, online:true, new:false, pool:'care', hourlyRate:350, cats:['companion','elder','clean'], tags:['陪伴','陪看醫生','備餐'], badges:['verified','safe','senior','cna']},
-  {name:'阿凱', avatar:'凱', rating:4.8, done:17, online:true, new:false, pool:'general', hourlyRate:250, cats:['pet','errand','game'], tags:['遛狗','代排隊','陪打遊戲'], badges:['verified','safe']},
-  {name:'小雯', avatar:'雯', rating:5.0, done:31, online:true, new:false, pool:'care', hourlyRate:400, cats:['clean','companion','elder'], tags:['打掃','陪逛街','陪吃飯'], badges:['verified','safe','cpr','cna']},
-  {name:'大明', avatar:'明', rating:4.7, done:14, online:false, new:false, pool:'care', hourlyRate:350, cats:['elder','companion'], tags:['就醫陪同','備餐','服藥提醒'], badges:['verified','safe','cna']},
-  {name:'小玲', avatar:'玲', rating:4.9, done:28, online:true, new:false, pool:'general', hourlyRate:300, cats:['pet','clean'], tags:['寵物','打掃','到府陪伴'], badges:['verified','safe','cpr']},
-  {name:'阿翔', avatar:'翔', rating:4.6, done:9, online:false, new:false, pool:'general', hourlyRate:250, cats:['errand','game'], tags:['搶票','代排','陪打遊戲'], badges:['verified']},
-  {name:'小慧', avatar:'慧', rating:4.95, done:42, online:true, new:false, pool:'care', hourlyRate:450, cats:['elder','clean','companion'], tags:['長輩陪伴','備餐','打掃'], badges:['verified','safe','cpr','cna','senior']},
-  {name:'阿傑', avatar:'傑', rating:4.5, done:6, online:true, new:true, pool:'general', hourlyRate:200, cats:['errand','pet'], tags:['代購','遛狗','代取件'], badges:['verified','safe']},
-  {name:'May', avatar:'M', rating:4.85, done:19, online:false, new:false, pool:'general', hourlyRate:300, cats:['companion','kid'], tags:['陪伴聊天','陪逛街','接送小孩'], badges:['verified','safe','cpr']},
-  {name:'阿德', avatar:'德', rating:4.7, done:12, online:true, new:false, pool:'general', hourlyRate:250, cats:['kid','errand'], tags:['放學接送','陪寫功課','代購'], badges:['verified','safe']},
-  {name:'小婷', avatar:'婷', rating:4.95, done:35, online:true, new:false, pool:'care', hourlyRate:500, cats:['elder','companion'], tags:['失智陪伴','備餐','就醫'], badges:['verified','safe','cpr','cna','senior']},
-  {name:'阿宏', avatar:'宏', rating:4.4, done:4, online:false, new:true, pool:'general', hourlyRate:200, cats:['errand','clean'], tags:['代排','搬運','打掃'], badges:['verified']}
-];
-
+/* 順咖名單改讀 Supabase 公開視圖 public_suncars */
+var staffList = [];
 var currentPool = 'all';
 var currentCat = 'all';
 var selectedBadges = [];
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
+
+/* 服務鍵 → 列表分類(寬鬆對應) */
+var SVC2CAT = {
+  'buy-food':'errand','buy-fresh':'errand','deliver':'errand','queue':'errand','micro':'errand',
+  'pet':'pet',
+  'home-help':'clean','furniture':'clean',
+  'chat':'companion','stand-by':'companion','companion-elder':'companion','family-report':'companion',
+  'sport':'game',
+  'medical':'elder','shopping-elder':'elder','digital-help':'elder','body-care':'elder',
+  'pick-kid':'kid','kid-care':'kid','teach':'kid'
+};
 
 function switchPool(el) {
   document.querySelectorAll('.p-tab').forEach(function(t){ t.classList.remove('on'); });
@@ -270,18 +272,13 @@ function switchPool(el) {
   currentPool = el.getAttribute('data-pool');
   renderStaff();
 }
-
 function toggleBadge(el) {
   var b = el.getAttribute('data-badge');
   el.classList.toggle('on');
-  if (selectedBadges.indexOf(b) > -1) {
-    selectedBadges = selectedBadges.filter(function(x){ return x !== b; });
-  } else {
-    selectedBadges.push(b);
-  }
+  if (selectedBadges.indexOf(b) > -1) selectedBadges = selectedBadges.filter(function(x){ return x !== b; });
+  else selectedBadges.push(b);
   renderStaff();
 }
-
 function toggleCat(el) {
   document.querySelectorAll('.cf').forEach(function(c){ c.classList.remove('on'); });
   el.classList.add('on');
@@ -296,6 +293,40 @@ var badgeMap = {
   cna: {cls:'b-cna', icon:'i-star', name:'照服員'},
   senior: {cls:'b-senior', icon:'i-crown', name:'資深照服'}
 };
+
+async function loadStaff() {
+  var grid = document.getElementById('staff-grid');
+  if (typeof window.sb === 'undefined') { grid.innerHTML = '<p style="grid-column:1/-1;color:var(--ink-soft);padding:1rem;">連線尚未載入</p>'; return; }
+  var ures = await sb.auth.getUser();
+  if (!ures || !ures.data || !ures.data.user) { window.location.href = '13_login.html'; return; }
+
+  var res = await sb.from('public_suncars').select('*');
+  if (res.error) { console.error(res.error); grid.innerHTML = '<p style="grid-column:1/-1;color:var(--ink-soft);padding:1rem;">讀取失敗:' + esc(res.error.message) + '</p>'; return; }
+
+  staffList = (res.data || []).map(function(r){
+    var p = r.profile || {};
+    var services = Array.isArray(p.services) ? p.services : [];
+    var cats = [];
+    services.forEach(function(k){ var c = SVC2CAT[k]; if (c && cats.indexOf(c) === -1) cats.push(c); });
+    var badges = [];
+    if (r.is_realname) badges.push('verified');
+    if (r.has_caregiver_cert) badges.push('cna');
+    var areas = Array.isArray(p.areas) ? p.areas : [];
+    return {
+      id: r.id,
+      name: r.display_name || '順咖',
+      avatar: r.avatar_url || '',
+      pool: r.has_caregiver_cert ? 'care' : 'general',
+      hourlyRate: r.expected_rate || null,
+      online: p.acceptingOrders !== false,
+      cats: cats,
+      tags: areas.slice(0, 3),
+      badges: badges,
+      credit: (r.credit_score == null ? 100 : r.credit_score)
+    };
+  });
+  renderStaff();
+}
 
 function renderStaff() {
   var filtered = staffList.filter(function(s){
@@ -312,50 +343,52 @@ function renderStaff() {
 
   var sortBy = document.getElementById('sort-sel').value;
   filtered.sort(function(a, b){
-    if (sortBy === 'rating') return b.rating - a.rating;
-    if (sortBy === 'done') return b.done - a.done;
-    if (sortBy === 'rate-asc') return a.hourlyRate - b.hourlyRate;
-    if (sortBy === 'rate-desc') return b.hourlyRate - a.hourlyRate;
-    if (sortBy === 'new') return (b.new ? 1 : 0) - (a.new ? 1 : 0);
-    if (sortBy === 'online') return (b.online ? 1 : 0) - (a.online ? 1 : 0);
+    if (sortBy === 'rate-asc') return (a.hourlyRate||0) - (b.hourlyRate||0);
+    if (sortBy === 'rate-desc') return (b.hourlyRate||0) - (a.hourlyRate||0);
+    if (sortBy === 'online') return (b.online?1:0) - (a.online?1:0);
     return 0;
+  });
+
+  /* 三個分頁計數 */
+  document.querySelectorAll('.p-tab').forEach(function(t){
+    var pool = t.getAttribute('data-pool');
+    var n = staffList.filter(function(s){ return pool === 'all' || s.pool === pool; }).length;
+    var c = t.querySelector('.count'); if (c) c.textContent = n;
   });
 
   document.getElementById('count-num').textContent = filtered.length;
   var grid = document.getElementById('staff-grid');
   var nores = document.getElementById('no-result');
 
-  if (filtered.length === 0) {
-    grid.innerHTML = '';
-    nores.style.display = 'block';
-    return;
-  }
+  if (filtered.length === 0) { grid.innerHTML = ''; nores.style.display = 'block'; return; }
   nores.style.display = 'none';
 
   grid.innerHTML = filtered.map(function(s){
-    var badges = s.badges.map(function(b){
-      var bm = badgeMap[b];
-      return '<span class="badge '+bm.cls+'"><svg><use href="#'+bm.icon+'"/></svg>'+bm.name+'</span>';
-    }).join('');
-    var tags = s.tags.map(function(t){ return '<span class="mtag">'+t+'</span>'; }).join('');
+    var badges = s.badges.map(function(b){ var bm = badgeMap[b]; return '<span class="badge '+bm.cls+'"><svg><use href="#'+bm.icon+'"/></svg>'+bm.name+'</span>'; }).join('');
+    var tags = s.tags.map(function(t){ return '<span class="mtag">'+esc(t)+'</span>'; }).join('');
     var onlineMark = s.online
-      ? '<span class="online-mark"><span class="dot"></span>在線</span>'
-      : '<span class="online-mark off"><span class="dot"></span>離線</span>';
-    return '<div class="staff-card" onclick="window.location.href=\'04_order_form.html?staff='+encodeURIComponent(s.name)+'\'">' +
+      ? '<span class="online-mark"><span class="dot"></span>接單中</span>'
+      : '<span class="online-mark off"><span class="dot"></span>暫停接單</span>';
+    var avatarInner = s.avatar
+      ? '<img src="'+esc(s.avatar)+'" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'
+      : esc(firstChar(s.name));
+    var rateHtml = s.hourlyRate
+      ? '<span class="rate-label">期望時薪</span><span class="rate-num">$'+s.hourlyRate+'</span><span class="rate-unit">/時</span>'
+      : '<span class="rate-label">期望時薪</span><span class="rate-num" style="font-size:0.95rem;">面議</span>';
+    return '<div class="staff-card" onclick="window.location.href=\'04_order_form.html?staff='+encodeURIComponent(s.id)+'\'">' +
       onlineMark +
-      '<div class="avatar">'+s.avatar+'</div>' +
-      '<div class="staff-name">'+s.name+(s.new?' <span class="new">新</span>':'')+'</div>' +
-      '<div class="staff-rating" onclick="event.stopPropagation(); window.location.href=\'05_review.html?view=fang\'" title="查看評價"><svg class="icon"><use href="#i-star"/></svg>'+s.rating.toFixed(1)+'</div>' +
-      '<div class="staff-done">已完成 '+s.done+' 件</div>' +
-      '<div class="staff-rate" title="順咖填的期望時薪,實際金額由案家出價"><span class="rate-label">期望時薪</span><span class="rate-num">$'+s.hourlyRate+'</span><span class="rate-unit">/時</span></div>' +
+      '<div class="avatar">'+avatarInner+'</div>' +
+      '<div class="staff-name">'+esc(s.name)+'</div>' +
+      '<div class="staff-done">信用分 '+s.credit+'</div>' +
+      '<div class="staff-rate" title="順咖填的期望時薪,實際金額由案家出價">'+rateHtml+'</div>' +
       '<div class="badge-row">'+badges+'</div>' +
       '<div class="mini-tags">'+tags+'</div>' +
-      '<button class="card-cta">指定她下單</button>' +
+      '<button class="card-cta">指定他下單</button>' +
     '</div>';
   }).join('');
 }
 
-renderStaff();
+document.addEventListener('DOMContentLoaded', loadStaff);
 </script>
 </body>
 </html>
