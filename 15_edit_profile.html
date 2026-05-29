@@ -393,6 +393,18 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       </div>
     </div>
 
+    <!-- 生活照 -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-cam"/></svg>生活照
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="section-desc">放幾張工作或生活照片,讓案家更認識你,最多 6 張</div>
+      <div id="gallery-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
+      <input type="file" id="gallery-upload" accept="image/*" multiple style="display:none;" onchange="uploadGalleryPhotos(this)">
+      <div class="field-hint" id="gallery-hint">點空格加照片,點照片右上角 × 移除。每張限 5MB</div>
+    </div>
+
     <!-- 服務班表 -->
     <div class="section-card">
       <div class="section-title">
@@ -593,6 +605,60 @@ async function uploadAvatar(file) {
     if (hint) hint.textContent = oldHint || '點相機更換大頭照';
     alert('照片上傳失敗:請確認後台已建立 avatars 儲存桶。訊息:' + (err && err.message ? err.message : err));
   }
+}
+
+/* ============ 生活照(多張) ============ */
+var galleryPhotos = [];   /* 公開網址陣列,存進 suncar role_data.photos */
+var GALLERY_MAX = 6;
+
+function renderGallery() {
+  var grid = document.getElementById('gallery-grid');
+  if (!grid) return;
+  var html = '';
+  galleryPhotos.forEach(function(url, i) {
+    html += '<div style="position:relative;width:100%;padding-top:100%;border-radius:12px;overflow:hidden;border:1px solid var(--border);">'
+      + '<img src="' + url + '" alt="生活照" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">'
+      + '<button type="button" onclick="removeGalleryPhoto(' + i + ')" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(0,0,0,0.55);color:#fff;font-size:0.9rem;line-height:1;cursor:pointer;">×</button>'
+      + '</div>';
+  });
+  if (galleryPhotos.length < GALLERY_MAX) {
+    html += '<label for="gallery-upload" style="width:100%;padding-top:100%;position:relative;border-radius:12px;border:1.5px dashed var(--border);cursor:pointer;display:block;">'
+      + '<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:var(--ink-light);">＋</span>'
+      + '</label>';
+  }
+  grid.innerHTML = html;
+}
+
+async function uploadGalleryPhotos(input) {
+  var files = Array.prototype.slice.call(input.files || []);
+  input.value = '';
+  if (!files.length) return;
+  if (!DB.user) { alert('尚未登入,請重新整理'); return; }
+  var hint = document.getElementById('gallery-hint');
+  for (var i = 0; i < files.length; i++) {
+    if (galleryPhotos.length >= GALLERY_MAX) { alert('最多 6 張'); break; }
+    var file = files[i];
+    if (file.size > 5 * 1024 * 1024) { alert('有照片超過 5MB,已略過'); continue; }
+    if (hint) hint.textContent = '照片上傳中…';
+    try {
+      var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      var path = DB.user.id + '/gallery/' + Date.now() + '_' + i + '.' + ext;
+      var up = await sb.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+      if (up.error) { throw up.error; }
+      var pub = sb.storage.from('avatars').getPublicUrl(path);
+      galleryPhotos.push(pub.data.publicUrl);
+      renderGallery();
+    } catch (err) {
+      console.error(err);
+      alert('生活照上傳失敗:' + (err && err.message ? err.message : err));
+    }
+  }
+  if (hint) hint.textContent = '照片已更新,記得按下方「儲存變更」。點空格加照片,點照片右上角 × 移除';
+}
+
+function removeGalleryPhoto(i) {
+  galleryPhotos.splice(i, 1);
+  renderGallery();
 }
 
 /* ============ 接案狀態切換 ============ */
@@ -976,6 +1042,7 @@ async function saveProfile() {
       var prev = (DB.suncarRole && DB.suncarRole.role_data) || {};
       var staffData = Object.assign({}, prev, {
         bio: document.getElementById('bio').value.trim(),
+        photos: galleryPhotos,
         schedule: scheduleData,
         areas: selectedAreas,
         services: selectedSvcs,
@@ -1049,6 +1116,8 @@ function loadStaffProfile() {
   var rate = DB.profile.expected_rate;
 
   if (d.bio) document.getElementById('bio').value = d.bio; else document.getElementById('bio').value = '';
+  galleryPhotos = Array.isArray(d.photos) ? d.photos.slice() : [];
+  renderGallery();
   if (Array.isArray(d.schedule) && d.schedule.length === 4) scheduleData = d.schedule;
   if (Array.isArray(d.areas)) selectedAreas = d.areas;
   /* 服務項目相容兩種鍵名:services 或 service_categories */
