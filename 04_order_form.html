@@ -608,16 +608,18 @@ var priceMap = {
 
 var currentTarget = null;
 
-function pickTarget(el) {
+function pickTarget(el, skipScroll) {
   document.querySelectorAll('.target-card').forEach(function(t){ t.classList.remove('on'); });
   el.classList.add('on');
   currentTarget = el.getAttribute('data-target');
   renderServices(currentTarget);
   updatePriceSuggest(currentTarget);
   document.getElementById('step2').classList.add('show');
-  setTimeout(function(){
-    document.getElementById('step2').scrollIntoView({behavior:'smooth', block:'start'});
-  }, 100);
+  if (!skipScroll) {
+    setTimeout(function(){
+      document.getElementById('step2').scrollIntoView({behavior:'smooth', block:'start'});
+    }, 100);
+  }
 }
 
 function renderServices(target) {
@@ -705,6 +707,72 @@ function updateSummary() {
   document.getElementById('s-total').textContent = base > 0 ? '$' + base : '—';
 }
 
+/* 自動帶入上次填寫的資料(下單成功或進加值流程時存於 localStorage)。
+ * 還原時一律呼叫既有處理函式(pickTarget/pickRegion/handleDur/toggleNoAddress),不另外複製邏輯。
+ * 不還原日期時間(會過期),由使用者每次重選。 */
+function applyLastForm() {
+  var raw = null;
+  try { raw = localStorage.getItem('order_last_form'); } catch(e){}
+  if (!raw) return;
+  var d;
+  try { d = JSON.parse(raw); } catch(e){ return; }
+  if (!d) return;
+
+  /* 服務對象 + 服務項目(skipScroll:還原時不自動捲到 step2) */
+  if (d.target) {
+    var card = document.querySelector('.target-card[data-target="' + d.target + '"]');
+    if (card) {
+      pickTarget(card, true);
+      if (Array.isArray(d.services) && d.services.length) {
+        document.querySelectorAll('#service-grid .stag').forEach(function(tag){
+          if (d.services.indexOf(tag.getAttribute('data-svcname')) > -1) tag.classList.add('on');
+        });
+      }
+    }
+  }
+
+  /* 預計時數 */
+  if (d.durSel) {
+    document.getElementById('dur-sel').value = d.durSel;
+    handleDur();
+    if (d.durSel === 'custom' && d.durCustom) document.getElementById('dur-custom').value = d.durCustom;
+  }
+
+  /* 縣市 + 行政區 */
+  if (d.city) {
+    var tags = document.querySelectorAll('.region-tag');
+    for (var i = 0; i < tags.length; i++) {
+      if (tags[i].firstChild.textContent.trim() === d.city) { pickRegion(tags[i]); break; }
+    }
+    if (DISTRICTS[d.city]) {
+      if (d.district) document.getElementById('service-district').value = d.district;
+    } else if (d.district) {
+      document.getElementById('service-district-input').value = d.district;
+    }
+  }
+
+  /* 地址 / 無門牌 */
+  if (d.noAddr) {
+    var cb = document.getElementById('no-address-toggle');
+    cb.checked = true;
+    toggleNoAddress(cb);
+    if (d.placeName) document.getElementById('place-name').value = d.placeName;
+    if (d.landmark) document.getElementById('place-landmark').value = d.landmark;
+  } else if (d.address) {
+    document.getElementById('service-address').value = d.address;
+  }
+
+  /* 金額 */
+  if (d.price) {
+    document.getElementById('base-price').value = d.price;
+    updateSummary();
+  }
+
+  /* 聯絡資訊 */
+  if (d.name) document.getElementById('contact-name').value = d.name;
+  if (d.phone) document.getElementById('contact-phone').value = d.phone;
+}
+
 /* 登入狀態改由 sb.auth.getUser() 在送出時即時判斷 */
 
 /* 同手機 1 小時最多 3 單 */
@@ -727,11 +795,18 @@ function recordOrder(rateCheck) {
   localStorage.setItem(rateCheck.key, JSON.stringify(rateCheck.records));
 }
 
+/* 驗證失敗統一處理:提醒 + 自動捲到該欄位置中 + 聚焦。呼叫端用 `return fail(欄位, 訊息);` 直接結束 */
+function fail(el, msg) {
+  alert(msg);
+  if (el) {
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){}
+    try { el.focus({ preventScroll: true }); } catch(e){}
+  }
+}
+
 function handleSubmit() {
   if (!currentTarget) {
-    alert('請先選擇服務對象');
-    document.querySelector('.target-card').scrollIntoView({behavior:'smooth', block:'center'});
-    return;
+    return fail(document.querySelector('.target-card'), '請先選擇服務對象');
   }
 
   var dateEl = document.getElementById('service-date');
@@ -739,45 +814,34 @@ function handleSubmit() {
   var dateVal = dateEl.value;
   var timeVal = timeEl.value;
   if (!dateVal || !timeVal) {
-    alert('請選擇服務日期與開始時間');
-    (dateVal ? timeEl : dateEl).focus();
-    return;
+    return fail(dateVal ? timeEl : dateEl, '請選擇服務日期與開始時間');
   }
   var serviceDateTime = new Date(dateVal + 'T' + timeVal);
   var now = new Date();
   var minTime = new Date(now.getTime() + 10 * 60 * 1000);
   if (serviceDateTime < now) {
-    alert('服務時間不能是過去的時間');
-    dateEl.focus();
-    return;
+    return fail(dateEl, '服務時間不能是過去的時間');
   }
   if (serviceDateTime < minTime) {
-    alert('最早可預約時間為 10 分鐘後,請選擇較晚的時間');
-    timeEl.focus();
-    return;
+    return fail(timeEl, '最早可預約時間為 10 分鐘後,請選擇較晚的時間');
   }
   var maxTime = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
   if (serviceDateTime > maxTime) {
-    alert('預約時間不能超過 90 天');
-    dateEl.focus();
-    return;
+    return fail(dateEl, '預約時間不能超過 90 天');
   }
 
   var durSel = document.getElementById('dur-sel').value;
   var durCustom = document.getElementById('dur-custom').value.trim();
   if (!durSel) {
-    alert('請選擇預計時數');
-    return;
+    return fail(document.getElementById('dur-sel'), '請選擇預計時數');
   }
   if (durSel === 'custom' && !durCustom) {
-    alert('請填寫自訂時數');
-    return;
+    return fail(document.getElementById('dur-custom'), '請填寫自訂時數');
   }
 
   var selectedRegion = document.querySelector('.region-tag.on');
   if (!selectedRegion) {
-    alert('請選擇服務縣市');
-    return;
+    return fail(document.querySelector('.region-tag'), '請選擇服務縣市');
   }
   if (selectedRegion.classList.contains('cold')) {
     if (!confirm('該縣市目前順咖較少,可能等待時間較長,仍要下單嗎?')) return;
@@ -788,16 +852,12 @@ function handleSubmit() {
   if (DISTRICTS[cityName]) {
     districtVal = document.getElementById('service-district').value;
     if (!districtVal) {
-      alert('請選擇行政區');
-      document.getElementById('service-district').focus();
-      return;
+      return fail(document.getElementById('service-district'), '請選擇行政區');
     }
   } else {
     districtVal = document.getElementById('service-district-input').value.trim();
     if (!districtVal) {
-      alert('請填寫行政區');
-      document.getElementById('service-district-input').focus();
-      return;
+      return fail(document.getElementById('service-district-input'), '請填寫行政區');
     }
   }
 
@@ -807,87 +867,60 @@ function handleSubmit() {
     var landmark = document.getElementById('place-landmark').value.trim();
     var willContact = document.getElementById('will-contact-staff').checked;
     if (!placeName) {
-      alert('請填寫服務地點名稱');
-      document.getElementById('place-name').focus();
-      return;
+      return fail(document.getElementById('place-name'), '請填寫服務地點名稱');
     }
     if (placeName.length < 5) {
-      alert('地點名稱請填詳細一點(至少 5 個字)');
-      document.getElementById('place-name').focus();
-      return;
+      return fail(document.getElementById('place-name'), '地點名稱請填詳細一點(至少 5 個字)');
     }
     if (!landmark) {
-      alert('請填寫附近明顯地標');
-      document.getElementById('place-landmark').focus();
-      return;
+      return fail(document.getElementById('place-landmark'), '請填寫附近明顯地標');
     }
     if (landmark.length < 5) {
-      alert('地標描述請詳細一點(至少 5 個字)');
-      document.getElementById('place-landmark').focus();
-      return;
+      return fail(document.getElementById('place-landmark'), '地標描述請詳細一點(至少 5 個字)');
     }
     if (!willContact) {
-      alert('請勾選「我會在順咖接單後主動聯絡確認碰面地點」');
-      return;
+      return fail(document.getElementById('will-contact-staff'), '請勾選「我會在順咖接單後主動聯絡確認碰面地點」');
     }
   } else {
     var addr = document.getElementById('service-address').value.trim();
     if (!addr) {
-      alert('請填寫詳細地址');
-      document.getElementById('service-address').focus();
-      return;
+      return fail(document.getElementById('service-address'), '請填寫詳細地址');
     }
     if (addr.length < 5) {
-      alert('地址請填寫完整(路名、號碼、樓層)');
-      document.getElementById('service-address').focus();
-      return;
+      return fail(document.getElementById('service-address'), '地址請填寫完整(路名、號碼、樓層)');
     }
     if (addr.indexOf('號') === -1) {
-      alert('地址必須包含「號」(例:中山路一段 88 號)\n\n如果服務地點是公園、廟口、車站、廣場等沒有門牌的地點,請改勾選下方的「服務地點沒有門牌地址」,並填寫地點名稱與明顯地標。');
-      document.getElementById('service-address').focus();
-      return;
+      return fail(document.getElementById('service-address'), '地址必須包含「號」(例:中山路一段 88 號)\n\n如果服務地點是公園、廟口、車站、廣場等沒有門牌的地點,請改勾選下方的「服務地點沒有門牌地址」,並填寫地點名稱與明顯地標。');
     }
   }
 
   var price = parseInt(document.getElementById('base-price').value);
   if (!price || price < 50) {
-    alert('請填寫支付金額(至少 50 元)');
-    document.getElementById('base-price').focus();
-    return;
+    return fail(document.getElementById('base-price'), '請填寫支付金額(至少 50 元)');
   }
   if (price > 50000) {
-    alert('單筆金額過高(最高 50,000 元),如有特殊需求請聯繫客服');
-    return;
+    return fail(document.getElementById('base-price'), '單筆金額過高(最高 50,000 元),如有特殊需求請聯繫客服');
   }
 
   var name = document.getElementById('contact-name').value.trim();
   var phone = document.getElementById('contact-phone').value.trim();
   if (!name) {
-    alert('請填寫聯絡人稱呼');
-    document.getElementById('contact-name').focus();
-    return;
+    return fail(document.getElementById('contact-name'), '請填寫聯絡人稱呼');
   }
   if (name.length < 2) {
-    alert('聯絡人稱呼至少 2 個字');
-    document.getElementById('contact-name').focus();
-    return;
+    return fail(document.getElementById('contact-name'), '聯絡人稱呼至少 2 個字');
   }
   if (!phone) {
-    alert('請填寫聯絡電話');
-    document.getElementById('contact-phone').focus();
-    return;
+    return fail(document.getElementById('contact-phone'), '請填寫聯絡電話');
   }
   var cleanPhone = phone.replace(/[-\s]/g, '');
   if (!/^09\d{8}$/.test(cleanPhone)) {
-    alert('請輸入正確的手機號碼(09xx-xxx-xxx)');
-    document.getElementById('contact-phone').focus();
-    return;
+    return fail(document.getElementById('contact-phone'), '請輸入正確的手機號碼(09xx-xxx-xxx)');
   }
 
   var rateCheck = checkRateLimit(cleanPhone);
   if (!rateCheck.ok) {
-    alert(rateCheck.msg);
-    return;
+    return fail(null, rateCheck.msg);
   }
 
   /* 收集已選服務項目,判斷是否需要照服員(pool B) */
@@ -940,6 +973,25 @@ function handleSubmit() {
     points_cost: 50,
     is_active: true
   };
+
+  /* 存下這次填寫的可重複欄位,供下次自動帶入(不存日期時間,會過期) */
+  try {
+    localStorage.setItem('order_last_form', JSON.stringify({
+      target: currentTarget,
+      services: svcNames,
+      durSel: durSel,
+      durCustom: durCustom,
+      city: cityName,
+      district: districtVal,
+      noAddr: noAddr,
+      address: noAddr ? '' : addr,
+      placeName: noAddr ? placeName : '',
+      landmark: noAddr ? landmark : '',
+      price: price,
+      name: name,
+      phone: phone
+    }));
+  } catch(e){}
 
   submitOrder(payload, rateCheck);
 }
@@ -1198,6 +1250,9 @@ function handleRegAgreeChange(cb) {
   if (f && serviceMap[f]) {
     var card = document.querySelector('.target-card[data-target="'+f+'"]');
     if (card) pickTarget(card);
+  } else {
+    /* 沒有從別頁指定服務對象時,帶入上次填寫的資料 */
+    applyLastForm();
   }
   var ref = params.get('ref');
   if (ref) {
