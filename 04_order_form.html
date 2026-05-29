@@ -533,10 +533,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 /* 指定順咖:用 02 帶來的 id 查 public_suncars 顯示暱稱與期望時薪 */
 window._specifiedStaffId = null;
 
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
+
 async function showSpecifiedStaff(staffId) {
   if (!staffId) return;
   if (typeof window.sb === 'undefined') { console.error('supabase-init.js 未載入'); return; }
-  var res = await sb.from('public_suncars').select('id,display_name,expected_rate').eq('id', staffId).maybeSingle();
+  var res = await sb.from('public_suncars').select('id,display_name,expected_rate,avatar_url').eq('id', staffId).maybeSingle();
   var s = (res && res.data) ? res.data : null;
   if (!s) { return; }
   window._specifiedStaffId = s.id;
@@ -544,7 +547,13 @@ async function showSpecifiedStaff(staffId) {
   var rate = s.expected_rate;
   var card = document.getElementById('specified-staff');
   document.getElementById('ss-name').textContent = name;
-  document.getElementById('ss-icon').textContent = name.charAt(0);
+  /* 頭框:有大頭照放照片,否則放暱稱首字(略過 emoji) */
+  var icon = document.getElementById('ss-icon');
+  if (s.avatar_url) {
+    icon.innerHTML = '<img src="'+esc(s.avatar_url)+'" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+  } else {
+    icon.textContent = firstChar(name);
+  }
   document.getElementById('ss-rate').textContent = (rate != null ? rate : '—');
   card.classList.add('show');
 
