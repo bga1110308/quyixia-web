@@ -208,6 +208,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   .sch-day{font-size:0.68rem;padding:4px 2px;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body id="body-root">
 
@@ -487,6 +489,31 @@ var urlParams = new URLSearchParams(window.location.search);
 var role = urlParams.get('role') || 'client';
 if (role !== 'staff') role = 'client';
 
+/* ============ Supabase 資料狀態 ============ */
+var DB = { user:null, profile:{}, clientRole:null, suncarRole:null };
+var avatarUrl = '';   /* 大頭照公開網址,儲存時寫進 users.role_detail.avatar_url */
+
+async function loadFromDB() {
+  if (typeof window.sb === 'undefined') { console.error('supabase-init.js 未載入'); return; }
+  var ures = await sb.auth.getUser();
+  var user = (ures && ures.data) ? ures.data.user : null;
+  if (!user) { window.location.href = '13_login.html'; return; }
+  DB.user = user;
+
+  var prof = await sb.from('users').select('display_name,phone,expected_rate,role_detail').eq('id', user.id).maybeSingle();
+  DB.profile = prof.data || {};
+  avatarUrl = (DB.profile.role_detail && DB.profile.role_detail.avatar_url) || '';
+
+  var roles = await sb.from('user_roles').select('role,status,role_data').eq('user_id', user.id);
+  (roles.data || []).forEach(function(r) {
+    if (r.role === 'client') DB.clientRole = r;
+    if (r.role === 'suncar') DB.suncarRole = r;
+  });
+
+  loadSharedProfile();
+  if (role === 'staff') loadStaffProfile();
+}
+
 /* ============ 切換視角(同頁切,不重新載入) ============ */
 function switchView(newRole) {
   if (newRole === role) return;
@@ -530,7 +557,7 @@ function applyRoleUI() {
   }
 }
 
-/* ============ 大頭照預覽 ============ */
+/* ============ 大頭照預覽 + 上傳 Storage ============ */
 function previewAvatar(input) {
   var file = input.files[0];
   if (!file) return;
@@ -545,6 +572,27 @@ function previewAvatar(input) {
     av.innerHTML = '<img src="' + e.target.result + '" alt="頭像">';
   };
   reader.readAsDataURL(file);
+  uploadAvatar(file);
+}
+
+async function uploadAvatar(file) {
+  if (!DB.user) { return; }
+  var hint = document.querySelector('.avatar-hint');
+  var oldHint = hint ? hint.textContent : '';
+  if (hint) hint.textContent = '照片上傳中…';
+  try {
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    var path = DB.user.id + '/avatar.' + ext;
+    var up = await sb.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+    if (up.error) { throw up.error; }
+    var pub = sb.storage.from('avatars').getPublicUrl(path);
+    avatarUrl = pub.data.publicUrl + '?t=' + Date.now();
+    if (hint) hint.textContent = '照片已上傳,記得按下方「儲存變更」';
+  } catch (err) {
+    console.error(err);
+    if (hint) hint.textContent = oldHint || '點相機更換大頭照';
+    alert('照片上傳失敗:請確認後台已建立 avatars 儲存桶。訊息:' + (err && err.message ? err.message : err));
+  }
 }
 
 /* ============ 接案狀態切換 ============ */
@@ -863,7 +911,7 @@ function deleteCert(key) {
 }
 
 /* ============ 儲存 / 取消 ============ */
-function saveProfile() {
+async function saveProfile() {
   var nick = document.getElementById('nickname').value.trim();
   var phone = document.getElementById('phone').value.trim();
   var email = document.getElementById('email').value.trim();
@@ -901,34 +949,56 @@ function saveProfile() {
     }
   }
 
-  /* Demo 模式:sessionStorage 暫存,正式版接 Supabase */
-  /* 共用基本資料(覆蓋同一份 key) */
-  var sharedProfile = {
-    nickname: nick,
-    realname: document.getElementById('realname').value.trim(),
-    phone: phone,
-    lineid: document.getElementById('lineid').value.trim(),
-    email: email,
-    address: document.getElementById('address').value.trim()
-  };
-  sessionStorage.setItem('userProfile_shared', JSON.stringify(sharedProfile));
+  /* ============ 寫入 Supabase ============ */
+  if (!DB.user) { alert('尚未登入,請重新整理'); return; }
+  var btn = document.querySelector('.btn-save');
+  if (btn) { btn.disabled = true; btn.textContent = '儲存中…'; }
 
-  /* 順咖專屬區 */
-  if (role === 'staff') {
-    var selRate = document.getElementById('hourly-rate-select').value;
-    var rateVal = selRate === 'custom'
-      ? parseInt(document.getElementById('hourly-rate-custom').value)
-      : parseInt(selRate);
-    var staffProfile = {
-      hourlyRate: rateVal,
-      bio: document.getElementById('bio').value.trim(),
-      schedule: scheduleData,
-      areas: selectedAreas,
-      services: selectedSvcs,
-      certs: certData,
-      acceptingOrders: document.getElementById('status-toggle').classList.contains('on')
-    };
-    sessionStorage.setItem('userProfile_staff', JSON.stringify(staffProfile));
+  try {
+    /* users:暱稱(display_name)、手機、role_detail(真實姓名/email/lineid/大頭照) */
+    var rd = Object.assign({}, DB.profile.role_detail || {});
+    rd.real_name = document.getElementById('realname').value.trim();
+    rd.email = email;
+    rd.lineid = document.getElementById('lineid').value.trim();
+    if (avatarUrl) rd.avatar_url = avatarUrl;
+
+    var userUpdate = { display_name: nick, phone: phone, role_detail: rd };
+    if (role === 'staff') { userUpdate.expected_rate = rate; }
+
+    var uRes = await sb.from('users').update(userUpdate).eq('id', DB.user.id);
+    if (uRes.error) { throw uRes.error; }
+    DB.profile.role_detail = rd;
+
+    if (role === 'staff') {
+      /* 順咖 role_data */
+      var transport = [];
+      document.querySelectorAll('.transport-chips .tp-chip.on').forEach(function(c){ transport.push(c.textContent.trim()); });
+      var prev = (DB.suncarRole && DB.suncarRole.role_data) || {};
+      var staffData = Object.assign({}, prev, {
+        bio: document.getElementById('bio').value.trim(),
+        schedule: scheduleData,
+        areas: selectedAreas,
+        services: selectedSvcs,
+        transport: transport,
+        acceptingOrders: document.getElementById('status-toggle').classList.contains('on')
+      });
+      var sRes = await sb.from('user_roles').update({ role_data: staffData }).eq('user_id', DB.user.id).eq('role', 'suncar');
+      if (sRes.error) { throw sRes.error; }
+      if (DB.suncarRole) DB.suncarRole.role_data = staffData;
+    } else {
+      /* 案家預設地址寫進 client 角色 role_data */
+      var addrVal = document.getElementById('address').value.trim();
+      var prevC = (DB.clientRole && DB.clientRole.role_data) || {};
+      var clientData = Object.assign({}, prevC, { address: addrVal });
+      var cRes = await sb.from('user_roles').update({ role_data: clientData }).eq('user_id', DB.user.id).eq('role', 'client');
+      if (cRes.error) { throw cRes.error; }
+      if (DB.clientRole) DB.clientRole.role_data = clientData;
+    }
+  } catch (err) {
+    console.error(err);
+    if (btn) { btn.disabled = false; btn.textContent = '儲存變更'; }
+    alert('儲存失敗:' + (err && err.message ? err.message : err));
+    return;
   }
 
   showToast('儲存成功');
@@ -951,73 +1021,78 @@ function showToast(msg) {
 }
 
 /* ============ 初始化 ============ */
-/* 從 sessionStorage 讀已儲存的共用資料回填 */
+/* 從 Supabase 回填共用資料 */
 function loadSharedProfile() {
-  var raw = sessionStorage.getItem('userProfile_shared');
-  if (!raw) return;
-  try {
-    var p = JSON.parse(raw);
-    if (p.nickname) document.getElementById('nickname').value = p.nickname;
-    if (p.realname) document.getElementById('realname').value = p.realname;
-    if (p.phone) document.getElementById('phone').value = p.phone;
-    if (typeof p.lineid === 'string') document.getElementById('lineid').value = p.lineid;
-    if (p.email) document.getElementById('email').value = p.email;
-    if (typeof p.address === 'string') document.getElementById('address').value = p.address;
-    /* 大頭照取暱稱第一個字 */
-    if (p.nickname) document.getElementById('big-avatar').textContent = p.nickname.charAt(0);
-  } catch(e) {}
+  var p = DB.profile || {};
+  var rd = p.role_detail || {};
+  var nick = p.display_name || '';
+  document.getElementById('nickname').value = nick;
+  document.getElementById('realname').value = rd.real_name || '';
+  document.getElementById('phone').value = p.phone || '';
+  document.getElementById('lineid').value = rd.lineid || '';
+  document.getElementById('email').value = rd.email || '';
+  /* 案家預設地址放在 client 角色的 role_data.address */
+  var addr = (DB.clientRole && DB.clientRole.role_data && DB.clientRole.role_data.address) || '';
+  document.getElementById('address').value = addr;
+  /* 大頭照:有照片顯示照片,否則用暱稱第一個字 */
+  var av = document.getElementById('big-avatar');
+  if (avatarUrl) {
+    av.innerHTML = '<img src="' + avatarUrl + '" alt="頭像">';
+  } else if (nick) {
+    av.textContent = Array.from(nick.trim())[0] || '·';
+  }
 }
 
-/* 從 sessionStorage 讀順咖專屬資料回填 */
+/* 從 Supabase 回填順咖專屬資料 */
 function loadStaffProfile() {
-  var raw = sessionStorage.getItem('userProfile_staff');
-  if (!raw) return;
-  try {
-    var p = JSON.parse(raw);
-    if (p.bio) document.getElementById('bio').value = p.bio;
-    /* schedule 新結構是 4x7 陣列;舊結構是物件,做相容 */
-    if (Array.isArray(p.schedule) && p.schedule.length === 4) {
-      scheduleData = p.schedule;
+  var d = (DB.suncarRole && DB.suncarRole.role_data) || {};
+  var rate = DB.profile.expected_rate;
+
+  if (d.bio) document.getElementById('bio').value = d.bio; else document.getElementById('bio').value = '';
+  if (Array.isArray(d.schedule) && d.schedule.length === 4) scheduleData = d.schedule;
+  if (Array.isArray(d.areas)) selectedAreas = d.areas;
+  /* 服務項目相容兩種鍵名:services 或 service_categories */
+  if (Array.isArray(d.services)) selectedSvcs = d.services;
+  else if (Array.isArray(d.service_categories)) selectedSvcs = d.service_categories;
+
+  if (rate) {
+    var preset = [200,250,300,350,400,450,500,600,800,1000,1500,2000,3000,5000,8000,12000,20000];
+    var sel = document.getElementById('hourly-rate-select');
+    if (preset.indexOf(rate) > -1) {
+      sel.value = String(rate);
+    } else {
+      sel.value = 'custom';
+      document.getElementById('custom-rate-wrap').style.display = 'block';
+      document.getElementById('hourly-rate-custom').value = rate;
     }
-    if (Array.isArray(p.areas)) selectedAreas = p.areas;
-    if (Array.isArray(p.services)) selectedSvcs = p.services;
-    if (Array.isArray(p.certs)) certData = p.certs;
-    if (p.hourlyRate) {
-      var preset = [200,250,300,350,400,450,500,600,800,1000,1500,2000,3000,5000,8000,12000,20000];
-      var sel = document.getElementById('hourly-rate-select');
-      if (preset.indexOf(p.hourlyRate) > -1) {
-        sel.value = String(p.hourlyRate);
-      } else {
-        sel.value = 'custom';
-        document.getElementById('custom-rate-wrap').style.display = 'block';
-        document.getElementById('hourly-rate-custom').value = p.hourlyRate;
-      }
-    }
-    /* 重新渲染所有區塊 */
-    renderSchedule();
-    renderAreas();
-    renderServices();
-    renderCerts();
-    if (typeof p.acceptingOrders === 'boolean') {
-      var t = document.getElementById('status-toggle');
-      var label = document.getElementById('status-label');
-      var sub = document.getElementById('status-sub');
-      if (p.acceptingOrders) {
-        t.classList.add('on');
-        label.textContent = '接單中';
-        sub.textContent = '案家可以看到你並指定下單';
-      } else {
-        t.classList.remove('on');
-        label.textContent = '暫停接案';
-        sub.textContent = '案家會看到「暫不接單」,無法指定你';
-      }
-    }
-  } catch(e) {}
+  }
+
+  renderSchedule();
+  renderAreas();
+  renderServices();
+  renderCerts();
+
+  /* 交通方式:依存檔勾選 */
+  if (Array.isArray(d.transport)) {
+    document.querySelectorAll('.transport-chips .tp-chip').forEach(function(chip) {
+      var t = chip.textContent.trim();
+      chip.classList.toggle('on', d.transport.indexOf(t) > -1);
+    });
+  }
+
+  /* 接案狀態 */
+  if (typeof d.acceptingOrders === 'boolean') {
+    var tg = document.getElementById('status-toggle');
+    var label = document.getElementById('status-label');
+    var sub = document.getElementById('status-sub');
+    tg.classList.toggle('on', d.acceptingOrders);
+    label.textContent = d.acceptingOrders ? '接單中' : '暫停接案';
+    sub.textContent = d.acceptingOrders ? '案家可以看到你並指定下單' : '案家會看到「暫不接單」,無法指定你';
+  }
 }
 
-loadSharedProfile();
 applyRoleUI();
-if (role === 'staff') loadStaffProfile();
+loadFromDB();
 </script>
 
 </body>
