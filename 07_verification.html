@@ -624,32 +624,32 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <button class="buy-modal-close" onclick="closeBuyModal()">×</button>
     </div>
     <div class="buy-modal-body">
-      <div class="buy-pkg" onclick="goToPayment(100, 100, 0)">
+      <div class="buy-pkg" onclick="goToPayment(100, 0)">
         <div class="buy-pkg-info">
           <span class="buy-pkg-pts">100 點</span>
         </div>
         <span class="buy-pkg-price">$100</span>
       </div>
-      <div class="buy-pkg" onclick="goToPayment(300, 280, 20)">
+      <div class="buy-pkg" onclick="goToPayment(300, 20)">
         <div class="buy-pkg-info">
           <span class="buy-pkg-pts">300 點</span>
-          <span class="buy-pkg-extra">送 20 點</span>
+          <span class="buy-pkg-extra">實得 320 點</span>
         </div>
-        <span class="buy-pkg-price">$280</span>
+        <span class="buy-pkg-price">$300</span>
       </div>
-      <div class="buy-pkg best" onclick="goToPayment(500, 450, 50)">
+      <div class="buy-pkg best" onclick="goToPayment(500, 50)">
         <div class="buy-pkg-info">
           <span class="buy-pkg-pts">500 點</span>
-          <span class="buy-pkg-extra">送 50 點</span>
+          <span class="buy-pkg-extra">實得 550 點</span>
         </div>
-        <span class="buy-pkg-price">$450</span>
+        <span class="buy-pkg-price">$500</span>
       </div>
-      <div class="buy-pkg" onclick="goToPayment(1000, 850, 150)">
+      <div class="buy-pkg" onclick="goToPayment(1000, 150)">
         <div class="buy-pkg-info">
           <span class="buy-pkg-pts">1000 點</span>
-          <span class="buy-pkg-extra">送 150 點</span>
+          <span class="buy-pkg-extra">實得 1150 點</span>
         </div>
-        <span class="buy-pkg-price">$850</span>
+        <span class="buy-pkg-price">$1000</span>
       </div>
       <div class="buy-modal-note">
         50 點 = 新增 1 個自訂證件欄位<br>
@@ -930,6 +930,7 @@ function addCustomCert() {
 
     if (pts < POINTS_PER_CERT) {
       if (confirm('新增 1 張其他證件需 '+POINTS_PER_CERT+' 點,你目前有 '+pts+' 點。\n\n要前往購買點數嗎?')) {
+        try { sessionStorage.setItem('credits_returnTo', '07_verification.html'); } catch(e){}
         window.location.href = '16_buy_credits.html';
       }
       return;
@@ -1023,9 +1024,17 @@ function closeBuyModal() {
   document.getElementById('buy-modal').classList.remove('show');
   document.body.style.overflow = '';
 }
-function goToPayment(pts, price, bonus) {
+function goToPayment(payPts, bonus) {
+  var received = payPts + bonus;
   try {
-    sessionStorage.setItem('pendingPlan', JSON.stringify({pts:pts, price:price, bonus:bonus, pool:'suncar'}));
+    sessionStorage.setItem('credits_returnTo', '07_verification.html');
+    sessionStorage.setItem('pendingPlan', JSON.stringify({
+      price: payPts,
+      received: received,
+      bonus: bonus,
+      pool: 'suncar',
+      returnTo: '07_verification.html'
+    }));
   } catch(e){}
   window.location.href = '17_payment.html';
 }
@@ -1121,6 +1130,16 @@ uploadCert = function(card, key, isReq) {
 updatePointsDisplay();
 updateDoneSummary();
 applyIdentityRule();
+
+/* 從 15 等頁帶 ?tab= 進來時直接切到指定分頁(certs=證件上傳) */
+(function(){
+  try {
+    var t = new URLSearchParams(window.location.search).get('tab');
+    if (t === '2' || t === 'certs') switchTab(2);
+    else if (t === '1' || t === 'phone') switchTab(1);
+    else if (t === '3' || t === 'status') switchTab(3);
+  } catch(e){}
+})();
 
 /* 點數從 sessionStorage 同步 */
 function syncPointsFromStorage() {

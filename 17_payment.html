@@ -259,6 +259,16 @@ function loadPlan() {
     window.location.href = '16_buy_credits.html';
     return;
   }
+
+  /* 欄位正規化:容錯舊版 16 寫入的格式(只有 pts/price),避免 undefined / NaN */
+  currentPlan.bonus = currentPlan.bonus || 0;
+  if (currentPlan.received == null) {
+    currentPlan.received = (currentPlan.pts != null) ? currentPlan.pts : ((currentPlan.price || 0) + currentPlan.bonus);
+  }
+  if (currentPlan.price == null) {
+    currentPlan.price = currentPlan.received - currentPlan.bonus;
+  }
+
   var base = currentPlan.received - currentPlan.bonus;
   document.getElementById('sum-base-pts').textContent = base;
   document.getElementById('sum-bonus').textContent = currentPlan.bonus;
