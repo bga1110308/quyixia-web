@@ -609,7 +609,18 @@ async function uploadAvatar(file) {
 
 /* ============ 生活照(多張) ============ */
 var galleryPhotos = [];   /* 公開網址陣列,存進 suncar role_data.photos */
+var pendingDelete = [];   /* 按 × 標記待刪的網址,按儲存時才真的從桶裡刪 */
 var GALLERY_MAX = 6;
+
+function urlToStoragePath(url) {
+  var marker = '/avatars/';
+  var i = url.indexOf(marker);
+  if (i === -1) return null;
+  var p = url.slice(i + marker.length);
+  var q = p.indexOf('?');
+  if (q > -1) p = p.slice(0, q);
+  return p;
+}
 
 function renderGallery() {
   var grid = document.getElementById('gallery-grid');
@@ -657,6 +668,8 @@ async function uploadGalleryPhotos(input) {
 }
 
 function removeGalleryPhoto(i) {
+  var url = galleryPhotos[i];
+  if (url) pendingDelete.push(url);
   galleryPhotos.splice(i, 1);
   renderGallery();
 }
@@ -1052,6 +1065,13 @@ async function saveProfile() {
       var sRes = await sb.from('user_roles').update({ role_data: staffData }).eq('user_id', DB.user.id).eq('role', 'suncar');
       if (sRes.error) { throw sRes.error; }
       if (DB.suncarRole) DB.suncarRole.role_data = staffData;
+
+      /* 真的從桶裡刪掉被移除的生活照 */
+      if (pendingDelete.length) {
+        var paths = pendingDelete.map(urlToStoragePath).filter(Boolean);
+        if (paths.length) { await sb.storage.from('avatars').remove(paths); }
+        pendingDelete = [];
+      }
     } else {
       /* 案家預設地址寫進 client 角色 role_data */
       var addrVal = document.getElementById('address').value.trim();
@@ -1117,6 +1137,7 @@ function loadStaffProfile() {
 
   if (d.bio) document.getElementById('bio').value = d.bio; else document.getElementById('bio').value = '';
   galleryPhotos = Array.isArray(d.photos) ? d.photos.slice() : [];
+  pendingDelete = [];
   renderGallery();
   if (Array.isArray(d.schedule) && d.schedule.length === 4) scheduleData = d.schedule;
   if (Array.isArray(d.areas)) selectedAreas = d.areas;
