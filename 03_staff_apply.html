@@ -365,24 +365,24 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="row2">
       <div class="field">
         <label>真實姓名<span class="req">*</span></label>
-        <input type="text" placeholder="與身分證相同">
+        <input type="text" id="sa-realname" placeholder="與身分證相同">
         <div class="hint">僅供平台審核,不會公開</div>
       </div>
       <div class="field">
         <label>暱稱<span class="req">*</span></label>
-        <input type="text" placeholder="例:小芳、阿凱">
+        <input type="text" id="sa-nickname" placeholder="例:小芳、阿凱">
         <div class="hint">案家會看到的稱呼</div>
       </div>
     </div>
     <div class="row2">
       <div class="field">
         <label>手機號碼<span class="req">*</span></label>
-        <input type="tel" placeholder="0912-345-678">
+        <input type="tel" id="sa-phone" placeholder="0912-345-678">
         <div class="hint">驗證後不會公開</div>
       </div>
       <div class="field">
         <label>年齡<span class="req">*</span></label>
-        <select>
+        <select id="sa-age">
           <option value="">請選擇</option>
           <option>18-25</option>
           <option>26-35</option>
@@ -414,15 +414,15 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
           <option value="">縣市</option>
           <option>台北市</option><option>新北市</option><option>桃園市</option><option>台中市</option><option>高雄市</option><option>基隆市</option><option>新竹市</option><option>新竹縣</option><option>宜蘭縣</option><option>苗栗縣</option><option>彰化縣</option><option>南投縣</option><option>雲林縣</option><option>嘉義市</option><option>嘉義縣</option><option>台南市</option><option>屏東縣</option><option>花蓮縣</option><option>台東縣</option><option>澎湖縣</option><option>金門縣</option><option>連江縣</option>
         </select>
-        <input type="text" placeholder="行政區(例:板橋區)">
+        <input type="text" id="sa-district" placeholder="行政區(例:板橋區)">
       </div>
       <div class="row2" style="margin-bottom:8px;">
-        <input type="text" placeholder="路 / 街(例:文化路)">
-        <input type="text" placeholder="段(例:一段,可留空)">
+        <input type="text" id="sa-street" placeholder="路 / 街(例:文化路)">
+        <input type="text" id="sa-section" placeholder="段(例:一段,可留空)">
       </div>
       <div class="row2">
-        <input type="text" placeholder="號(例:188 號)">
-        <input type="text" placeholder="樓 / 室(例:5 樓之 2)">
+        <input type="text" id="sa-no" placeholder="號(例:188 號)">
+        <input type="text" id="sa-floor" placeholder="樓 / 室(例:5 樓之 2)">
       </div>
       <div class="hint">系統會優先派發附近的任務給你,完整地址不會公開</div>
     </div>
@@ -431,7 +431,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <label>能跑多遠?<span class="req">*</span></label>
       <div class="range-row">
         <div class="range-icon"><svg><use href="#i-bike"/></svg></div>
-        <select>
+        <select id="sa-distance">
           <option value="">請選擇</option>
           <option>走路 10 分鐘內(同社區)</option>
           <option>騎車 15 分鐘內(同行政區)</option>
@@ -445,7 +445,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
     <div class="field">
       <label>簡短自我介紹 <span class="opt">(選填)</span></label>
-      <textarea placeholder="例:白天上班的上班族,假日有空。會煮飯、會狗狗、住板橋..."></textarea>
+      <textarea id="sa-bio" placeholder="例:白天上班的上班族,假日有空。會煮飯、會狗狗、住板橋..."></textarea>
       <div class="hint">案家會看到,越具體越容易被選中</div>
     </div>
   </div>
@@ -816,7 +816,85 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   去一下平台 · 順咖招募中
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 <script>
+// 申請當順咖頁。需先用 LINE 登入才能申請。
+// 進頁先確認登入狀態：沒登入就先去 LINE 授權再回來填表，避免填完才被要求登入。
+window.addEventListener('DOMContentLoaded', async function () {
+  var res = await sb.auth.getSession();
+  if (!(res.data && res.data.session)) {
+    localStorage.setItem('signup_role', 'suncar');
+    await sb.auth.signInWithOAuth({
+      provider: 'custom:line',
+      options: { redirectTo: window.location.origin + '/03_staff_apply.html', scopes: 'openid profile' }
+    });
+    return;
+  }
+  // 已登入：補 line_user_id、用 LINE 暱稱預填暱稱欄
+  await backfillLineId();
+  var ures = await sb.auth.getUser();
+  var user = ures.data ? ures.data.user : null;
+  if (user) {
+    var lineName = (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) || '';
+    var nick = document.getElementById('sa-nickname');
+    if (lineName && nick && !nick.value) nick.value = lineName;
+  }
+  localStorage.removeItem('signup_role');
+});
+
+async function backfillLineId() {
+  var ures = await sb.auth.getUser();
+  var user = ures.data ? ures.data.user : null;
+  if (!user) return;
+  var lineId = extractLineId(user);
+  if (lineId) {
+    await sb.from('users').update({ line_user_id: lineId }).eq('id', user.id).is('line_user_id', null);
+  }
+}
+
+function extractLineId(user) {
+  if (user.identities) {
+    for (var i = 0; i < user.identities.length; i++) {
+      var idt = user.identities[i];
+      if ((idt.provider || '').indexOf('line') !== -1 && idt.identity_data && idt.identity_data.sub) {
+        return idt.identity_data.sub;
+      }
+    }
+  }
+  if (user.user_metadata && user.user_metadata.sub) return user.user_metadata.sub;
+  return null;
+}
+
+// 收集選取的服務類別（身體照顧類即使勾了，也要等 07 驗證照服員證才真正解鎖）
+function collectCategories() {
+  var cats = [];
+  document.querySelectorAll('.cat-item.on').forEach(function (c) {
+    var spans = c.querySelectorAll('span');
+    var label = '';
+    for (var i = 0; i < spans.length; i++) {
+      if (!spans[i].className) { label = spans[i].textContent.trim(); break; }
+    }
+    if (!label && spans.length >= 2) label = spans[1].textContent.trim();
+    if (label) cats.push(label);
+  });
+  return cats;
+}
+
+// 收集不可上班時段
+function collectUnavail() {
+  var days = [];
+  document.querySelectorAll('.day-block').forEach(function (b) {
+    var idx = Number(b.getAttribute('data-day'));
+    var slots = [];
+    b.querySelectorAll('.slot-row').forEach(function (r) {
+      slots.push({ from: r.querySelector('.slot-from').value, to: r.querySelector('.slot-to').value });
+    });
+    days.push({ day: idx, slots: slots });
+  });
+  return days;
+}
+
 /* === 身份切換(傳遞到 07_verification 用 sessionStorage)=== */
 function pickIdentity(el) {
   document.querySelectorAll('.id-card').forEach(function(t){ t.classList.remove('on'); });
@@ -1046,7 +1124,7 @@ function handleAgreeChange(cb) {
   }
 }
 
-function handleSubmit() {
+async function handleSubmit() {
   if (!readStatus.terms || !readStatus.privacy) {
     alert('請先閱讀順咖條款與隱私權政策');
     return;
@@ -1055,6 +1133,80 @@ function handleSubmit() {
     alert('請勾選同意條款');
     return;
   }
+
+  // 必填基本資料檢查
+  var realname = document.getElementById('sa-realname').value.trim();
+  var nickname = document.getElementById('sa-nickname').value.trim();
+  var phone = document.getElementById('sa-phone').value.trim();
+  var age = document.getElementById('sa-age').value;
+  var distance = document.getElementById('sa-distance').value;
+  var city = document.getElementById('city-sel').value;
+  var district = document.getElementById('sa-district').value.trim();
+  if (!realname || !nickname || !phone || !age || !distance || !city || !district) {
+    alert('請填完基本資料的必填欄位(姓名、暱稱、手機、年齡、性別、地址、能跑多遠)');
+    return;
+  }
+
+  var gender = document.getElementById('gender-sel').value;
+  var otherName = document.getElementById('other-name-input').value.trim();
+  var street = document.getElementById('sa-street').value.trim();
+  var section = document.getElementById('sa-section').value.trim();
+  var no = document.getElementById('sa-no').value.trim();
+  var floor = document.getElementById('sa-floor').value.trim();
+  var bio = document.getElementById('sa-bio').value.trim();
+  var identityEl = document.querySelector('.id-card.on');
+  var identity = identityEl ? identityEl.getAttribute('data-id') : 'general';
+  var categories = collectCategories();
+  var unavail = collectUnavail();
+
+  var btn = document.querySelector('.submit-btn');
+  if (btn) btn.disabled = true;
+
+  var ures = await sb.auth.getUser();
+  var user = ures.data ? ures.data.user : null;
+  if (!user) {
+    alert('登入狀態遺失,請重新進入頁面用 LINE 登入。');
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  // 1. 更新 users：暱稱當公開名、手機。真實姓名等放 role_detail。
+  //    has_caregiver_cert 維持 false，要等 07 驗證照服員證才設 true（長照法紅線）。
+  var up = await sb.from('users').update({
+    display_name: nickname,
+    phone: phone,
+    role_detail: { real_name: realname, age: age, gender: gender, other_name: otherName }
+  }).eq('id', user.id);
+  if (up.error) {
+    alert('資料儲存失敗:' + up.error.message);
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  // 2. 建立 suncar 角色：status pending，等審核 + 驗證
+  var roleRes = await sb.from('user_roles').upsert({
+    user_id: user.id,
+    role: 'suncar',
+    status: 'pending',
+    role_data: {
+      identity: identity,
+      address: { city: city, district: district, street: street, section: section, no: no, floor: floor },
+      max_distance: distance,
+      bio: bio,
+      categories: categories,
+      unavailable: unavail,
+      cert_verified: false
+    }
+  }, { onConflict: 'user_id,role' });
+  if (roleRes.error) {
+    alert('順咖申請建立失敗:' + roleRes.error.message);
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  // 身份類型留給 07 上傳證件用
+  try { sessionStorage.setItem('applyIdentity', identity); } catch (e) {}
+
   alert('申請已送出!接下來請完成帳號認證。');
   window.location.href = '07_verification.html';
 }
