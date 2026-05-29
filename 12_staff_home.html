@@ -313,10 +313,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
         <div class="h-name" id="h-name"><span id="h-nametext">載入中…</span><span class="h-rating" id="h-rating"></span></div>
         <div class="h-badges" id="h-badges"></div>
       </div>
-      <a href="crown_all_levels.html?count=8" class="crown-btn lv3" id="crown-btn" title="點看完整等級表">
+      <a href="crown_all_levels.html?count=0" class="crown-btn lv0" id="crown-btn" title="點看完整等級表">
         <svg class="crown-svg" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></svg>
-        <span class="crown-count" id="crown-count">8</span>
-        <span class="crown-tooltip">已推薦 8 人 · 點看等級</span>
+        <span class="crown-count" id="crown-count">0</span>
+        <span class="crown-tooltip">尚未開始推薦 · 點看等級</span>
       </a>
       <button class="edit-btn" onclick="window.location.href='15_edit_profile.html?role=staff'"><svg><use href="#i-edit"/></svg>編輯</button>
     </div>
@@ -347,18 +347,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="toggle on" id="online-toggle" onclick="toggleOnline()"></div>
     </div>
 
-    <!-- 身份切換 -->
-    <div class="role-switch" id="role-switch">
-      <button class="rs-pill" onclick="switchRole('client',this)"><svg><use href="#i-user"/></svg>案家視角</button>
-      <button class="rs-pill on" onclick="switchRole('staff',this)"><svg><use href="#i-staff"/></svg>順咖視角</button>
-    </div>
-
-    <!-- DEMO 切換區 -->
-    <div class="demo-toggle">
-      <span class="lbl-demo">DEMO ▸</span>
-      <span onclick="toggleDualRole()" id="demo-toggle" title="這顆鈕只在 demo 出現,上線會移除">切換成「也是案家」</span>
-      <span onclick="cycleCrown()" id="crown-demo" title="這顆鈕只在 demo 出現,上線會移除">皇冠:LV 3 推薦達人(8 推薦)</span>
-    </div>
   </div>
 </div>
 
@@ -404,7 +392,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </div>
     <div class="income-row income-pending">
       <span>月費狀態(新人首月免費)</span>
-      <strong>剩 18 天</strong>
+      <strong id="acct-trial">—</strong>
     </div>
     <div class="income-hint">
       ⓘ 服務報酬由案家直接支付給你,平台不經手金流<br>
@@ -550,13 +538,20 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     $('h-badges').innerHTML = badges;
 
     /* 角色狀態 */
-    var roles = await sb.from('user_roles').select('role,status').eq('user_id', user.id);
+    var roles = await sb.from('user_roles').select('role,status,created_at').eq('user_id', user.id);
     var rlist = roles.data || [];
     var suncarRole = rlist.find(function(r){ return r.role==='suncar'; });
     var clientRole = rlist.find(function(r){ return r.role==='client'; });
     var statusMap = { active:'已通過', pending:'審核中', suspended:'已停用', rejected:'未通過' };
     if(suncarRole){ $('role-status').textContent = '順咖 · '+(statusMap[suncarRole.status]||suncarRole.status); canAcceptJobs = (suncarRole.status==='active'); }
     if(clientRole){ $('role-switch-link').style.display = ''; }
+
+    /* 月費狀態:新人首月免費。起算日 = 成為順咖那天(suncar user_roles.created_at),+30 天到期。
+       目前 users 表沒有「方案到期」欄位,等之後有正式月費機制再改讀到期欄位。 */
+    renderTrial(suncarRole && suncarRole.created_at);
+
+    /* 皇冠等級:推薦人數來源(06_referral)尚未建表,先帶 0 顯示 LV 0;之後改帶真實人數 */
+    renderCrown(0);
 
     /* 上線開關狀態:未通過審核不開放接單 */
     if(!canAcceptJobs){
@@ -636,53 +631,45 @@ function toggleOnline() {
     : '目前離線 · 不接新單';
 }
 
-/* 雙重身份模擬 */
-var isDualRole = false;
-
-/* 皇冠等級 11 級制 — 與 crown_all_levels.html 對齊 */
+/* 皇冠等級 11 級制 — 與 crown_all_levels.html 對齊
+ * 依推薦人數決定等級。推薦人數由 init 帶入(目前推薦資料尚未建表,先帶 0)。 */
 var crownLevels = [
-  { cls: 'lv0',    count: 0,  label: 'LV 0 未啟動' },
-  { cls: 'lv1',    count: 2,  label: 'LV 1 入門(2 推薦)' },
-  { cls: 'lv2',    count: 4,  label: 'LV 2 小有名氣(4 推薦)' },
-  { cls: 'lv3',    count: 8,  label: 'LV 3 推薦達人(8 推薦)' },
-  { cls: 'lv4 k1', count: 12, label: '王者 I(12 推薦)' },
-  { cls: 'lv4 k2', count: 17, label: '王者 II(17 推薦)' },
-  { cls: 'lv4 k3', count: 22, label: '王者 III(22 推薦)' },
-  { cls: 'lv4 k4', count: 27, label: '王者 IV(27 推薦)' },
-  { cls: 'lv4 k5', count: 35, label: '王者 V(35 推薦)' },
-  { cls: 'lv4 k6', count: 45, label: '王者 VI(45 推薦)' },
-  { cls: 'lv4 k7', count: 58, label: '王者 VII 完全體(58 推薦)' }
+  { cls: 'lv0',    min: 0,  label: 'LV 0 未啟動' },
+  { cls: 'lv1',    min: 2,  label: 'LV 1 入門' },
+  { cls: 'lv2',    min: 4,  label: 'LV 2 小有名氣' },
+  { cls: 'lv3',    min: 8,  label: 'LV 3 推薦達人' },
+  { cls: 'lv4 k1', min: 12, label: '王者 I' },
+  { cls: 'lv4 k2', min: 17, label: '王者 II' },
+  { cls: 'lv4 k3', min: 22, label: '王者 III' },
+  { cls: 'lv4 k4', min: 27, label: '王者 IV' },
+  { cls: 'lv4 k5', min: 35, label: '王者 V' },
+  { cls: 'lv4 k6', min: 45, label: '王者 VI' },
+  { cls: 'lv4 k7', min: 58, label: '王者 VII 完全體' }
 ];
-var crownIdx = 3;
 
-function cycleCrown() {
-  crownIdx = (crownIdx + 1) % crownLevels.length;
-  var data = crownLevels[crownIdx];
+function renderCrown(count) {
+  count = count || 0;
+  var lv = crownLevels[0];
+  for (var i = 0; i < crownLevels.length; i++) { if (count >= crownLevels[i].min) lv = crownLevels[i]; }
   var btn = document.getElementById('crown-btn');
-  btn.className = 'crown-btn ' + data.cls;
-  btn.href = 'crown_all_levels.html?count=' + data.count;
-  document.getElementById('crown-count').textContent = data.count;
-  btn.querySelector('.crown-tooltip').textContent = data.count === 0
+  if (!btn) return;
+  btn.className = 'crown-btn ' + lv.cls;
+  btn.href = 'crown_all_levels.html?count=' + count;
+  document.getElementById('crown-count').textContent = count;
+  btn.querySelector('.crown-tooltip').textContent = count === 0
     ? '尚未開始推薦 · 點看等級'
-    : '已推薦 ' + data.count + ' 人 · 點看等級';
-  document.getElementById('crown-demo').textContent = '皇冠:' + data.label;
+    : '已推薦 ' + count + ' 人 · 點看等級';
 }
 
-function toggleDualRole() {
-  isDualRole = !isDualRole;
-  document.getElementById('role-switch').classList.toggle('show', isDualRole);
-  document.getElementById('demo-toggle').textContent = isDualRole
-    ? '切回「只是順咖」'
-    : '切換成「也是案家」';
-}
-
-function switchRole(role, btn) {
-  if (role === 'client') {
-    window.location.href = '11_client_home.html';
-    return;
-  }
-  document.querySelectorAll('.rs-pill').forEach(function(p){ p.classList.remove('on'); });
-  btn.classList.add('on');
+/* 首月免費倒數:傳入成為順咖的日期(ISO 字串),+30 天到期,顯示剩餘天數 */
+var TRIAL_DAYS = 30;
+function renderTrial(joinedAt) {
+  var el = document.getElementById('acct-trial');
+  if (!el) return;
+  if (!joinedAt) { el.textContent = '—'; return; }
+  var expiry = new Date(joinedAt).getTime() + TRIAL_DAYS * 86400000;
+  var daysLeft = Math.ceil((expiry - Date.now()) / 86400000);
+  el.textContent = daysLeft > 0 ? ('剩 ' + daysLeft + ' 天') : '首月免費已結束';
 }
 
 /* 篩選 */
