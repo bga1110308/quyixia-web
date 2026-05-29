@@ -533,11 +533,11 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(!user){ window.location.href = '13_login.html'; return; }
 
     /* 本人 users */
-    var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score').eq('id', user.id).maybeSingle();
+    var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score,role_detail').eq('id', user.id).maybeSingle();
     var u = prof.data || {};
     var name = u.display_name || '順咖';
     $('h-nametext').textContent = name;
-    var av = $('h-avatar'); av.textContent = firstChar(name); if(u.has_caregiver_cert){ av.classList.add('cna'); }
+    var av = $('h-avatar'); if(u.has_caregiver_cert){ av.classList.add('cna'); } var avurl = u.role_detail && u.role_detail.avatar_url; if(avurl){ av.innerHTML = '<img src="'+esc(avurl)+'" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'; } else { av.textContent = firstChar(name); }
     $('acct-points').textContent = (u.suncar_points||0) + ' 點';
     $('acct-credit').textContent = (u.credit_score==null?100:u.credit_score) + ' / 100';
     if(u.expected_rate){ $('rate-display').innerHTML = '$ ' + u.expected_rate + '<span class="unit">/時</span>'; }

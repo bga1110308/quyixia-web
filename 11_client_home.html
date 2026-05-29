@@ -479,7 +479,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     var u = prof.data || {};
     var name = u.display_name || (u.role_detail && u.role_detail.real_name) || '會員';
     $('h-name').textContent = name;
-    $('h-avatar').textContent = firstChar(name);
+    var _avurl = u.role_detail && u.role_detail.avatar_url; if(_avurl){ $('h-avatar').innerHTML = '<img src="'+esc(_avurl)+'" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'; } else { $('h-avatar').textContent = firstChar(name); }
     $('h-greeting').textContent = greeting();
     $('stat-points').textContent = (u.client_points||0) + ' 點';
     $('h-member').textContent = u.member_no ? ('會員編號 '+u.member_no) : '';
