@@ -271,6 +271,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   .page-title{font-size:1.7rem;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 
@@ -292,14 +294,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="page-title">幫你<span class="em"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span></div>
     <div class="page-sub">填完送出,附近的順咖看到後主動聯繫你<br>從選對象開始,只要幾分鐘</div>
   </div>
-</div>
-
-<!-- Demo 登入狀態切換 -->
-<div class="demo-auth-bar">
-  <button class="demo-auth-toggle" id="demo-auth-toggle" onclick="toggleLoginDemo()">
-    <span class="dot"></span>
-    <span id="demo-auth-label">展示模式:未登入訪客</span>
-  </button>
 </div>
 
 <div class="form-wrap">
@@ -536,23 +530,26 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </div>
 
 <script>
-/* 順咖期望時薪對照表(與 02_staff_list.html 對齊,demo 用,正式接 DB 後改 API 撈) */
-var staffRateMap = {
-  '小芳':350, '阿凱':250, '小雯':400, '大明':350, '小玲':300, '阿翔':250,
-  '小慧':450, '阿傑':200, 'May':300, '阿德':250, '小婷':500, '阿宏':200
-};
+/* 指定順咖:用 02 帶來的 id 查 public_suncars 顯示暱稱與期望時薪 */
+window._specifiedStaffId = null;
 
-function showSpecifiedStaff(name) {
-  if (!name) return;
-  var rate = staffRateMap[name];
+async function showSpecifiedStaff(staffId) {
+  if (!staffId) return;
+  if (typeof window.sb === 'undefined') { console.error('supabase-init.js 未載入'); return; }
+  var res = await sb.from('public_suncars').select('id,display_name,expected_rate').eq('id', staffId).maybeSingle();
+  var s = (res && res.data) ? res.data : null;
+  if (!s) { return; }
+  window._specifiedStaffId = s.id;
+  var name = s.display_name || '順咖';
+  var rate = s.expected_rate;
   var card = document.getElementById('specified-staff');
   document.getElementById('ss-name').textContent = name;
   document.getElementById('ss-icon').textContent = name.charAt(0);
-  document.getElementById('ss-rate').textContent = rate || '—';
+  document.getElementById('ss-rate').textContent = (rate != null ? rate : '—');
   card.classList.add('show');
 
   /* 報酬欄位下方時薪提示 */
-  if (rate) {
+  if (rate != null) {
     document.getElementById('rate-tip-name').textContent = name;
     document.getElementById('rate-tip-amount').textContent = rate;
     document.getElementById('rate-tip').classList.add('show');
@@ -560,6 +557,7 @@ function showSpecifiedStaff(name) {
 }
 
 function clearSpecifiedStaff() {
+  window._specifiedStaffId = null;
   document.getElementById('specified-staff').classList.remove('show');
   document.getElementById('rate-tip').classList.remove('show');
   /* 清掉 URL 上的 staff 參數,避免重新整理又跳回來 */
@@ -620,6 +618,8 @@ function renderServices(target) {
   serviceMap[target].forEach(function(s){
     var div = document.createElement('div');
     div.className = 'stag';
+    div.setAttribute('data-svcname', s.name);
+    div.setAttribute('data-pro', s.pro ? '1' : '');
     div.onclick = function(){ this.classList.toggle('on'); };
     var proMark = s.pro
       ? '<span class="pro-mark"><svg><use href="#i-star"/></svg>照服員</span>'
@@ -696,21 +696,7 @@ function updateSummary() {
   document.getElementById('s-total').textContent = base > 0 ? '$' + base : '—';
 }
 
-/* 註冊登入狀態 */
-var isLoggedIn = false;
-
-function toggleLoginDemo() {
-  isLoggedIn = !isLoggedIn;
-  var btn = document.getElementById('demo-auth-toggle');
-  var label = document.getElementById('demo-auth-label');
-  if (isLoggedIn) {
-    btn.classList.add('logged-in');
-    label.textContent = '展示模式:已登入會員';
-  } else {
-    btn.classList.remove('logged-in');
-    label.textContent = '展示模式:未登入訪客';
-  }
-}
+/* 登入狀態改由 sb.auth.getUser() 在送出時即時判斷 */
 
 /* 同手機 1 小時最多 3 單 */
 function checkRateLimit(phone) {
@@ -895,20 +881,113 @@ function handleSubmit() {
     return;
   }
 
-  if (isLoggedIn) {
-    recordOrder(rateCheck);
-    submitOrder();
-  } else {
-    document.getElementById('reg-modal').classList.add('show');
-    document.body.style.overflow = 'hidden';
-    window._pendingContactInfo = { name: name, phone: phone };
-    window._pendingRateCheck = rateCheck;
+  /* 收集已選服務項目,判斷是否需要照服員(pool B) */
+  var svcEls = document.querySelectorAll('#service-grid .stag.on');
+  if (svcEls.length === 0) {
+    alert('請至少選擇一個服務項目');
+    document.getElementById('service-grid').scrollIntoView({behavior:'smooth', block:'center'});
+    return;
   }
+  var svcNames = [];
+  var needPro = false;
+  svcEls.forEach(function(el){
+    svcNames.push(el.getAttribute('data-svcname') || el.textContent.trim());
+    if (el.getAttribute('data-pro') === '1') needPro = true;
+  });
+  var serviceType = svcNames.join('、');
+  var pool = needPro ? 'B' : 'A';
+
+  /* 預計時數轉成分鐘,對不到的自訂值存 null、原文寫進備註 */
+  var durMinMap = {'10 分鐘':10,'30 分鐘':30,'1 小時':60,'2 小時':120,'3 小時':180,'半天(4h)':240,'全天(8h)':480,'24 小時':1440};
+  var durationMinutes = durMinMap[durSel] || null;
+  var durNote = (durSel === 'custom') ? durCustom : '';
+
+  /* 服務地址與備註 */
+  var serviceAddress;
+  var addrNoteParts = [cityName + districtVal];
+  if (noAddr) {
+    serviceAddress = placeName;
+    addrNoteParts.push('地標:' + landmark);
+    addrNoteParts.push('無門牌,接單後由案家主動聯絡確認碰面');
+  } else {
+    serviceAddress = addr;
+  }
+  if (durNote) addrNoteParts.push('時數:' + durNote);
+  addrNoteParts.push('聯絡人:' + name + ' ' + cleanPhone);
+
+  var payload = {
+    suncar_id: window._specifiedStaffId || null,
+    status: 'matching',
+    order_type: 'service',
+    service_type: serviceType,
+    pool: pool,
+    need_assist: needPro,
+    service_time: serviceDateTime.toISOString(),
+    service_district: districtVal,
+    service_address: serviceAddress,
+    address_note: addrNoteParts.join('；'),
+    duration_minutes: durationMinutes,
+    amount: price,
+    points_cost: 50,
+    is_active: true
+  };
+
+  submitOrder(payload, rateCheck);
 }
 
-function submitOrder() {
-  alert('訂單已送出!附近的順咖看到後將主動聯繫你。');
-  window.location.href = '10_order_detail.html';
+async function submitOrder(payload, rateCheck) {
+  if (typeof window.sb === 'undefined') { alert('系統未就緒,請重新整理頁面後再試'); return; }
+
+  var btn = document.querySelector('.submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '送出中...'; }
+
+  try {
+    /* 沒登入直接導登入頁 */
+    var ures = await sb.auth.getUser();
+    var user = (ures && ures.data) ? ures.data.user : null;
+    if (!user) { window.location.href = '13_login.html'; return; }
+
+    /* 檢查點數是否足夠扣 50 */
+    var pr = await sb.from('users').select('client_points').eq('id', user.id).maybeSingle();
+    var pts = (pr.data && pr.data.client_points != null) ? pr.data.client_points : 0;
+    if (pts < 50) {
+      alert('點數不足 50 點,先帶你去加值。目前點數:' + pts + ' 點');
+      window.location.href = '16_buy_credits.html';
+      return;
+    }
+
+    /* 寫入訂單,order_no 由 trigger 自動產生,不要自己填 */
+    payload.client_id = user.id;
+    var ins = await sb.from('orders').insert(payload).select('id').single();
+    if (ins.error || !ins.data) {
+      alert('下單失敗:' + (ins.error ? ins.error.message : '未知錯誤'));
+      if (btn) { btn.disabled = false; btn.textContent = '送出訂單'; }
+      return;
+    }
+    var newId = ins.data.id;
+
+    /* 扣 50 點:寫點數明細(負值)+ 更新餘額 */
+    var ptx = await sb.from('point_transactions').insert({
+      user_id: user.id,
+      pool: payload.pool,
+      change: -50,
+      reason: '下單服務費',
+      order_id: newId
+    });
+    if (ptx.error) console.error('point_transactions:', ptx.error);
+
+    var upd = await sb.from('users').update({ client_points: pts - 50 }).eq('id', user.id);
+    if (upd.error) console.error('update points:', upd.error);
+
+    /* 本機限流記一筆 */
+    if (rateCheck) recordOrder(rateCheck);
+
+    window.location.href = '10_order_detail.html?id=' + newId;
+  } catch (e) {
+    console.error(e);
+    alert('下單時發生錯誤,請稍後再試');
+    if (btn) { btn.disabled = false; btn.textContent = '送出訂單'; }
+  }
 }
 
 /* === 註冊 Modal === */
@@ -932,12 +1011,7 @@ function goToLogin() {
 }
 
 function regWith(provider) {
-  alert('用 ' + provider + ' 註冊:\n\n1. 跳到 ' + provider + ' 授權頁\n2. 同意授權\n3. 自動跳回網站、自動完成註冊\n4. 訂單同時送出\n\n(demo 模擬中)');
-  setTimeout(function(){
-    isLoggedIn = true;
-    if (window._pendingRateCheck) recordOrder(window._pendingRateCheck);
-    submitOrder();
-  }, 500);
+  window.location.href = '13_login.html';
 }
 
 function showEmailReg() {
@@ -977,15 +1051,8 @@ function completeReg() {
   }
   if (!agreed) { alert('請勾選同意條款'); return; }
 
-  isLoggedIn = true;
-  if (window._pendingRateCheck) {
-    recordOrder(window._pendingRateCheck);
-  }
   closeRegModal();
-  setTimeout(function(){
-    alert('註冊完成!\n\n1. 已寄送驗證信到 ' + email + '\n2. 訂單已送出,請收信驗證後可看訂單進度\n\n(demo 跳到訂單詳情)');
-    window.location.href = '10_order_detail.html';
-  }, 200);
+  window.location.href = '13_login.html';
 }
 
 function gotoLogin() {
