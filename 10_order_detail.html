@@ -257,7 +257,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <button class="back-btn" onclick="window.location.href='11_client_home.html'"><svg><use href="#i-back"/></svg></button>
     <div>
       <div class="topbar-title">訂單詳情</div>
-      <div class="topbar-sub" id="topbar-sub">#0522 · 陪媽媽看醫生</div>
+      <div class="topbar-sub" id="topbar-sub">載入中…</div>
     </div>
   </div>
   <div class="topbar-r">
@@ -511,6 +511,7 @@ async function init(){
   document.getElementById('status-title').textContent = ui.title;
   document.getElementById('status-desc').textContent = ui.desc;
   document.getElementById('sb-id').textContent = (o.order_no ? ('#'+o.order_no) : '#—') + ' · ' + fmtDT(o.created_at);
+  document.getElementById('topbar-sub').textContent = (o.order_no ? ('#'+o.order_no) : '#—') + (o.service_type ? (' · ' + o.service_type) : '');
 
   /* 訂單資訊 */
   var poolChip = (o.pool === 'B')
