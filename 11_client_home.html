@@ -231,6 +231,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   .fs-cta-title{font-size:1.05rem;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 
@@ -262,22 +264,20 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <div class="role-strip">
   <svg><use href="#i-user"/></svg>
   <span class="role-label">案家服務台 · 找順咖幫忙</span>
-  <a href="12_staff_home.html" class="role-switch-link">切到順咖端</a>
+  <span id="role-status" style="font-size:0.7rem;color:var(--forest);background:var(--mint-pale);padding:3px 9px;border-radius:99px;border:1px solid rgba(95,181,142,0.25);font-weight:500;"></span>
+  <a href="12_staff_home.html" class="role-switch-link" id="role-switch-link" style="display:none;">切到順咖端</a>
 </div>
 
 <!-- ============ HERO ============ -->
 <div class="hero">
   <div class="hero-inner">
     <div class="hero-top">
-      <div class="h-avatar">王</div>
+      <div class="h-avatar" id="h-avatar">·</div>
       <div class="h-info">
-        <div class="h-greeting">嗨,午安</div>
-        <div class="h-name">王小姐</div>
-        <div class="h-badges">
-          <span class="bm b-verified"><svg><use href="#i-check"/></svg>實名</span>
-          <span class="bm b-phone"><svg><use href="#i-phone"/></svg>手機已驗</span>
-          <span class="bm bm-unverified" onclick="window.location.href='07_verification.html'"><svg><use href="#i-mail"/></svg>信箱未驗</span>
-        </div>
+        <div class="h-greeting" id="h-greeting">嗨</div>
+        <div class="h-name" id="h-name">載入中…</div>
+        <div class="h-badges" id="h-badges"></div>
+        <div id="h-member" style="font-size:0.66rem;color:var(--ink-light);margin-top:3px;letter-spacing:0.3px;"></div>
       </div>
       <a href="crown_all_levels.html?count=4" class="crown-btn lv2" id="crown-btn" title="點看完整等級表">
         <svg class="crown-svg" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></svg>
@@ -324,80 +324,30 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
   <div class="stats-row">
     <div class="stat-card clickable" onclick="filterTo('matching')">
-      <div class="stat-num has-active">2</div>
+      <div class="stat-num has-active" id="stat-matching">0</div>
       <div class="stat-label">媒合中</div>
     </div>
     <div class="stat-card clickable" onclick="filterTo('active')">
-      <div class="stat-num has-active">1</div>
+      <div class="stat-num has-active" id="stat-active">0</div>
       <div class="stat-label">進行中</div>
     </div>
     <div class="stat-card clickable" onclick="filterTo('done')">
-      <div class="stat-num has-done">12</div>
+      <div class="stat-num has-done" id="stat-done">0</div>
       <div class="stat-label">已完成</div>
     </div>
     <div class="stat-card clickable" onclick="window.location.href='16_buy_credits.html'">
-      <div class="stat-num">320 點</div>
+      <div class="stat-num" id="stat-points">0 點</div>
       <div class="stat-label">點數餘額</div>
     </div>
   </div>
 
   <!-- ============ 進行中的任務 ============ -->
+  <div id="active-section" style="display:none;">
   <div class="sec-h">
     <div class="sec-title">進行中</div>
     <a class="sec-action" onclick="document.querySelector('.filter-bar').scrollIntoView({behavior:'smooth'})">看全部<svg><use href="#i-arrow-right"/></svg></a>
   </div>
-
-  <div class="order-card active-order" onclick="window.location.href='10_order_detail.html'">
-    <div class="oc-top">
-      <div style="flex:1;min-width:0;">
-        <div class="oc-id-row"><span class="oc-id">#0522</span> · 今天 09:00 開始</div>
-        <div class="oc-title">陪媽媽看醫生<span class="pool-chip pool-B">照服員</span></div>
-      </div>
-      <span class="status-tag s-active"><svg><use href="#i-radio"/></svg>服務中</span>
-    </div>
-    <div class="oc-meta">
-      <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>台北市信義區 · 台大醫院</span>
-      <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>剩 1.5 小時</span>
-    </div>
-    <div class="oc-bottom">
-      <div class="oc-staff">
-        <div class="oc-staff-avatar">芳</div>
-        <span>小芳</span>
-        <span style="color:var(--ink-light);font-size:0.7rem;">·</span>
-        <span style="color:var(--amber-deep);font-size:0.72rem;font-weight:500;">10:32 已抵達醫院</span>
-      </div>
-      <div><span class="oc-price-label">總計</span><span class="oc-price">$ 600</span></div>
-    </div>
-    <!-- 進行中訂單:聯絡按鈕 -->
-    <div class="contact-row" onclick="event.stopPropagation();">
-      <a href="tel:0911234567" class="contact-btn call">
-        <span class="contact-icon">📞</span>
-        <span>撥打電話</span>
-      </a>
-      <a href="https://line.me/R/ti/p/~quyixia_demo" target="_blank" class="contact-btn line">
-        <span class="contact-icon">💬</span>
-        <span>LINE 聯絡</span>
-      </a>
-    </div>
-  </div>
-
-  <div class="order-card matching" onclick="window.location.href='10_order_detail.html'">
-    <div class="oc-top">
-      <div style="flex:1;min-width:0;">
-        <div class="oc-id-row"><span class="oc-id">#0526</span> · 明天 19:00</div>
-        <div class="oc-title">陪打遊戲<span class="pool-chip pool-A">一般</span></div>
-      </div>
-      <span class="status-tag s-matching"><svg><use href="#i-clock"/></svg>媒合中</span>
-    </div>
-    <div class="oc-meta">
-      <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>台北市中山區</span>
-      <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>2 小時</span>
-      <span class="oc-meta-item" style="color:var(--amber-deep);font-weight:500;">已有 2 位查看</span>
-    </div>
-    <div class="oc-bottom">
-      <div style="font-size:0.74rem;color:var(--ink-light);">預計 30 分內回覆</div>
-      <div><span class="oc-price-label">願付</span><span class="oc-price">$ 400</span></div>
-    </div>
+  <div id="active-list"></div>
   </div>
 
   <!-- ============ 歷史紀錄 ============ -->
@@ -406,101 +356,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
 
   <div class="filter-bar">
-    <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt">15</span></span>
-    <span class="filter-tag" data-filter="matching" onclick="filterToggle(this)">媒合中<span class="cnt">2</span></span>
-    <span class="filter-tag" data-filter="active" onclick="filterToggle(this)">進行中<span class="cnt">1</span></span>
-    <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt">12</span></span>
+    <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt" id="cnt-all">0</span></span>
+    <span class="filter-tag" data-filter="matching" onclick="filterToggle(this)">媒合中<span class="cnt" id="cnt-matching">0</span></span>
+    <span class="filter-tag" data-filter="active" onclick="filterToggle(this)">進行中<span class="cnt" id="cnt-active">0</span></span>
+    <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt" id="cnt-done">0</span></span>
   </div>
 
   <div id="history-list">
-    <!-- 歷史訂單 -->
-    <div class="order-card done-order" data-status="done" onclick="window.location.href='10_order_detail.html'">
-      <div class="oc-top">
-        <div style="flex:1;min-width:0;">
-          <div class="oc-id-row"><span class="oc-id">#0519</span> · 2025/05/20</div>
-          <div class="oc-title">遛狗<span class="pool-chip pool-A">一般</span></div>
-        </div>
-        <span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>
-      </div>
-      <div class="oc-meta">
-        <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>新北市板橋區</span>
-        <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>1.5 小時</span>
-        <span class="oc-meta-item"><svg style="color:var(--amber);"><use href="#i-star"/></svg>你給 5.0</span>
-      </div>
-      <div class="oc-bottom">
-        <div class="oc-staff">
-          <div class="oc-staff-avatar">凱</div>
-          <span>阿凱</span>
-        </div>
-        <div><span class="oc-price-label">已付</span><span class="oc-price">$ 350</span></div>
-      </div>
-    </div>
-
-    <div class="order-card done-order" data-status="done" onclick="window.location.href='10_order_detail.html'">
-      <div class="oc-top">
-        <div style="flex:1;min-width:0;">
-          <div class="oc-id-row"><span class="oc-id">#0512</span> · 2025/05/12</div>
-          <div class="oc-title">代排隊買限量球鞋<span class="pool-chip pool-A">一般</span></div>
-        </div>
-        <span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>
-      </div>
-      <div class="oc-meta">
-        <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>台北市信義區</span>
-        <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>3 小時</span>
-        <span class="oc-meta-item"><svg style="color:var(--amber);"><use href="#i-star"/></svg>你給 4.5</span>
-      </div>
-      <div class="oc-bottom">
-        <div class="oc-staff">
-          <div class="oc-staff-avatar">明</div>
-          <span>大明</span>
-        </div>
-        <div><span class="oc-price-label">已付</span><span class="oc-price">$ 800</span></div>
-      </div>
-    </div>
-
-    <div class="order-card done-order" data-status="done" onclick="window.location.href='10_order_detail.html'">
-      <div class="oc-top">
-        <div style="flex:1;min-width:0;">
-          <div class="oc-id-row"><span class="oc-id">#0505</span> · 2025/05/05</div>
-          <div class="oc-title">陪媽媽就醫<span class="pool-chip pool-B">照服員</span></div>
-        </div>
-        <span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>
-      </div>
-      <div class="oc-meta">
-        <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>台北市大安區</span>
-        <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>3 小時</span>
-        <span class="oc-meta-item"><svg style="color:var(--amber);"><use href="#i-star"/></svg>你給 5.0</span>
-      </div>
-      <div class="oc-bottom">
-        <div class="oc-staff">
-          <div class="oc-staff-avatar">芳</div>
-          <span>小芳</span>
-        </div>
-        <div><span class="oc-price-label">已付</span><span class="oc-price">$ 600</span></div>
-      </div>
-    </div>
-
-    <div class="order-card done-order" data-status="done" onclick="window.location.href='10_order_detail.html'">
-      <div class="oc-top">
-        <div style="flex:1;min-width:0;">
-          <div class="oc-id-row"><span class="oc-id">#0428</span> · 2025/04/28</div>
-          <div class="oc-title">家裡打掃<span class="pool-chip pool-A">一般</span></div>
-        </div>
-        <span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>
-      </div>
-      <div class="oc-meta">
-        <span class="oc-meta-item"><svg><use href="#i-pin"/></svg>新北市板橋區</span>
-        <span class="oc-meta-item"><svg><use href="#i-clock"/></svg>4 小時</span>
-        <span class="oc-meta-item" style="color:var(--ink-light);">尚未評價</span>
-      </div>
-      <div class="oc-bottom">
-        <div class="oc-staff">
-          <div class="oc-staff-avatar">雯</div>
-          <span>小雯</span>
-        </div>
-        <div><span class="oc-price-label">已付</span><span class="oc-price">$ 800</span></div>
-      </div>
-    </div>
   </div>
 
   <!-- 空狀態 -->
@@ -560,6 +422,129 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </div>
 
 <script>
+/* === 接 Supabase:讀登入者真實資料與訂單 === */
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function firstChar(name){ name=(name||'').trim(); return name ? name.charAt(0) : '·'; }
+  function greeting(){ var h=new Date().getHours(); if(h<5)return '嗨,夜深了'; if(h<11)return '嗨,早安'; if(h<14)return '嗨,午安'; if(h<18)return '嗨,午後好'; return '嗨,晚安'; }
+
+  /* 訂單狀態對照:04_order_form 寫入 orders.status 時請沿用這四個值 */
+  var STATUS = {
+    matching:  { label:'媒合中', cls:'s-matching', icon:'#i-clock', group:'matching' },
+    active:    { label:'服務中', cls:'s-active',   icon:'#i-radio', group:'active' },
+    done:      { label:'已完成', cls:'s-done',     icon:'#i-check', group:'done' },
+    cancelled: { label:'已取消', cls:'s-done',     icon:'#i-check', group:'done' }
+  };
+  function poolChip(pool){ return pool==='B' ? '<span class="pool-chip pool-B">照服員</span>' : '<span class="pool-chip pool-A">一般</span>'; }
+  function shortNo(no){ if(!no) return ''; var m=String(no).match(/(\d{4})$/); return m ? '#'+m[1] : '#'+String(no).slice(-4); }
+  function fmtDate(ts){ if(!ts) return ''; var d=new Date(ts); return d.getFullYear()+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+  function hoursText(min){ if(!min) return ''; return (Math.round(min/60*10)/10)+' 小時'; }
+
+  function buildCard(o, staffName){
+    var st = STATUS[o.status] || STATUS.matching;
+    var loc = [o.service_district, o.service_address].filter(Boolean).join(' · ');
+    var metaTime = hoursText(o.duration_minutes);
+    var priceLabel = st.group==='done' ? '已付' : (st.group==='matching' ? '願付' : '總計');
+    return ''+
+      '<div class="order-card '+(st.group==='active'?'active-order':st.group==='matching'?'matching':'done-order')+'" data-status="'+st.group+'" onclick="window.location.href=\'10_order_detail.html\'">'+
+        '<div class="oc-top">'+
+          '<div style="flex:1;min-width:0;">'+
+            '<div class="oc-id-row"><span class="oc-id">'+esc(shortNo(o.order_no))+'</span> · '+esc(fmtDate(o.service_time))+'</div>'+
+            '<div class="oc-title">'+esc(o.service_type||'服務')+poolChip(o.pool)+'</div>'+
+          '</div>'+
+          '<span class="status-tag '+st.cls+'"><svg><use href="'+st.icon+'"/></svg>'+st.label+'</span>'+
+        '</div>'+
+        '<div class="oc-meta">'+
+          (loc ? '<span class="oc-meta-item"><svg><use href="#i-pin"/></svg>'+esc(loc)+'</span>' : '')+
+          (metaTime ? '<span class="oc-meta-item"><svg><use href="#i-clock"/></svg>'+esc(metaTime)+'</span>' : '')+
+        '</div>'+
+        '<div class="oc-bottom">'+
+          (staffName
+            ? '<div class="oc-staff"><div class="oc-staff-avatar">'+esc(firstChar(staffName))+'</div><span>'+esc(staffName)+'</span></div>'
+            : '<div style="font-size:0.74rem;color:var(--ink-light);">'+(st.group==='matching'?'媒合中,等待順咖接單':'')+'</div>')+
+          '<div><span class="oc-price-label">'+priceLabel+'</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'+
+        '</div>'+
+      '</div>';
+  }
+
+  async function init(){
+    if(typeof window.sb === 'undefined'){ console.error('supabase-init.js 未載入'); return; }
+    var ures = await sb.auth.getUser();
+    var user = (ures && ures.data) ? ures.data.user : null;
+    if(!user){ window.location.href = '13_login.html'; return; }
+
+    /* 本人 users */
+    var prof = await sb.from('users').select('display_name,member_no,client_points,phone,is_verified,is_realname,role_detail').eq('id', user.id).maybeSingle();
+    var u = prof.data || {};
+    var name = u.display_name || (u.role_detail && u.role_detail.real_name) || '會員';
+    $('h-name').textContent = name;
+    $('h-avatar').textContent = firstChar(name);
+    $('h-greeting').textContent = greeting();
+    $('stat-points').textContent = (u.client_points||0) + ' 點';
+    $('h-member').textContent = u.member_no ? ('會員編號 '+u.member_no) : '';
+
+    var badges = '';
+    if(u.is_realname || u.is_verified){ badges += '<span class="bm b-verified"><svg><use href="#i-check"/></svg>實名</span>'; }
+    if(u.phone){ badges += '<span class="bm b-phone"><svg><use href="#i-phone"/></svg>手機已驗</span>'; }
+    var hasEmail = u.role_detail && u.role_detail.email;
+    badges += hasEmail
+      ? '<span class="bm b-verified"><svg><use href="#i-mail"/></svg>信箱已留</span>'
+      : '<span class="bm bm-unverified" onclick="window.location.href=\'07_verification.html\'"><svg><use href="#i-mail"/></svg>信箱未驗</span>';
+    $('h-badges').innerHTML = badges;
+
+    /* 角色狀態 */
+    var roles = await sb.from('user_roles').select('role,status').eq('user_id', user.id);
+    var rlist = roles.data || [];
+    var clientRole = rlist.find(function(r){ return r.role==='client'; });
+    var suncarRole = rlist.find(function(r){ return r.role==='suncar'; });
+    var statusMap = { active:'已啟用', pending:'審核中', suspended:'已停用', rejected:'未通過' };
+    if(clientRole){ $('role-status').textContent = '案家 · '+(statusMap[clientRole.status]||clientRole.status); }
+    if(suncarRole){
+      $('role-switch-link').style.display = '';
+      var rc = $('recruit-cta'); if(rc){ rc.style.display = 'none'; }
+    }
+
+    /* 本人訂單 */
+    var ores = await sb.from('orders').select('order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,suncar_id').eq('client_id', user.id).order('created_at',{ascending:false});
+    var orders = ores.data || [];
+
+    var suncarIds = orders.map(function(o){ return o.suncar_id; }).filter(Boolean);
+    var nameById = {};
+    if(suncarIds.length){
+      var sres = await sb.from('users').select('id,display_name').in('id', suncarIds);
+      (sres.data||[]).forEach(function(s){ nameById[s.id] = s.display_name; });
+    }
+
+    var cnt = { matching:0, active:0, done:0 };
+    orders.forEach(function(o){ var g=(STATUS[o.status]||{}).group; if(g==='matching')cnt.matching++; else if(g==='active')cnt.active++; else if(g==='done')cnt.done++; });
+    $('stat-matching').textContent = cnt.matching;
+    $('stat-active').textContent = cnt.active;
+    $('stat-done').textContent = cnt.done;
+    $('cnt-all').textContent = orders.length;
+    $('cnt-matching').textContent = cnt.matching;
+    $('cnt-active').textContent = cnt.active;
+    $('cnt-done').textContent = cnt.done;
+
+    var activeOrders = orders.filter(function(o){ var g=(STATUS[o.status]||{}).group; return g==='active'||g==='matching'; });
+    if(activeOrders.length){
+      $('active-list').innerHTML = activeOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id]); }).join('');
+      $('active-section').style.display = '';
+    }
+
+    var listEl = $('history-list');
+    if(orders.length){
+      listEl.innerHTML = orders.map(function(o){ return buildCard(o, nameById[o.suncar_id]); }).join('');
+      $('empty-state').style.display = 'none';
+    } else {
+      listEl.innerHTML = '';
+      $('empty-state').style.display = '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+
 /* === 雙重身份模擬 === */
 var isDualRole = false;
 
