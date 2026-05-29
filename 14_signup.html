@@ -328,18 +328,18 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
     <div class="row2">
       <div class="field">
         <label>真實姓名<span class="req">*</span></label>
-        <input type="text" placeholder="例:王小明">
+        <input type="text" id="su-realname" placeholder="例:王小明">
       </div>
       <div class="field">
         <label>稱呼<span class="req">*</span></label>
-        <input type="text" placeholder="例:小明、明哥">
+        <input type="text" id="su-nickname" placeholder="例:小明、明哥">
         <div class="hint">順咖會看到的稱呼</div>
       </div>
     </div>
 
     <div class="field">
       <label>手機號碼<span class="req">*</span></label>
-      <input type="tel" placeholder="0912-345-678">
+      <input type="tel" id="su-phone" placeholder="0912-345-678">
       <div class="hint">用來接收訂單通知,不會公開給順咖</div>
     </div>
 
@@ -352,12 +352,12 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
     <div class="field">
       <label>常用服務地址<span class="req">*</span></label>
       <div class="row2" style="margin-bottom:8px;">
-        <input type="text" placeholder="縣市(例:新北市)">
-        <input type="text" placeholder="行政區(例:板橋區)">
+        <input type="text" id="su-city" placeholder="縣市(例:新北市)">
+        <input type="text" id="su-district" placeholder="行政區(例:板橋區)">
       </div>
       <div class="row2">
-        <input type="text" placeholder="路 / 街(例:文化路一段)">
-        <input type="text" placeholder="號 · 樓(例:188 號 5 樓)">
+        <input type="text" id="su-street" placeholder="路 / 街(例:文化路一段)">
+        <input type="text" id="su-addrdetail" placeholder="號 · 樓(例:188 號 5 樓)">
       </div>
       <div class="hint">用於配對附近的順咖,可日後修改、新增其他地址</div>
     </div>
@@ -578,8 +578,11 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 <script>
 var chosenAuthMethod = '';
+var chosenRole = 'client'; // 這頁是找順咖入口，角色固定 client
 
 function goStep(n) {
   document.querySelectorAll('.step').forEach(function(s){ s.classList.remove('on'); });
@@ -597,34 +600,82 @@ function goStep(n) {
 
 function pickRole(role) {
   if (role === 'client') {
+    chosenRole = 'client';
     goStep(2);
   }
 }
 
-function signupWith(method) {
-  chosenAuthMethod = method;
-  var msgMap = {
-    'LINE': { msg: '已用 LINE 完成身分驗證', detail: '系統收到:LINE 暱稱、頭像(姓名、電話需自填)' },
-    'Google': { msg: '已用 Google 完成身分驗證', detail: '系統收到:Google Email、頭像(姓名、電話需自填)' },
-    'Email': { msg: '已寄送驗證信至你的 Email', detail: '請完成信箱驗證(姓名、電話需自填)' }
-  };
-  var info = msgMap[method];
-  document.getElementById('auth-msg').textContent = info.msg;
-  document.getElementById('auth-detail').textContent = info.detail;
-
-  if (method === 'Google') {
-    document.getElementById('email-field').value = 'your-google-email@gmail.com';
-    document.getElementById('email-field').setAttribute('readonly', 'readonly');
-  } else {
-    document.getElementById('email-field').removeAttribute('readonly');
-    document.getElementById('email-field').value = '';
+// 進頁先看：是不是剛從 LINE 授權跳回來
+window.addEventListener('DOMContentLoaded', async function () {
+  var res = await sb.auth.getSession();
+  var pendingRole = localStorage.getItem('signup_role');
+  if (res.data && res.data.session && pendingRole) {
+    // 註冊途中授權回來，補 line_user_id、進補資料步驟
+    await backfillLineId();
+    await prefillStep3();
+    goStep(3);
   }
+  // 沒登入、或已登入但沒有註冊意圖，都留在 step 1
+});
 
-  alert('用 ' + method + ' 註冊流程:\n\n1. 跳到 ' + method + ' 授權頁\n2. 同意授權\n3. 自動跳回網站、進入補資料步驟\n\n(demo 模擬中,假設授權成功)');
-  setTimeout(function(){ goStep(3); }, 300);
+async function signupWith(method) {
+  if (method !== 'LINE') {
+    alert(method + ' 註冊尚未開放,目前請先用 LINE 註冊。');
+    return;
+  }
+  chosenAuthMethod = method;
+  localStorage.setItem('signup_role', chosenRole || 'client');
+  var r = await sb.auth.signInWithOAuth({
+    provider: 'custom:line',
+    options: {
+      redirectTo: window.location.origin + '/14_signup.html',
+      scopes: 'openid profile'
+    }
+  });
+  if (r.error) {
+    alert('LINE 註冊啟動失敗:' + r.error.message);
+    localStorage.removeItem('signup_role');
+  }
 }
 
-function completeSignup() {
+// 補 line_user_id（跟登入頁同一套邏輯）
+async function backfillLineId() {
+  var ures = await sb.auth.getUser();
+  var user = ures.data ? ures.data.user : null;
+  if (!user) return;
+  var lineId = extractLineId(user);
+  if (lineId) {
+    await sb.from('users').update({ line_user_id: lineId }).eq('id', user.id).is('line_user_id', null);
+  }
+}
+
+function extractLineId(user) {
+  if (user.identities) {
+    for (var i = 0; i < user.identities.length; i++) {
+      var idt = user.identities[i];
+      if ((idt.provider || '').indexOf('line') !== -1 && idt.identity_data && idt.identity_data.sub) {
+        return idt.identity_data.sub;
+      }
+    }
+  }
+  if (user.user_metadata && user.user_metadata.sub) return user.user_metadata.sub;
+  return null;
+}
+
+// 補資料頁：用 LINE 暱稱預填稱呼
+async function prefillStep3() {
+  var ures = await sb.auth.getUser();
+  var user = ures.data ? ures.data.user : null;
+  document.getElementById('auth-msg').textContent = '已用 LINE 完成身分驗證';
+  document.getElementById('auth-detail').textContent = '系統收到:LINE 暱稱、頭像(姓名、電話需自填)';
+  if (user) {
+    var lineName = (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) || '';
+    var nick = document.getElementById('su-nickname');
+    if (lineName && nick && !nick.value) nick.value = lineName;
+  }
+}
+
+async function completeSignup() {
   var inputs = document.querySelectorAll('#step-3 input');
   var required = [0,1,2,4,5,6,7];
   var ok = true;
@@ -649,6 +700,54 @@ function completeSignup() {
     alert('請勾選同意條款');
     return;
   }
+
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+
+  var ures = await sb.auth.getUser();
+  var user = ures.data ? ures.data.user : null;
+  if (!user) {
+    alert('登入狀態遺失,請重新用 LINE 註冊。');
+    btn.disabled = false;
+    return;
+  }
+
+  var realname = document.getElementById('su-realname').value.trim();
+  var nickname = document.getElementById('su-nickname').value.trim();
+  var phone = document.getElementById('su-phone').value.trim();
+  var email = document.getElementById('email-field').value.trim();
+  var city = document.getElementById('su-city').value.trim();
+  var district = document.getElementById('su-district').value.trim();
+  var street = document.getElementById('su-street').value.trim();
+  var addrdetail = document.getElementById('su-addrdetail').value.trim();
+  var addressFull = city + district + street + addrdetail;
+
+  // 1. 更新 users：稱呼當公開顯示名、手機、真實姓名與 email 放 role_detail
+  var up = await sb.from('users').update({
+    display_name: nickname,
+    phone: phone,
+    role_detail: { real_name: realname, email: email }
+  }).eq('id', user.id);
+  if (up.error) {
+    alert('資料儲存失敗:' + up.error.message);
+    btn.disabled = false;
+    return;
+  }
+
+  // 2. 建立 client 角色：案家直接 active
+  var roleRes = await sb.from('user_roles').upsert({
+    user_id: user.id,
+    role: 'client',
+    status: 'active',
+    role_data: { city: city, district: district, street: street, detail: addrdetail, address_full: addressFull }
+  }, { onConflict: 'user_id,role' });
+  if (roleRes.error) {
+    alert('角色建立失敗:' + roleRes.error.message);
+    btn.disabled = false;
+    return;
+  }
+
+  localStorage.removeItem('signup_role');
   alert('註冊完成!即將進入會員主頁');
   window.location.href = '11_client_home.html';
 }
