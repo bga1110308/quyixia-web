@@ -377,6 +377,7 @@ async function confirmPay() {
     if (rt.error) console.error('point_transactions:', rt.error);
 
     try { sessionStorage.removeItem('pendingPlan'); } catch(e){}
+    try { sessionStorage.setItem('credits_lastTopupAt', String(Date.now())); } catch(e){}
 
     alert('儲值成功!' + poolName + '點數共獲得 ' + currentPlan.received + ' 點');
 

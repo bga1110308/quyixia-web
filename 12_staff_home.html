@@ -379,7 +379,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <!-- 帳戶 -->
   <div class="sec-h">
     <div class="sec-title">我的帳戶</div>
-    <a class="sec-action" onclick="window.location.href='16_buy_credits.html'">儲值<svg><use href="#i-arrow-right"/></svg></a>
+    <a class="sec-action" onclick="try{sessionStorage.setItem('credits_pool','suncar');sessionStorage.setItem('credits_returnTo','12_staff_home.html');}catch(e){}window.location.href='16_buy_credits.html'">儲值<svg><use href="#i-arrow-right"/></svg></a>
   </div>
   <div class="income-detail">
     <div class="income-row">
@@ -505,13 +505,13 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
 
   function activeCard(o, clientName, clientPhone){
     var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
-    return '<div class="order-card active-order" onclick="window.location.href=\'10_order_detail.html\'">'+head(o,'<span class="status-tag s-active"><svg><use href="#i-radio"/></svg>服務中</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-green" onclick="event.stopPropagation(); alert(\'標記完成功能稍後接上\')">標記完成</button></div>'+price(o)+'</div></div>';
+    return '<div class="order-card active-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-active"><svg><use href="#i-radio"/></svg>服務中</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-green" onclick="event.stopPropagation(); alert(\'標記完成功能稍後接上\')">標記完成</button></div>'+price(o)+'</div></div>';
   }
   function doneCard(o){
-    return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div></div>';
+    return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div></div>';
   }
   function openCard(o){
-    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html\'">'+head(o,'<span class="status-tag s-open">可接單</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); alert(\'接單功能稍後接上\')">接單</button></div>'+price(o)+'</div></div>';
+    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">可接單</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); alert(\'接單功能稍後接上\')">接單</button></div>'+price(o)+'</div></div>';
   }
 
   async function init(){
@@ -562,7 +562,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     }
 
     /* 本人接的單(suncar_id = 我) */
-    var ores = await sb.from('orders').select('order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id').eq('suncar_id', user.id).order('service_time',{ascending:false});
+    var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id').eq('suncar_id', user.id).order('service_time',{ascending:false});
     var myOrders = ores.data || [];
     var activeOrders = myOrders.filter(function(o){ return o.status==='active'; });
     var doneOrders = myOrders.filter(function(o){ return o.status==='done'; });
@@ -599,7 +599,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
 
     /* 可接任務(媒合中且尚無人接,審核通過才查) */
     if(canAcceptJobs){
-      var open = await sb.from('orders').select('order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount').eq('status','matching').is('suncar_id', null).order('service_time',{ascending:true});
+      var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount').eq('status','matching').is('suncar_id', null).order('service_time',{ascending:true});
       var openOrders = (open.data || []).filter(function(o){ return o.pool==='A' || (o.pool==='B' && u.has_caregiver_cert); });
       $('stat-open').textContent = openOrders.length;
       $('open-badge').textContent = openOrders.length + ' 筆';

@@ -267,9 +267,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <symbol id="i-coin" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6z"/></symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></symbol>
-  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></symbol>  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
 </defs>
 </svg>
+
+<a href="index.html" class="home-fab" title="回首頁" style="position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);text-decoration:none;"><svg style="width:18px;height:18px;fill:currentColor;"><use href="#i-home"/></svg></a>
 
 <div class="page-header">
   <div class="page-title">帳號認證</div>
@@ -930,7 +932,10 @@ function addCustomCert() {
 
     if (pts < POINTS_PER_CERT) {
       if (confirm('新增 1 張其他證件需 '+POINTS_PER_CERT+' 點,你目前有 '+pts+' 點。\n\n要前往購買點數嗎?')) {
-        try { sessionStorage.setItem('credits_returnTo', '07_verification.html'); } catch(e){}
+        try {
+          sessionStorage.setItem('credits_pool', 'suncar');
+          sessionStorage.setItem('credits_returnTo', '07_verification.html?tab=certs');
+        } catch(e){}
         window.location.href = '16_buy_credits.html';
       }
       return;
@@ -1025,15 +1030,16 @@ function closeBuyModal() {
   document.body.style.overflow = '';
 }
 function goToPayment(payPts, bonus) {
+  if (!confirm('你要加值的是「順咖點數」,確定嗎?')) return;
   var received = payPts + bonus;
   try {
-    sessionStorage.setItem('credits_returnTo', '07_verification.html');
+    sessionStorage.setItem('credits_returnTo', '12_staff_home.html');
     sessionStorage.setItem('pendingPlan', JSON.stringify({
       price: payPts,
       received: received,
       bonus: bonus,
       pool: 'suncar',
-      returnTo: '07_verification.html'
+      returnTo: '12_staff_home.html'
     }));
   } catch(e){}
   window.location.href = '17_payment.html';

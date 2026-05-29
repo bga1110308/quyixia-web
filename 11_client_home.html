@@ -318,7 +318,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="stat-num has-done" id="stat-done">0</div>
       <div class="stat-label">已完成</div>
     </div>
-    <div class="stat-card clickable" onclick="window.location.href='16_buy_credits.html'">
+    <div class="stat-card clickable" onclick="try{sessionStorage.setItem('credits_pool','client');}catch(e){}window.location.href='16_buy_credits.html'">
       <div class="stat-num" id="stat-points">0 點</div>
       <div class="stat-label">點數餘額</div>
     </div>
@@ -430,7 +430,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     var metaTime = hoursText(o.duration_minutes);
     var priceLabel = st.group==='done' ? '已付' : (st.group==='matching' ? '願付' : '總計');
     return ''+
-      '<div class="order-card '+(st.group==='active'?'active-order':st.group==='matching'?'matching':'done-order')+'" data-status="'+st.group+'" onclick="window.location.href=\'10_order_detail.html\'">'+
+      '<div class="order-card '+(st.group==='active'?'active-order':st.group==='matching'?'matching':'done-order')+'" data-status="'+st.group+'" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+
         '<div class="oc-top">'+
           '<div style="flex:1;min-width:0;">'+
             '<div class="oc-id-row"><span class="oc-id">'+esc(shortNo(o.order_no))+'</span> · '+esc(fmtDate(o.service_time))+'</div>'+
@@ -492,7 +492,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     }
 
     /* 本人訂單 */
-    var ores = await sb.from('orders').select('order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,suncar_id').eq('client_id', user.id).order('created_at',{ascending:false});
+    var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,suncar_id').eq('client_id', user.id).order('created_at',{ascending:false});
     var orders = ores.data || [];
 
     var suncarIds = orders.map(function(o){ return o.suncar_id; }).filter(Boolean);

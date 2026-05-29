@@ -229,6 +229,8 @@ function setPool(pool) {
    bonus:額外贈點
    received:實際入帳 = payPts + bonus */
 function goPay(payPts, bonus) {
+  var poolName = (currentPool === 'suncar') ? '順咖點數' : '案家點數';
+  if (!confirm('你要加值的是「' + poolName + '」。\n如果要改成另一種,請按取消、用上方按鈕切換。\n\n確定加值「' + poolName + '」嗎?')) return;
   var received = payPts + bonus;
   var returnTo = '';
   try {
@@ -266,6 +268,30 @@ function checkSuccess() {
 
 async function init() {
   await refreshBalance();
+
+  /* 讀來源頁設定的池(預設,不鎖死;使用者仍可手動切換) */
+  var pool = '';
+  try { pool = sessionStorage.getItem('credits_pool') || ''; } catch(e){}
+
+  /* 連續儲值提醒:剛儲值過(10 分內)又進來儲值就確認一次。success 返回頁不算 */
+  var p = new URLSearchParams(window.location.search);
+  if (p.get('success') !== '1') {
+    var last = 0;
+    try { last = parseInt(sessionStorage.getItem('credits_lastTopupAt') || '0', 10); } catch(e){}
+    if (last && (Date.now() - last) < 10 * 60 * 1000) {
+      if (!confirm('你剛剛已經儲值過了,確定要再儲值一次嗎?')) {
+        try { sessionStorage.removeItem('credits_lastTopupAt'); } catch(e){}
+        window.location.href = (pool === 'suncar') ? '12_staff_home.html' : '11_client_home.html';
+        return;
+      }
+      try { sessionStorage.removeItem('credits_lastTopupAt'); } catch(e){}
+    }
+  }
+
+  /* 套用預選池後清掉,避免下次直接開 16 時殘留 */
+  if (pool === 'suncar' || pool === 'client') setPool(pool);
+  try { sessionStorage.removeItem('credits_pool'); } catch(e){}
+
   checkSuccess();
 }
 init();
