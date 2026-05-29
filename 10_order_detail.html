@@ -215,6 +215,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   .topbar-title{font-size:0.92rem;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 
@@ -266,24 +268,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 <div class="wrap">
 
-  <!-- Demo 階段切換 -->
-  <div class="demo-switcher">
-    <div class="demo-label">DEMO · 切換訂單階段預覽</div>
-    <div class="demo-btns">
-      <button class="demo-btn" onclick="setStage('matching')">媒合中</button>
-      <button class="demo-btn" onclick="setStage('accepted')">已接單</button>
-      <button class="demo-btn on" onclick="setStage('active')">進行中</button>
-      <button class="demo-btn" onclick="setStage('await_confirm')">待你確認</button>
-      <button class="demo-btn" onclick="setStage('done')">已完成</button>
-    </div>
-  </div>
-
   <!-- 狀態大卡 -->
   <div class="status-banner active-banner" id="status-banner">
     <div class="sb-status-tag sb-active" id="status-tag"><svg><use href="#i-radio"/></svg>服務中</div>
     <div class="sb-title" id="status-title">小芳正在幫你處理</div>
     <div class="sb-desc" id="status-desc">已到達服務地點,預計 1 小時 30 分後完成</div>
-    <div class="sb-id">#0522 · 2025/05/22 09:00</div>
+    <div class="sb-id" id="sb-id">#— · —</div>
   </div>
 
   <!-- 完成確認區 -->
@@ -325,20 +315,16 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div class="section-card" id="staff-section">
     <div class="sec-title">順咖</div>
     <div class="staff-card">
-      <div class="staff-avatar cna">芳</div>
+      <div class="staff-avatar cna" id="staff-avatar">—</div>
       <div class="staff-info">
-        <div class="staff-name">小芳</div>
-        <div class="staff-rating"><svg><use href="#i-star"/></svg>4.9 · 已完成 23 件</div>
-        <div class="staff-badges">
-          <span class="bm bm-verified"><svg><use href="#i-check"/></svg>實名</span>
-          <span class="bm bm-safe"><svg><use href="#i-shield"/></svg>良民</span>
-          <span class="bm bm-cna"><svg><use href="#i-star"/></svg>照服</span>
-          <span class="bm bm-senior"><svg><use href="#i-crown"/></svg>資深</span>
+        <div class="staff-name" id="staff-name">—</div>
+        <div class="staff-rating" id="staff-rating"><svg><use href="#i-star"/></svg>—</div>
+        <div class="staff-badges" id="staff-badges">
         </div>
       </div>
     </div>
     <!-- 統一聯絡按鈕 -->
-    <div class="contact-row" id="staff-contact-actions">
+    <div class="contact-row" id="staff-contact-actions" style="display:none;">
       <a class="contact-btn call" href="tel:0911234567">
         <span class="contact-icon">📞</span>
         <span>撥打電話</span>
@@ -354,7 +340,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
 
   <!-- 進度時間軸 -->
-  <div class="section-card">
+  <div class="section-card" id="timeline-section" style="display:none;">
     <div class="sec-title">進度</div>
     <div class="timeline-v" id="timeline">
       <div class="tl-item done">
@@ -388,7 +374,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
 
   <!-- 即時通知 -->
-  <div class="section-card">
+  <div class="section-card" id="feed-section" style="display:none;">
     <div class="sec-title"><svg><use href="#i-bell"/></svg>即時通知</div>
     <div class="live-feed">
       <div class="feed-item new">
@@ -427,23 +413,23 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="sec-title">訂單資訊</div>
     <div class="info-row">
       <div class="info-label"><svg><use href="#i-clipboard"/></svg>服務項目</div>
-      <div class="info-value">陪看醫生<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服員</span></div>
+      <div class="info-value" id="oi-service">—</div>
     </div>
-    <div class="info-row">
+    <div class="info-row" id="oi-target-row" style="display:none;">
       <div class="info-label"><svg><use href="#i-user"/></svg>服務對象</div>
-      <div class="info-value">家裡長輩(媽媽,78 歲)</div>
+      <div class="info-value" id="oi-target">—</div>
     </div>
     <div class="info-row">
       <div class="info-label"><svg><use href="#i-pin"/></svg>地點</div>
-      <div class="info-value">台北市信義區 · 台大醫院</div>
+      <div class="info-value" id="oi-place">—</div>
     </div>
     <div class="info-row">
       <div class="info-label"><svg><use href="#i-clock"/></svg>時間</div>
-      <div class="info-value">2025/05/22 09:00 · 預計 3 小時</div>
+      <div class="info-value" id="oi-time">—</div>
     </div>
     <div class="info-row">
       <div class="info-label"><svg><use href="#i-edit"/></svg>備註</div>
-      <div class="info-value">媽媽會講台語比較好,行動需略攙扶</div>
+      <div class="info-value" id="oi-note">—</div>
     </div>
   </div>
 
@@ -452,181 +438,125 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="sec-title"><svg><use href="#i-money"/></svg>費用明細</div>
     <div class="fee-row">
       <span>服務報酬</span>
-      <span class="fee-price">$ 600</span>
+      <span class="fee-price" id="fee-amount">$ —</span>
     </div>
     <div class="fee-row">
-      <span>平台服務費</span>
-      <span class="fee-price">$ 0</span>
+      <span>平台服務費(已扣點數)</span>
+      <span class="fee-price" id="fee-points">— 點</span>
     </div>
     <div class="fee-row total">
-      <span>應付總額</span>
-      <span class="price">$ 600</span>
+      <span>應付服務報酬</span>
+      <span class="price" id="fee-total">$ —</span>
     </div>
     <div style="font-size:0.74rem;color:var(--ink-light);margin-top:8px;line-height:1.65;">
-      確認服務完成後,款項將自動撥給順咖
+      服務報酬由案家於服務完成後直接支付給順咖,平台不經手金流
     </div>
   </div>
 
   <!-- 底部操作 -->
-  <div class="bottom-actions" id="bottom-actions">
+  <div class="bottom-actions" id="bottom-actions" style="display:none;">
     <button class="btn btn-outline" style="grid-column:span 2;" onclick="reportProblem()"><svg><use href="#i-flag"/></svg>回報問題</button>
   </div>
 
 </div>
 
 <script>
-/* 各階段內容 */
-var stages = {
-  matching: {
-    bannerCls: '',
-    statusTag: '<svg><use href="#i-clock"/></svg>媒合中',
-    statusTagCls: 'sb-matching',
-    title: '正在幫你找順咖',
-    desc: '已有 2 位順咖查看此任務 · 預計 30 分鐘內回覆',
-    showStaff: false,
-    showConfirm: false,
-    showSuccess: false,
-    showBottomActions: true,
-    bottomBtns: '<button class="btn btn-outline" onclick="alert(\'修改訂單\')"><svg><use href="#i-edit"/></svg>修改訂單</button><button class="btn btn-red" onclick="cancelOrder(\'matching\')"><svg><use href="#i-x"/></svg>取消訂單</button>'
-  },
-  accepted: {
-    bannerCls: 'active-banner',
-    statusTag: '<svg><use href="#i-check"/></svg>順咖已接單',
-    statusTagCls: 'sb-active',
-    title: '小芳會準時到府',
-    desc: '預計明天 09:00 抵達 · 可先用訊息聯絡確認細節',
-    showStaff: true,
-    showConfirm: false,
-    showSuccess: false,
-    showBottomActions: true,
-    bottomBtns: '<button class="btn btn-red" style="grid-column:span 2;" onclick="cancelOrder(\'accepted\')"><svg><use href="#i-x"/></svg>取消訂單</button>'
-  },
-  active: {
-    bannerCls: 'active-banner',
-    statusTag: '<svg><use href="#i-radio"/></svg>服務中',
-    statusTagCls: 'sb-active',
-    title: '小芳正在幫你處理',
-    desc: '已到達服務地點,預計 1 小時 30 分後完成<br><span style="font-size:0.78rem;color:var(--ink-light);">服務已開始,無法取消訂單 · 有問題請先聯絡順咖</span>',
-    showStaff: true,
-    showConfirm: false,
-    showSuccess: false,
-    showBottomActions: true,
-    bottomBtns: '<button class="btn btn-outline" style="grid-column:span 2;" onclick="reportProblem()"><svg><use href="#i-flag"/></svg>回報問題</button>'
-  },
-  await_confirm: {
-    bannerCls: 'confirm-banner',
-    statusTag: '<svg><use href="#i-warn"/></svg>等待你確認',
-    statusTagCls: 'sb-confirm',
-    title: '順咖說已經完成',
-    desc: '請確認服務是否如預期完成',
-    showStaff: true,
-    showConfirm: true,
-    showSuccess: false,
-    showBottomActions: false
-  },
-  done: {
-    bannerCls: 'done-banner',
-    statusTag: '<svg><use href="#i-check-circle"/></svg>已完成',
-    statusTagCls: 'sb-done',
-    title: '服務完成',
-    desc: '感謝你使用去一下 · 期待你的回饋',
-    showStaff: true,
-    showConfirm: false,
-    showSuccess: true,
-    showBottomActions: false
-  }
+/* 工具 */
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
+function fmtDT(v){ if(!v) return '—'; var d=new Date(v); if(isNaN(d)) return '—'; var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+function durText(m){ if(m==null) return '時數待討論'; if(m>=60){ var h=Math.floor(m/60); var mm=m%60; return '預計 '+h+' 小時'+(mm?(' '+mm+' 分'):''); } return '預計 '+m+' 分鐘'; }
+
+/* 狀態對應顯示 */
+var STATUS_UI = {
+  matching: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>媒合中',   title:'正在幫你找順咖', desc:'附近的順咖看到任務後會主動聯繫你' },
+  active:   { cls:'active-banner', tagCls:'sb-active',   tag:'<svg><use href="#i-radio"/></svg>服務中',    title:'順咖服務中',     desc:'服務進行中,有問題可直接聯絡順咖' },
+  done:     { cls:'done-banner',   tagCls:'sb-done',     tag:'<svg><use href="#i-check-circle"/></svg>已完成', title:'服務完成',       desc:'感謝你使用去一下' },
+  cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }
 };
 
-function setStage(stage) {
-  document.querySelectorAll('.demo-btn').forEach(function(b){ b.classList.remove('on'); });
-  if (event && event.target) event.target.classList.add('on');
+async function init(){
+  if(typeof window.sb === 'undefined'){ alert('系統未就緒,請重新整理頁面'); return; }
 
-  var s = stages[stage];
+  var params = new URLSearchParams(window.location.search);
+  var orderId = params.get('id');
+
+  var ures = await sb.auth.getUser();
+  var user = (ures && ures.data) ? ures.data.user : null;
+  if(!user){ window.location.href = '13_login.html'; return; }
+
+  if(!orderId){
+    document.getElementById('status-title').textContent = '找不到訂單';
+    document.getElementById('status-desc').textContent = '網址沒有帶訂單編號';
+    return;
+  }
+
+  var ores = await sb.from('orders')
+    .select('id,order_no,status,pool,order_type,service_type,service_time,service_district,service_address,address_note,duration_minutes,amount,points_cost,suncar_id,created_at,client_id')
+    .eq('id', orderId).maybeSingle();
+  var o = (ores && ores.data) ? ores.data : null;
+  if(!o){
+    document.getElementById('status-title').textContent = '找不到這筆訂單';
+    document.getElementById('status-desc').textContent = '訂單不存在,或你沒有權限查看';
+    return;
+  }
+
+  /* 狀態大卡 */
+  var ui = STATUS_UI[o.status] || STATUS_UI.matching;
   var banner = document.getElementById('status-banner');
-  banner.className = 'status-banner ' + s.bannerCls;
+  banner.className = 'status-banner ' + ui.cls;
   var tag = document.getElementById('status-tag');
-  tag.className = 'sb-status-tag ' + s.statusTagCls;
-  tag.innerHTML = s.statusTag;
-  document.getElementById('status-title').textContent = s.title;
-  document.getElementById('status-desc').innerHTML = s.desc;
+  tag.className = 'sb-status-tag ' + ui.tagCls;
+  tag.innerHTML = ui.tag;
+  document.getElementById('status-title').textContent = ui.title;
+  document.getElementById('status-desc').textContent = ui.desc;
+  document.getElementById('sb-id').textContent = (o.order_no ? ('#'+o.order_no) : '#—') + ' · ' + fmtDT(o.created_at);
 
-  document.getElementById('staff-section').style.display = s.showStaff ? '' : 'none';
-  document.getElementById('confirm-action').classList.toggle('show', s.showConfirm);
-  document.getElementById('success-box').classList.toggle('show', s.showSuccess);
-  document.getElementById('bottom-actions').style.display = s.showBottomActions ? '' : 'none';
+  /* 訂單資訊 */
+  var poolChip = (o.pool === 'B')
+    ? '<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服員</span>'
+    : '<span class="pool-chip pool-A">一般</span>';
+  document.getElementById('oi-service').innerHTML = esc(o.service_type || '—') + poolChip;
+  document.getElementById('oi-place').textContent = (o.service_district || '') + (o.service_address ? (' · ' + o.service_address) : '') || '—';
+  document.getElementById('oi-time').textContent = fmtDT(o.service_time) + ' · ' + durText(o.duration_minutes);
+  document.getElementById('oi-note').textContent = o.address_note || '無';
 
-  if (s.bottomBtns) {
-    document.getElementById('bottom-actions').innerHTML = s.bottomBtns;
-  }
+  /* 費用 */
+  document.getElementById('fee-amount').textContent = (o.amount != null ? ('$ ' + o.amount) : '$ —');
+  document.getElementById('fee-points').textContent = (o.points_cost != null ? o.points_cost : 0) + ' 點';
+  document.getElementById('fee-total').textContent = (o.amount != null ? ('$ ' + o.amount) : '$ —');
 
-  /* 控制聯絡按鈕:已接單／服務中／待確認才顯示 */
-  var canContact = (stage === 'accepted' || stage === 'active' || stage === 'await_confirm');
-  var contactActions = document.getElementById('staff-contact-actions');
-  var hint = document.getElementById('contact-hint-msg');
-  if (contactActions) {
-    contactActions.style.display = canContact ? '' : 'none';
-  }
-  if (hint) {
-    if (stage === 'done') {
-      hint.style.display = '';
-      hint.innerHTML = '✅ 訂單已完成,如有問題請聯絡客服協助處理';
-    } else if (!canContact) {
-      hint.style.display = '';
-      hint.innerHTML = '📱 電話 / LINE 聯絡功能僅在訂單成立後(已接單／服務中／待確認)開放';
+  /* 指定順咖卡 */
+  var staffSection = document.getElementById('staff-section');
+  if(o.suncar_id){
+    var sres = await sb.from('public_suncars')
+      .select('id,display_name,avatar_url,credit_score,is_realname,has_caregiver_cert')
+      .eq('id', o.suncar_id).maybeSingle();
+    var st = (sres && sres.data) ? sres.data : null;
+    if(st){
+      var sname = st.display_name || '順咖';
+      var av = document.getElementById('staff-avatar');
+      if(st.avatar_url){
+        av.innerHTML = '<img src="'+esc(st.avatar_url)+'" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+      } else {
+        av.textContent = firstChar(sname);
+      }
+      document.getElementById('staff-name').textContent = sname;
+      document.getElementById('staff-rating').innerHTML = '<svg><use href="#i-star"/></svg>信用分 ' + (st.credit_score != null ? st.credit_score : '—');
+      var badges = '';
+      if(st.is_realname) badges += '<span class="bm bm-verified"><svg><use href="#i-check"/></svg>實名</span>';
+      if(st.has_caregiver_cert) badges += '<span class="bm bm-cna"><svg><use href="#i-star"/></svg>照服</span>';
+      document.getElementById('staff-badges').innerHTML = badges;
+      staffSection.style.display = '';
     } else {
-      hint.style.display = 'none';
+      staffSection.style.display = 'none';
     }
+  } else {
+    staffSection.style.display = 'none';
   }
 }
 
-function confirmComplete() {
-  if (confirm('確認服務已完成?\n\n款項將撥給順咖,此動作無法復原。')) {
-    setStage('done');
-    document.querySelectorAll('.demo-btn').forEach(function(b){
-      b.classList.remove('on');
-      if (b.textContent === '已完成') b.classList.add('on');
-    });
-    window.scrollTo({top:0, behavior:'smooth'});
-  }
-}
-
-function reportIssue() {
-  var reason = prompt('請簡述問題(送出後客服會聯繫你):');
-  if (reason) {
-    alert('已通知客服,將於 24 小時內聯繫你了解狀況。\n款項暫時不會撥給順咖。');
-  }
-}
-
-function reportProblem() {
-  var reason = prompt('服務進行中遇到什麼狀況?\n\n(客服會立刻介入處理,必要時可中止服務)');
-  if (reason) {
-    alert('已通知客服緊急處理,預計 15 分鐘內聯繫你。\n如為人身安全問題,請直接撥打 110。');
-  }
-}
-
-/* 取消訂單 · 依責任歸屬退點 */
-function cancelOrder(stage) {
-  if (stage === 'matching') {
-    var msg = '取消訂單後將:\n\n' +
-              '✅ 全額退還 50 點到你的帳戶\n' +
-              '✅ 訂單立即關閉\n\n' +
-              '確定要取消嗎?';
-    if (confirm(msg)) {
-      alert('訂單已取消,50 點已退還至你的帳戶。');
-    }
-  } else if (stage === 'accepted') {
-    var msg = '⚠️ 取消提醒\n\n' +
-              '順咖已接受訂單並安排時間,此時取消:\n\n' +
-              '✅ 全額退還 50 點\n' +
-              '❌ 記一次取消次數,30 天內累計達 2 次將暫停下單\n' +
-              '❌ 順咖會收到通知,可能影響你的評價\n\n' +
-              '若是順咖無法依約服務,請點下方「回報問題」交由客服處理(全額退還 50 點,不計取消次數)\n\n' +
-              '仍要取消嗎?';
-    if (confirm(msg)) {
-      alert('訂單已取消,已全額退還 50 點,並記錄一次取消次數。');
-    }
-  }
-}
+init();
 </script>
 </body>
 </html>
