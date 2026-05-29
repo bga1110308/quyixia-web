@@ -171,37 +171,78 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 <script>
-function loginWith(provider) {
-  /* 真實上線:呼叫 Supabase Auth 的 OAuth */
-  /* supabase.auth.signInWithOAuth({ provider: 'line' / 'google' }) */
-  alert('用 ' + provider + ' 登入流程:\n\n1. 跳到 ' + provider + ' 授權頁\n2. 同意授權\n3. 自動跳回網站、自動登入\n\n(demo 模擬中,假設登入成功)');
-  setTimeout(function(){
-    window.location.href = '11_client_home.html';
-  }, 500);
+// 登入頁。LINE 已串接 Supabase Auth。
+// Google 與 Email 待 Supabase 設定好供應商後再開放。
+
+var card = document.querySelector('.login-card');
+
+// 進頁先檢查：是不是剛從 LINE 授權跳回來、或本來就已登入
+window.addEventListener('DOMContentLoaded', async function () {
+  if (card) card.style.visibility = 'hidden';
+  var res = await sb.auth.getSession();
+  if (res.data && res.data.session) {
+    await handlePostLogin();
+    return; // 已導向首頁，不顯示登入卡
+  }
+  if (card) card.style.visibility = 'visible';
+});
+
+// 登入成功後：補 line_user_id，再進首頁
+async function handlePostLogin() {
+  var ures = await sb.auth.getUser();
+  var user = ures.data ? ures.data.user : null;
+  if (user) {
+    var lineId = extractLineId(user);
+    if (lineId) {
+      // 只在目前為空時補寫，避免覆蓋
+      await sb.from('users')
+        .update({ line_user_id: lineId })
+        .eq('id', user.id)
+        .is('line_user_id', null);
+    }
+  }
+  window.location.href = '11_client_home.html';
+}
+
+// 從 LINE 身分資料取出 LINE user id（userinfo 的 sub）
+function extractLineId(user) {
+  if (user.identities) {
+    for (var i = 0; i < user.identities.length; i++) {
+      var idt = user.identities[i];
+      if ((idt.provider || '').indexOf('line') !== -1 &&
+          idt.identity_data && idt.identity_data.sub) {
+        return idt.identity_data.sub;
+      }
+    }
+  }
+  if (user.user_metadata && user.user_metadata.sub) return user.user_metadata.sub;
+  return null;
+}
+
+async function loginWith(provider) {
+  if (provider === 'LINE') {
+    var r = await sb.auth.signInWithOAuth({
+      provider: 'custom:line',
+      options: {
+        redirectTo: window.location.origin + '/13_login.html',
+        scopes: 'openid profile'
+      }
+    });
+    if (r.error) alert('LINE 登入啟動失敗:' + r.error.message);
+    return;
+  }
+  alert(provider + ' 登入尚未開放,目前請先用 LINE 登入。');
 }
 
 function toggleEmail() {
-  var sec = document.getElementById('email-section');
-  var social = document.getElementById('social-row');
-  if (sec.classList.contains('show')) {
-    sec.classList.remove('show');
-    social.style.display = 'flex';
-  } else {
-    sec.classList.add('show');
-    social.style.display = 'none';
-    setTimeout(function(){ document.getElementById('email-input').focus(); }, 100);
-  }
+  alert('Email 登入尚未開放,目前請先用 LINE 登入。');
 }
 
 function sendEmailLink() {
-  var email = document.getElementById('email-input').value.trim();
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    alert('請輸入正確的 Email 格式');
-    return;
-  }
-  /* 真實上線:supabase.auth.signInWithOtp({ email }) */
-  alert('登入連結已寄送至:\n' + email + '\n\n請開啟信箱點連結完成登入');
+  alert('Email 登入尚未開放,目前請先用 LINE 登入。');
 }
 </script>
 </body>
