@@ -244,6 +244,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   .page-title{font-size:1.4rem;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 
@@ -529,8 +531,10 @@ function init() {
     showWriteStaff();
   } else if (role === 'client') {
     showWriteClient();
+  } else if (view === 'me') {
+    showMyReviews();          // 本人真實評價:查 reviews.reviewee_id = 登入者,本人免解鎖
   } else if (view) {
-    showView(view);
+    showView(view);           // 範例/他人:目前仍是 demo 寫死,屬 E3 待辦(之後改查指定 user)
   } else {
     document.getElementById('mode-guide').style.display = 'block';
   }
@@ -703,6 +707,152 @@ function showView(key) {
     '</div>';
   }).join('');
   document.getElementById('review-list').innerHTML = listHTML;
+}
+
+/* 本人真實評價:讀 reviews 裡 reviewee_id = 登入者(=我收到的評價)。本人看自己一律免解鎖,分項/行為/信用全開。
+ * reviews 欄位:reviewer_id, reviewee_id, order_id, mode, ratings(jsonb), flags(jsonb), comment, is_public, created_at
+ * 約定格式(E3 寫評價時請照此存):ratings = { overall:1~5, items:{ 標籤:1~5 } };flags = { 標籤:true }。
+ * 讀取端對舊/缺格式有容錯,但寫入端務必照約定,否則分項評分會算不出來。 */
+async function showMyReviews() {
+  document.getElementById('mode-view').style.display = 'block';
+  if (typeof window.sb === 'undefined') { document.getElementById('view-sub').textContent = '系統載入失敗,請重新整理'; return; }
+
+  var ures = await sb.auth.getUser();
+  var user = ures.data ? ures.data.user : null;
+  if (!user) { window.location.href = '13_login.html'; return; }
+
+  /* 本人基本資料 */
+  var pr = await sb.from('users').select('display_name,credit_score,cancel_count,has_caregiver_cert,is_realname,is_verified,role_detail').eq('id', user.id).maybeSingle();
+  var u = pr.data || {};
+  var myName = u.display_name || '我';
+  var avatarUrl = u.role_detail && u.role_detail.avatar_url;
+
+  /* 本人收到的評價 */
+  var rr = await sb.from('reviews').select('reviewer_id,order_id,mode,ratings,flags,comment,created_at').eq('reviewee_id', user.id).order('created_at', { ascending: false });
+  var rows = rr.data || [];
+
+  /* 評價人名字(打碼用) */
+  var nameById = {};
+  var rids = rows.map(function(r){ return r.reviewer_id; }).filter(Boolean);
+  if (rids.length) {
+    var nres = await sb.from('users').select('id,display_name').in('id', rids);
+    (nres.data || []).forEach(function(n){ nameById[n.id] = n.display_name; });
+  }
+
+  /* 完成單數(本人為案家或順咖、狀態 done) */
+  var doneCount = 0;
+  var dres = await sb.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'done').or('client_id.eq.' + user.id + ',suncar_id.eq.' + user.id);
+  if (dres && typeof dres.count === 'number') doneCount = dres.count;
+
+  /* 每則總星等:優先讀 ratings.overall,否則取 items 數值平均 */
+  function overallOf(r) {
+    if (!r.ratings) return 0;
+    if (typeof r.ratings.overall === 'number') return r.ratings.overall;
+    var v = r.ratings.items || r.ratings;
+    var ks = Object.keys(v).filter(function(k){ return typeof v[k] === 'number'; });
+    if (!ks.length) return 0;
+    var s = 0; ks.forEach(function(k){ s += v[k]; });
+    return s / ks.length;
+  }
+  var avg = rows.length ? (rows.reduce(function(s, r){ return s + overallOf(r); }, 0) / rows.length) : 0;
+
+  /* 顏色:本人評價頁統一用順咖綠;之後若要分案家金可依進入來源帶參數 */
+  var roleClass = 'view-staff';
+  document.getElementById('view-title').textContent = myName + ' 的評價紀錄';
+  document.getElementById('view-sub').textContent = rows.length
+    ? ('共 ' + rows.length + ' 則評價,平均 ' + avg.toFixed(1) + ' 星')
+    : '還沒有收到評價';
+
+  /* 頭像 */
+  var avatarInner = avatarUrl
+    ? '<img src="' + avatarUrl + '" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'
+    : (Array.from(myName)[0] || '我');
+
+  var badgesHTML = '';
+  if (u.is_realname || u.is_verified) badgesHTML += '<span class="badge-mini b-verified"><svg><use href="#i-check"/></svg>實名</span>';
+  if (u.has_caregiver_cert) badgesHTML += '<span class="badge-mini b-cna"><svg><use href="#i-star-fill"/></svg>照服員</span>';
+
+  var fullStars = '';
+  for (var i = 0; i < 5; i++) fullStars += '<svg><use href="#i-star-fill"/></svg>';
+
+  document.getElementById('stat-overview').className = 'stat-overview ' + roleClass;
+  document.getElementById('stat-overview').innerHTML =
+    '<div class="role-tab ' + roleClass + '"><span class="role-dot"></span>我收到的評價</div>' +
+    '<div class="stat-head">' +
+      '<div class="stat-avatar">' + avatarInner + '</div>' +
+      '<div style="flex:1;"><div class="stat-name">' + myName + '</div><div class="badge-row">' + badgesHTML + '</div></div>' +
+      '<div class="big-rating-mini">' +
+        '<div class="big-num ' + roleClass + '">' + (rows.length ? avg.toFixed(1) : '—') + '</div>' +
+        '<div class="big-stars ' + roleClass + '">' + fullStars + '</div>' +
+        '<div class="big-count">' + rows.length + ' 則評價</div>' +
+      '</div>' +
+    '</div>';
+
+  /* 分項評分(把各則 ratings.items 取平均) */
+  var itemSum = {}, itemCnt = {};
+  rows.forEach(function(r){
+    var v = (r.ratings && r.ratings.items) ? r.ratings.items : null;
+    if (!v) return;
+    Object.keys(v).forEach(function(k){ if (typeof v[k] === 'number') { itemSum[k] = (itemSum[k] || 0) + v[k]; itemCnt[k] = (itemCnt[k] || 0) + 1; } });
+  });
+  var subHTML = Object.keys(itemSum).map(function(k){
+    var val = itemSum[k] / itemCnt[k];
+    var pct = (val / 5 * 100).toFixed(0);
+    return '<div class="sub-row"><span class="sub-label">' + k + '</span><div class="sub-track"><div class="sub-fill ' + roleClass + '" style="width:' + pct + '%;"></div></div><span class="sub-val">' + val.toFixed(1) + '</span></div>';
+  }).join('');
+
+  /* 行為紀錄(flags:統計每個標籤被勾選的次數) */
+  var flagCnt = {};
+  rows.forEach(function(r){
+    var f = r.flags || {};
+    Object.keys(f).forEach(function(k){ if (f[k]) flagCnt[k] = (flagCnt[k] || 0) + 1; });
+  });
+  var flagKeys = Object.keys(flagCnt);
+  var flagsHTML = flagKeys.length
+    ? flagKeys.map(function(k){ return '<div class="flag-row flag-hit"><svg class="flag-ico"><use href="#i-flag"/></svg><span class="flag-label">' + k + '</span><span class="flag-stat">' + rows.length + ' 筆中 ' + flagCnt[k] + ' 筆</span></div>'; }).join('')
+    : '<div class="flag-row flag-clean"><svg class="flag-ico"><use href="#i-flag"/></svg><span class="flag-label">無不良行為紀錄</span><span class="flag-stat">' + rows.length + ' 筆中 0 筆</span></div>';
+
+  /* 信用分:score 用 users.credit_score,棄單用 cancel_count,完成單用 orders done 數;準時率暫無資料 */
+  var creditHTML =
+    '<div class="credit-box"><div class="credit-score ' + roleClass + '"><div class="cs-num">' + (u.credit_score == null ? 100 : u.credit_score) + '</div><div class="cs-unit">信用分</div></div>' +
+    '<div class="credit-detail">' +
+      '<div class="cd-item"><span class="cd-num">' + doneCount + '</span><span class="cd-lbl">完成單</span></div>' +
+      '<div class="cd-item"><span class="cd-num">' + (u.cancel_count || 0) + '</span><span class="cd-lbl">棄單</span></div>' +
+      '<div class="cd-item"><span class="cd-num">—</span><span class="cd-lbl">準時率</span></div>' +
+    '</div></div>';
+
+  document.getElementById('locked-content').innerHTML =
+    (subHTML ? '<div class="sec-title" style="margin:0 0 0.8rem;">分項評分</div><div class="sub-list">' + subHTML + '</div>' : '') +
+    '<div class="sec-title" style="margin:' + (subHTML ? '1.4rem' : '0') + ' 0 0.8rem;">行為紀錄</div><div class="flag-list">' + flagsHTML + '</div>' +
+    '<div class="sec-title" style="margin:1.4rem 0 0.8rem;">信用分</div>' + creditHTML;
+
+  /* 本人看自己免解鎖:拿掉遮罩 */
+  var lockArea = document.getElementById('lock-area');
+  lockArea.className = 'lock-area ' + roleClass;
+  var mask = lockArea.querySelector('.lock-mask');
+  if (mask) mask.style.display = 'none';
+
+  /* 文字評價列表 */
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function starsStr(n){ var s=''; for(var k=0;k<5;k++) s += (k < Math.round(n) ? '★' : '☆'); return s; }
+  if (!rows.length) {
+    document.getElementById('review-list').innerHTML = '<div class="flag-row flag-clean" style="justify-content:center;">完成服務並收到評價後,會顯示在這裡</div>';
+    return;
+  }
+  document.getElementById('review-list').innerHTML = rows.map(function(r){
+    var rawName = nameById[r.reviewer_id] || '會員';
+    var roleSuffix = (r.mode === 'client') ? '(案家)' : (r.mode === 'staff' ? '(順咖)' : '');
+    var shown = IS_ADMIN ? esc(rawName + roleSuffix) : esc(maskName(rawName + roleSuffix));
+    var avatarHTML = IS_ADMIN
+      ? '<div class="r-avatar">' + esc(Array.from(rawName)[0] || '·') + '</div>'
+      : '<div class="r-avatar masked"><svg><use href="#i-shield"/></svg></div>';
+    var d = r.created_at ? new Date(r.created_at) : null;
+    var dateStr = d ? (d.getFullYear() + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + ('0'+d.getDate()).slice(-2)) : '';
+    return '<div class="review-card"><div class="reviewer-row">' + avatarHTML +
+      '<div style="flex:1;"><div class="r-name">' + shown + (IS_ADMIN ? ' <span class="admin-eye">後台可見</span>' : '') + '</div><div class="r-date">' + dateStr + '</div></div>' +
+      '<div class="r-stars">' + starsStr(overallOf(r)) + '</div></div>' +
+      '<div class="r-comment">' + esc(r.comment || '') + '</div></div>';
+  }).join('');
 }
 
 // Demo:解鎖直接掀開遮罩,不真扣點。接 Supabase 後改成「先檢查/扣點數→成功才解鎖」
