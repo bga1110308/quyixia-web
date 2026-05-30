@@ -607,6 +607,11 @@ function pickRole(role) {
 
 // 進頁先看：是不是剛從 LINE 授權跳回來
 window.addEventListener('DOMContentLoaded', async function () {
+  // 先抓網址 ?ref= 推薦碼存起來（LINE 跳轉會掉 query，故存 localStorage）
+  var refParam = new URLSearchParams(window.location.search).get('ref');
+  if (refParam && refParam.trim()) {
+    localStorage.setItem('signup_ref', refParam.trim().toUpperCase());
+  }
   var res = await sb.auth.getSession();
   var pendingRole = localStorage.getItem('signup_role');
   if (res.data && res.data.session && pendingRole) {
@@ -722,16 +727,40 @@ async function completeSignup() {
   var addrdetail = document.getElementById('su-addrdetail').value.trim();
   var addressFull = city + district + street + addrdetail;
 
-  // 1. 更新 users：稱呼當公開顯示名、手機、真實姓名與 email 放 role_detail
+  // 1. 更新 users：稱呼當公開顯示名、手機、email（獨立欄位）、真實姓名放 role_detail
   var up = await sb.from('users').update({
     display_name: nickname,
     phone: phone,
-    role_detail: { real_name: realname, email: email }
+    email: email,
+    role_detail: { real_name: realname }
   }).eq('id', user.id);
   if (up.error) {
-    alert('資料儲存失敗:' + up.error.message);
+    if (up.error.code === '23505') {
+      var dupMsg = '此手機/信箱/LINE 已被註冊';
+      var m = up.error.message || '';
+      if (m.indexOf('phone') > -1) dupMsg = '此手機已被其他帳號註冊';
+      else if (m.indexOf('email') > -1) dupMsg = '此信箱已被其他帳號註冊';
+      else if (m.indexOf('line') > -1) dupMsg = '此 LINE 已被其他帳號註冊';
+      alert(dupMsg);
+    } else {
+      alert('資料儲存失敗:' + up.error.message);
+    }
     btn.disabled = false;
     return;
+  }
+
+  // 1b. 補推薦碼 ref_code（空才寫，公式同後台：id 去橫線取前 6 碼大寫）
+  var myCode = user.id.replace(/-/g, '').substr(0, 6).toUpperCase();
+  await sb.from('users').update({ ref_code: myCode }).eq('id', user.id).is('ref_code', null);
+
+  // 1c. 解析推薦碼 → referred_by（空才寫、不能是自己）
+  var refCode = (localStorage.getItem('signup_ref') || '').trim();
+  if (refCode) {
+    var refRes = await sb.from('users').select('id').ilike('ref_code', refCode).maybeSingle();
+    if (refRes.data && refRes.data.id && refRes.data.id !== user.id) {
+      await sb.from('users').update({ referred_by: refRes.data.id }).eq('id', user.id).is('referred_by', null);
+    }
+    localStorage.removeItem('signup_ref');
   }
 
   // 2. 建立 client 角色：案家直接 active

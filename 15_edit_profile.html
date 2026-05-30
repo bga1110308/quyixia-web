@@ -316,7 +316,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
     <div class="field">
       <label class="field-label">Email <span class="req">*</span></label>
-      <input type="email" id="email" value="huiyi@example.com">
+      <input type="email" id="email" placeholder="your@email.com">
     </div>
 
     <div class="field" id="default-addr-field">
@@ -512,7 +512,7 @@ async function loadFromDB() {
   if (!user) { window.location.href = '13_login.html'; return; }
   DB.user = user;
 
-  var prof = await sb.from('users').select('display_name,phone,expected_rate,role_detail').eq('id', user.id).maybeSingle();
+  var prof = await sb.from('users').select('display_name,phone,email,expected_rate,role_detail').eq('id', user.id).maybeSingle();
   DB.profile = prof.data || {};
   avatarUrl = (DB.profile.role_detail && DB.profile.role_detail.avatar_url) || '';
 
@@ -1034,14 +1034,14 @@ async function saveProfile() {
   if (btn) { btn.disabled = true; btn.textContent = '儲存中…'; }
 
   try {
-    /* users:暱稱(display_name)、手機、role_detail(真實姓名/email/lineid/大頭照) */
+    /* users:暱稱(display_name)、手機、email(獨立欄位)、role_detail(真實姓名/lineid/大頭照) */
     var rd = Object.assign({}, DB.profile.role_detail || {});
     rd.real_name = document.getElementById('realname').value.trim();
-    rd.email = email;
+    delete rd.email; /* email 已搬成 users 獨立欄位,不再放 role_detail */
     rd.lineid = document.getElementById('lineid').value.trim();
     if (avatarUrl) rd.avatar_url = avatarUrl;
 
-    var userUpdate = { display_name: nick, phone: phone, role_detail: rd };
+    var userUpdate = { display_name: nick, phone: phone, email: email, role_detail: rd };
     if (role === 'staff') { userUpdate.expected_rate = rate; }
 
     var uRes = await sb.from('users').update(userUpdate).eq('id', DB.user.id);
@@ -1084,6 +1084,15 @@ async function saveProfile() {
   } catch (err) {
     console.error(err);
     if (btn) { btn.disabled = false; btn.textContent = '儲存變更'; }
+    if (err && err.code === '23505') {
+      var msg = '此手機/信箱已被註冊';
+      if (err.message) {
+        if (err.message.indexOf('phone') > -1) msg = '此手機已被註冊';
+        else if (err.message.indexOf('email') > -1) msg = '此信箱已被註冊';
+      }
+      alert(msg);
+      return;
+    }
     alert('儲存失敗:' + (err && err.message ? err.message : err));
     return;
   }
@@ -1117,7 +1126,7 @@ function loadSharedProfile() {
   document.getElementById('realname').value = rd.real_name || '';
   document.getElementById('phone').value = p.phone || '';
   document.getElementById('lineid').value = rd.lineid || '';
-  document.getElementById('email').value = rd.email || '';
+  document.getElementById('email').value = p.email || rd.email || '';
   /* 案家預設地址放在 client 角色的 role_data.address */
   var addr = (DB.clientRole && DB.clientRole.role_data && DB.clientRole.role_data.address) || '';
   document.getElementById('address').value = addr;
