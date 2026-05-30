@@ -190,10 +190,17 @@ window.addEventListener('DOMContentLoaded', async function () {
   if (card) card.style.visibility = 'visible';
 });
 
-// 登入成功後：補 line_user_id，再進首頁
+// 登入成功後：補 line_user_id，再依角色進對應首頁
 async function handlePostLogin() {
-  var ures = await sb.auth.getUser();
-  var user = ures.data ? ures.data.user : null;
+  // 先讀本機 session(webview 較可靠),getUser 只當備援
+  var user = null;
+  var sres = await sb.auth.getSession();
+  if (sres.data && sres.data.session && sres.data.session.user) {
+    user = sres.data.session.user;
+  } else {
+    var ures = await sb.auth.getUser();
+    user = ures.data ? ures.data.user : null;
+  }
   if (user) {
     var lineId = extractLineId(user);
     if (lineId) {
@@ -203,7 +210,15 @@ async function handlePostLogin() {
         .eq('id', user.id)
         .is('line_user_id', null);
     }
+    // 依角色決定首頁：有案家(或兩者都有)→案家首頁 11；只有順咖→順咖首頁 12
+    var roleRes = await sb.from('user_roles').select('role').eq('user_id', user.id);
+    var rlist = roleRes.data || [];
+    var hasClient = rlist.some(function(r){ return r.role === 'client'; });
+    var hasSuncar = rlist.some(function(r){ return r.role === 'suncar'; });
+    if (hasClient) { window.location.href = '11_client_home.html'; return; }
+    if (hasSuncar) { window.location.href = '12_staff_home.html'; return; }
   }
+  // 沒有任何角色或讀不到使用者：預設進案家首頁
   window.location.href = '11_client_home.html';
 }
 

@@ -453,8 +453,16 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   async function init(){
     if(typeof window.sb === 'undefined'){ console.error('supabase-init.js 未載入'); return; }
-    var ures = await sb.auth.getUser();
-    var user = (ures && ures.data) ? ures.data.user : null;
+    // 守門:先讀本機 session(LINE 內建瀏覽器較可靠),getUser 只當備援。
+    // 不要只用 getUser,它在 webview 常回 null,會跟 13 互踢成無窮迴圈。
+    var user = null;
+    var sres = await sb.auth.getSession();
+    if(sres.data && sres.data.session && sres.data.session.user){
+      user = sres.data.session.user;
+    } else {
+      var ures = await sb.auth.getUser();
+      user = (ures && ures.data) ? ures.data.user : null;
+    }
     if(!user){ window.location.href = '13_login.html'; return; }
 
     /* 本人 users */
