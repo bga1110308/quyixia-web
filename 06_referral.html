@@ -220,7 +220,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 <div class="page-header">
   <div class="page-title">推薦碼 · 皇冠計畫</div>
-  <div class="page-sub">推薦越多,獎勵越豐厚<br>順咖點數、案家點數分開累積,各有專屬獎勵</div>
+  <div class="page-sub">推薦越多,獎勵越豐厚<br>順咖金幣、案家金幣分開累積,各有專屬獎勵</div>
 </div>
 
 <div class="tab-bar">
@@ -233,13 +233,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <div class="wrap" id="tab0">
   <div class="card">
     <div class="crown-hero">
-      <a href="crown_all_levels.html?count=7" class="my-crown-link" title="點看完整皇冠等級表">
+      <a href="crown_all_levels.html?count=0" id="crown-link" class="my-crown-link" title="點看完整皇冠等級表">
         <div class="crown-circle">
           <svg><use href="#i-crown"/></svg>
-          <span class="my-count">7</span>
+          <span class="my-count" id="crown-count">0</span>
         </div>
         <div class="crown-name">推薦達人皇冠</div>
-        <div class="crown-days">已推薦 <strong>7</strong> 位好友 · 剩餘顯示 <strong>12</strong> 天</div>
+        <div class="crown-days">已推薦 <strong id="crown-friends">0</strong> 位好友</div>
         <div class="crown-bar-wrap"><div class="crown-bar" style="width:40%;"></div></div>
         <div class="crown-bar-label">累積皇冠天數:12 / 30 天</div>
         <div class="crown-click-hint">
@@ -260,11 +260,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div class="card">
     <div class="sec-title">我的推薦碼</div>
     <div class="ref-code-box">
-      <div class="ref-code">FANG2025</div>
+      <div class="ref-code" id="ref-code">載入中…</div>
       <div class="ref-btns">
-        <button class="ref-btn" onclick="copyTo('FANG2025','推薦碼已複製:FANG2025')"><svg><use href="#i-copy"/></svg>複製推薦碼</button>
-        <button class="ref-btn" onclick="copyTo('https://quyixia.tw/join?ref=FANG2025','推薦連結已複製!')"><svg><use href="#i-link"/></svg>複製推薦連結</button>
-        <button class="ref-btn" onclick="shareLink('FANG2025')"><svg><use href="#i-share"/></svg>分享給朋友</button>
+        <button class="ref-btn" onclick="copyCode()"><svg><use href="#i-copy"/></svg>複製推薦碼</button>
+        <button class="ref-btn" onclick="copyRefLink()"><svg><use href="#i-link"/></svg>複製推薦連結</button>
+        <button class="ref-btn" onclick="shareRef()"><svg><use href="#i-share"/></svg>分享給朋友</button>
       </div>
       <div class="copy-msg" id="copy-msg"></div>
     </div>
@@ -272,7 +272,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div><svg class="ico" style="color:var(--amber-deep)"><use href="#i-crown"/></svg> <span><strong>推薦一般順咖</strong>:每推薦 5 人 → 5 天皇冠頭框(上限 30 天)</span></div>
       <div><svg class="ico" style="color:var(--warn)"><use href="#i-steth"/></svg> <span><strong>推薦照服員</strong>:每推薦 1 人 = 一般 3 人<span class="bonus-tag"><svg><use href="#i-flame"/></svg>3 倍獎勵</span></span></div>
       <div><svg class="ico" style="color:var(--forest)"><use href="#i-pin"/></svg> <span><strong>推薦案家</strong>:每推薦 5 人 → 1 小時任務置頂(上限 72 小時)</span></div>
-      <div style="color:var(--ink-light);margin-top:5px;">兩種點數分開計算,1 年內使用完畢</div>
+      <div style="color:var(--ink-light);margin-top:5px;">兩種金幣分開計算,可當點數折抵服務</div>
     </div>
   </div>
 
@@ -283,27 +283,27 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="script-card">
       <div class="script-label"><svg><use href="#i-msg"/></svg>給想接案的朋友</div>
       <button class="script-copy-btn" onclick="copyScript(this, 'staff')"><svg><use href="#i-copy"/></svg>複製</button>
-      <div class="script-text">嘿,我在用一個叫「去一下」的接案平台,下班或假日有空就接,自己排班自己定價,不用打卡也沒底薪壓力。用我推薦碼 FANG2025 註冊,雙方都有獎勵。https://quyixia.tw/join?ref=FANG2025</div>
+      <div class="script-text" data-tpl="1">嘿,我在用一個叫「去一下」的接案平台,下班或假日有空就接,自己排班自己定價,不用打卡也沒底薪壓力。用我推薦碼 FANG2025 註冊,雙方都有獎勵。https://quyixia.tw/join?ref=FANG2025</div>
     </div>
 
     <div class="script-card">
       <div class="script-label"><svg><use href="#i-steth"/></svg>給照服員 / 居服員朋友(建議用這個,獎勵 3 倍)</div>
       <button class="script-copy-btn" onclick="copyScript(this, 'cna')"><svg><use href="#i-copy"/></svg>複製</button>
-      <div class="script-text">妳有照服員證的話可以試試「去一下」,下班後接自費案賺外快,平台不問妳在哪間機構上班,可以自己設定不接單時段保護本業。我的推薦碼 FANG2025。https://quyixia.tw/join?ref=FANG2025</div>
+      <div class="script-text" data-tpl="1">妳有照服員證的話可以試試「去一下」,下班後接自費案賺外快,平台不問妳在哪間機構上班,可以自己設定不接單時段保護本業。我的推薦碼 FANG2025。https://quyixia.tw/join?ref=FANG2025</div>
     </div>
 
     <div class="script-card">
       <div class="script-label"><svg><use href="#i-pin"/></svg>給需要幫忙的朋友</div>
       <button class="script-copy-btn" onclick="copyScript(this, 'client')"><svg><use href="#i-copy"/></svg>複製</button>
-      <div class="script-text">家裡長輩需要陪看醫生、遛狗、代排隊...這些雜事用「去一下」就好,平台都是實名認證過的順咖。用我的推薦碼 FANG2025 註冊有優惠。https://quyixia.tw/join?ref=FANG2025</div>
+      <div class="script-text" data-tpl="1">家裡長輩需要陪看醫生、遛狗、代排隊...這些雜事用「去一下」就好,平台都是實名認證過的順咖。用我的推薦碼 FANG2025 註冊有優惠。https://quyixia.tw/join?ref=FANG2025</div>
     </div>
   </div>
 
   <div class="card">
     <div class="sec-title">推薦進度</div>
     <div class="progress-row">
-      <div class="progress-num">8</div>
-      <div class="progress-label">總推薦人數<br><span>順咖 5 人</span> · <span>案家 3 人</span></div>
+      <div class="progress-num" id="prog-num">0</div>
+      <div class="progress-label">總推薦人數(註冊就算)</div>
     </div>
     <div class="milestone-row">
       <div class="milestone done"><span class="milestone-svg"><svg><use href="#i-crown"/></svg></span><div class="milestone-label">5人皇冠</div></div>
@@ -311,31 +311,15 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="milestone"><span class="milestone-svg"><svg><use href="#i-diamond"/></svg></span><div class="milestone-label">20人傳說</div></div>
       <div class="milestone"><span class="milestone-svg"><svg><use href="#i-flame"/></svg></span><div class="milestone-label">50人大使</div></div>
     </div>
-    <div style="font-size:0.76rem;color:var(--ink-light);margin-top:10px;">再推薦 2 人(共 10 人)解鎖「推薦達人」稱號</div>
+    <div id="prog-hint" style="font-size:0.76rem;color:var(--ink-light);margin-top:10px;"></div>
   </div>
 </div>
 
 <!-- Tab 1:推薦紀錄 -->
 <div class="wrap" id="tab1" style="display:none;">
   <div class="card">
-    <div class="sec-title">推薦紀錄(共 8 人)</div>
-    <div class="section-label" style="color:var(--amber-deep);">
-      <span style="background:linear-gradient(180deg,var(--honey),var(--amber));"></span>順咖推薦(5 人 · 已得 5 天皇冠)
-    </div>
-    <div class="ref-list" style="margin-bottom:1rem;">
-      <div class="ref-item"><div class="ref-avatar s">凱</div><div class="ref-info"><div class="ref-name">阿凱<span class="pool-chip pool-A">一般</span></div><div class="ref-date">2025/05/18 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已接單</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point">+1 點</span></div>
-      <div class="ref-item"><div class="ref-avatar s">玲</div><div class="ref-info"><div class="ref-name">小玲<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服</span></div><div class="ref-date">2025/05/15 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已接單</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point">+3 點</span></div>
-      <div class="ref-item"><div class="ref-avatar s">明</div><div class="ref-info"><div class="ref-name">大明<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服</span></div><div class="ref-date">2025/05/08 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已接單</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point">+3 點</span></div>
-      <div class="ref-item"><div class="ref-avatar s">張</div><div class="ref-info"><div class="ref-name">張先生<span class="pool-chip pool-A">一般</span></div><div class="ref-date">2025/05/02 · <span class="ref-status rs-registered"><svg><use href="#i-clock"/></svg>已註冊未接單</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point">+1 點</span></div>
-      <div class="ref-item"><div class="ref-avatar s">雯</div><div class="ref-info"><div class="ref-name">小雯<span class="pool-chip pool-A">一般</span></div><div class="ref-date">2025/04/28 · <span class="ref-status rs-pending"><svg><use href="#i-clock"/></svg>待註冊</span></div></div><span class="ref-type-tag s">順咖</span><span class="ref-point" style="color:var(--ink-light);">待</span></div>
-    </div>
-    <div class="section-label" style="color:var(--forest);">
-      <span style="background:linear-gradient(180deg,var(--mint),var(--forest));"></span>案家推薦(3 人 · 累積中,再 2 人可兌換)
-    </div>
-    <div class="ref-list">
-      <div class="ref-item"><div class="ref-avatar c">王</div><div class="ref-info"><div class="ref-name">王先生</div><div class="ref-date">2025/05/12 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已下單</span></div></div><span class="ref-type-tag c">案家</span><span class="ref-point" style="color:var(--forest);">+1 點</span></div>
-      <div class="ref-item"><div class="ref-avatar c">李</div><div class="ref-info"><div class="ref-name">李小姐</div><div class="ref-date">2025/05/10 · <span class="ref-status rs-registered"><svg><use href="#i-clock"/></svg>已註冊未下單</span></div></div><span class="ref-type-tag c">案家</span><span class="ref-point" style="color:var(--forest);">+1 點</span></div>
-      <div class="ref-item"><div class="ref-avatar c">陳</div><div class="ref-info"><div class="ref-name">陳小姐</div><div class="ref-date">2025/05/05 · <span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已下單</span></div></div><span class="ref-type-tag c">案家</span><span class="ref-point" style="color:var(--forest);">+1 點</span></div>
+    <div class="sec-title" id="rec-title">推薦紀錄</div>
+    <div id="rec-list" style="font-size:0.85rem;color:var(--ink-soft);">載入中…</div>
     </div>
   </div>
 </div>
@@ -344,73 +328,173 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <div class="wrap" id="tab2" style="display:none;">
   <div class="dual-points">
     <div class="pool-box staff-pool">
-      <div class="pool-label"><svg><use href="#i-crown"/></svg>順咖點數</div>
+      <div class="pool-label"><svg><use href="#i-crown"/></svg>順咖金幣</div>
       <div class="pool-num" id="staff-pts">5</div>
       <div class="pool-sub">推薦順咖累積</div>
     </div>
     <div class="pool-box client-pool">
-      <div class="pool-label"><svg><use href="#i-pin"/></svg>案家點數</div>
+      <div class="pool-label"><svg><use href="#i-pin"/></svg>案家金幣</div>
       <div class="pool-num" id="client-pts">3</div>
       <div class="pool-sub">推薦案家累積</div>
     </div>
   </div>
-  <div class="pool-note">兩種點數分開使用 · 有效期限 1 年 · 兌換後不可退</div>
+  <div class="pool-note">順咖、案家金幣分開使用 · 可當點數折抵服務</div>
 
   <div class="section-label" style="color:var(--amber-deep);">
-    <span style="background:linear-gradient(180deg,var(--honey),var(--amber));"></span>順咖專屬兌換(使用順咖點數)
+    <span style="background:linear-gradient(180deg,var(--honey),var(--amber));"></span>順咖專屬兌換(使用順咖金幣)
   </div>
 
   <div class="redeem-card staff-card">
-    <span class="pool-tag">順咖點數</span>
+    <span class="pool-tag">順咖金幣</span>
     <div class="redeem-header">
       <div class="redeem-title"><svg class="ico" style="color:var(--amber)"><use href="#i-crown"/></svg>皇冠頭框 5 天</div>
-      <div class="redeem-cost">5 點</div>
+      <div class="redeem-cost">5 金幣</div>
     </div>
     <div class="redeem-desc">順咖卡片顯示醒目皇冠頭框,提升被選中機率。每次兌換 +5 天,上限 30 天,可累積。</div>
     <button class="redeem-btn" onclick="redeem(this,'staff',5,'皇冠頭框 5 天')">兌換</button>
   </div>
 
   <div class="redeem-card staff-card">
-    <span class="pool-tag">順咖點數</span>
+    <span class="pool-tag">順咖金幣</span>
     <div class="redeem-header">
       <div class="redeem-title"><svg class="ico" style="color:var(--amber)"><use href="#i-star"/></svg>推薦達人標章 7 天</div>
-      <div class="redeem-cost">3 點</div>
+      <div class="redeem-cost">3 金幣</div>
     </div>
     <div class="redeem-desc">頭像旁顯示推薦達人標章,讓案家知道你是活躍且受信任的順咖。</div>
     <button class="redeem-btn" onclick="redeem(this,'staff',3,'推薦達人標章 7 天')">兌換</button>
   </div>
 
   <div class="section-label" style="color:var(--forest);margin-top:0.85rem;">
-    <span style="background:linear-gradient(180deg,var(--mint),var(--forest));"></span>案家專屬兌換(使用案家點數)
+    <span style="background:linear-gradient(180deg,var(--mint),var(--forest));"></span>案家專屬兌換(使用案家金幣)
   </div>
 
   <div class="redeem-card client-card">
-    <span class="pool-tag">案家點數</span>
+    <span class="pool-tag">案家金幣</span>
     <div class="redeem-header">
       <div class="redeem-title"><svg class="ico" style="color:var(--mint)"><use href="#i-pin"/></svg>任務單置頂 1 小時</div>
-      <div class="redeem-cost">5 點</div>
+      <div class="redeem-cost">5 金幣</div>
     </div>
     <div class="redeem-desc">你的任務單置頂顯示 1 小時,讓更多順咖優先看到,加速接單。最多累積至 72 小時。</div>
     <button class="redeem-btn" onclick="redeem(this,'client',5,'任務置頂 1 小時')">兌換</button>
   </div>
 
   <div class="redeem-card client-card">
-    <span class="pool-tag">案家點數</span>
+    <span class="pool-tag">案家金幣</span>
     <div class="redeem-header">
       <div class="redeem-title"><svg class="ico" style="color:var(--mint)"><use href="#i-bookmark"/></svg>優先顯示標章 3 天</div>
-      <div class="redeem-cost">3 點</div>
+      <div class="redeem-cost">3 金幣</div>
     </div>
     <div class="redeem-desc">案家頭像旁顯示優先標章,讓順咖知道你是活躍案家,優先考慮接你的案子。</div>
     <button class="redeem-btn" onclick="redeem(this,'client',3,'優先顯示標章 3 天')">兌換</button>
   </div>
 
   <div style="font-size:0.78rem;color:var(--ink-light);text-align:center;margin-top:0.85rem;line-height:1.75;">
-    點數有效期限為獲得後 1 年內,逾期歸零<br>兌換後立即生效,不可退換
+    金幣可當點數折抵服務,也可兌換以下加值<br>兌換後立即生效,不可退換
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 <script>
-var staffPts = 5, clientPts = 3;
+var staffPts = 0, clientPts = 0;   // 順咖金幣 / 案家金幣(真值,載入後填)
+var myRefCode = '';
+var myId = null;
+var REF_BASE = 'https://quyixia.tw/join?ref=';
+
+document.addEventListener('DOMContentLoaded', loadReferral);
+
+async function loadReferral() {
+  if (typeof window.sb === 'undefined') { console.error('supabase-init.js 未載入'); return; }
+  var ures = await sb.auth.getUser();
+  var user = ures.data ? ures.data.user : null;
+  if (!user) { document.getElementById('ref-code').textContent = '請先登入'; return; }
+  myId = user.id;
+
+  // 1. 我的推薦碼 + 金幣餘額
+  var me = await sb.from('users').select('ref_code,suncar_coins,client_coins').eq('id', user.id).maybeSingle();
+  if (me.data) {
+    myRefCode = me.data.ref_code || '';
+    staffPts = me.data.suncar_coins || 0;
+    clientPts = me.data.client_coins || 0;
+  }
+  document.getElementById('ref-code').textContent = myRefCode || '—';
+  document.getElementById('staff-pts').textContent = staffPts;
+  document.getElementById('client-pts').textContent = clientPts;
+  // 把三段話術裡的推薦碼與連結換成真碼
+  if (myRefCode) {
+    document.querySelectorAll('.script-text[data-tpl]').forEach(function(el){
+      el.textContent = el.textContent
+        .replace(/FANG2025/g, myRefCode)
+        .replace(/ref=[A-Z0-9]+/g, 'ref=' + myRefCode);
+    });
+  }
+
+  // 2. 人頭數 = referred_by = 我 的帳號數(註冊就算)
+  var cnt = await sb.from('users').select('id', { count: 'exact', head: true }).eq('referred_by', user.id);
+  var head = cnt.count || 0;
+  document.getElementById('crown-count').textContent = head;
+  document.getElementById('crown-friends').textContent = head;
+  document.getElementById('prog-num').textContent = head;
+  document.getElementById('rec-title').textContent = '推薦紀錄(共 ' + head + ' 人)';
+  var link = document.getElementById('crown-link');
+  if (link) link.setAttribute('href', 'crown_all_levels.html?count=' + head);
+  var nextTier = head < 5 ? 5 : head < 10 ? 10 : head < 20 ? 20 : head < 50 ? 50 : null;
+  document.getElementById('prog-hint').textContent = nextTier
+    ? ('再推薦 ' + (nextTier - head) + ' 人(共 ' + nextTier + ' 人)解鎖下一級皇冠')
+    : '已達最高皇冠等級';
+
+  // 3. 推薦紀錄:我推薦的人 + 各自有沒有完成首單拿到金幣
+  await renderRecords(user.id);
+}
+
+async function renderRecords(uid) {
+  var box = document.getElementById('rec-list');
+  var res = await sb.from('users')
+    .select('id,display_name,has_caregiver_cert,created_at')
+    .eq('referred_by', uid)
+    .order('created_at', { ascending: false });
+  var people = (res.data) || [];
+  if (!people.length) { box.innerHTML = '<div style="color:var(--ink-light);padding:0.5rem 0;">還沒有人用你的推薦碼註冊。把推薦碼分享出去吧!</div>'; return; }
+
+  // 查這些人已發過的金幣紀錄
+  var ids = people.map(function(p){ return p.id; });
+  var rw = await sb.from('referral_rewards').select('referred_id,role,coins').eq('referrer_id', uid).in('referred_id', ids);
+  var rewardMap = {};
+  (rw.data || []).forEach(function(r){
+    rewardMap[r.referred_id] = rewardMap[r.referred_id] || [];
+    rewardMap[r.referred_id].push(r);
+  });
+
+  var html = '';
+  people.forEach(function(p){
+    var nm = p.display_name || '新朋友';
+    var initial = Array.from(nm.trim())[0] || '·';
+    var cg = p.has_caregiver_cert;
+    var rewards = rewardMap[p.id] || [];
+    var coins = rewards.reduce(function(s,r){ return s + (r.coins||0); }, 0);
+    var status, point;
+    if (rewards.length) {
+      status = '<span class="ref-status rs-active"><svg><use href="#i-check"/></svg>已完成首單</span>';
+      point = '+' + coins + ' 金幣';
+    } else {
+      status = '<span class="ref-status rs-registered"><svg><use href="#i-clock"/></svg>已註冊未完成首單</span>';
+      point = '<span style="color:var(--ink-light);">待</span>';
+    }
+    var chip = cg ? '<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服</span>' : '';
+    html += '<div class="ref-item"><div class="ref-avatar s">' + initial + '</div>'
+      + '<div class="ref-info"><div class="ref-name">' + nm + chip + '</div>'
+      + '<div class="ref-date">' + fmtDate(p.created_at) + ' · ' + status + '</div></div>'
+      + '<span class="ref-point">' + point + '</span></div>';
+  });
+  box.innerHTML = html;
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  var d = new Date(s);
+  if (isNaN(d)) return '';
+  return d.getFullYear() + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + ('0'+d.getDate()).slice(-2);
+}
 
 function switchTab(n, el) {
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
@@ -432,8 +516,17 @@ function copyTo(text, msg) {
 }
 function show(el, msg){ el.textContent = msg; setTimeout(function(){ el.textContent = ''; }, 3000); }
 
-function shareLink(code) {
-  var url = 'https://quyixia.tw/join?ref=' + code;
+function copyCode() {
+  if (!myRefCode) { alert('推薦碼尚未載入'); return; }
+  copyTo(myRefCode, '推薦碼已複製:' + myRefCode);
+}
+function copyRefLink() {
+  if (!myRefCode) { alert('推薦碼尚未載入'); return; }
+  copyTo(REF_BASE + myRefCode, '推薦連結已複製!');
+}
+function shareRef() {
+  if (!myRefCode) { alert('推薦碼尚未載入'); return; }
+  var url = REF_BASE + myRefCode;
   if (navigator.share) {
     navigator.share({ title: '去一下平台', text: '推薦你加入去一下!', url: url });
   } else {
@@ -441,15 +534,28 @@ function shareLink(code) {
   }
 }
 
-function redeem(btn, pool, cost, name) {
-  var pts = pool === 'staff' ? staffPts : clientPts;
+async function redeem(btn, pool, cost, name) {
+  if (!myId) { alert('請先登入'); return; }
+  var bal = pool === 'staff' ? staffPts : clientPts;
+  var col = pool === 'staff' ? 'suncar_coins' : 'client_coins';
   var elId = pool === 'staff' ? 'staff-pts' : 'client-pts';
-  if (pts < cost) { alert((pool==='staff'?'順咖':'案家') + '點數不足,目前只有 ' + pts + ' 點'); return; }
-  if (pool === 'staff') staffPts -= cost;
-  else clientPts -= cost;
-  document.getElementById(elId).textContent = pool === 'staff' ? staffPts : clientPts;
-  btn.textContent = '已兌換 ✓';
+  var label = pool === 'staff' ? '順咖' : '案家';
+  if (bal < cost) { alert(label + '金幣不足,目前只有 ' + bal + ' 金幣'); return; }
   btn.disabled = true;
+  var upd = {};
+  upd[col] = bal - cost;
+  // 樂觀更新:只在餘額沒被別處改動時才扣(避免重複扣)
+  var q = sb.from('users').update(upd).eq('id', myId);
+  q = pool === 'staff' ? q.eq('suncar_coins', bal) : q.eq('client_coins', bal);
+  var res = await q.select(col).maybeSingle();
+  if (res.error || !res.data) {
+    btn.disabled = false;
+    alert('兌換失敗,請重新整理後再試');
+    return;
+  }
+  if (pool === 'staff') staffPts = res.data[col]; else clientPts = res.data[col];
+  document.getElementById(elId).textContent = res.data[col];
+  btn.textContent = '已兌換 ✓';
   alert('「' + name + '」兌換成功!');
 }
 
