@@ -1162,8 +1162,15 @@ async function handleSubmit() {
   var btn = document.querySelector('.submit-btn');
   if (btn) btn.disabled = true;
 
-  var ures = await sb.auth.getUser();
-  var user = ures.data ? ures.data.user : null;
+  // 先讀本機已存的登入狀態(較可靠);getUser 只當備援,避免人其實登入著卻被誤判遺失
+  var user = null;
+  var sres = await sb.auth.getSession();
+  if (sres.data && sres.data.session && sres.data.session.user) {
+    user = sres.data.session.user;
+  } else {
+    var ures = await sb.auth.getUser();
+    user = ures.data ? ures.data.user : null;
+  }
   if (!user) {
     alert('登入狀態遺失,請重新進入頁面用 LINE 登入。');
     if (btn) btn.disabled = false;
