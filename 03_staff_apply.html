@@ -448,6 +448,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <textarea id="sa-bio" placeholder="例:白天上班的上班族,假日有空。會煮飯、會狗狗、住板橋..."></textarea>
       <div class="hint">案家會看到,越具體越容易被選中</div>
     </div>
+
+    <div class="field">
+      <label>推薦碼 <span class="opt">(選填)</span></label>
+      <input type="text" id="sa-refcode" placeholder="有朋友推薦你嗎?填他的推薦碼" maxlength="12" style="text-transform:uppercase;">
+      <div class="hint">朋友分享連結給你的話會自動帶入,也可以手動輸入</div>
+    </div>
   </div>
 
   <!-- Step 3: 能接哪些任務 -->
@@ -822,6 +828,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 // 申請當順咖頁。需先用 LINE 登入才能申請。
 // 進頁先確認登入狀態：沒登入就先去 LINE 授權再回來填表，避免填完才被要求登入。
 window.addEventListener('DOMContentLoaded', async function () {
+  // 先抓網址 ?ref= 推薦碼存起來(LINE 跳轉會掉網址參數,跟 14 用同一個 key)
+  var refParam = new URLSearchParams(window.location.search).get('ref');
+  if (refParam && refParam.trim()) {
+    localStorage.setItem('signup_ref', refParam.trim().toUpperCase());
+  }
   var res = await sb.auth.getSession();
   if (!(res.data && res.data.session)) {
     localStorage.setItem('signup_role', 'suncar');
@@ -840,6 +851,10 @@ window.addEventListener('DOMContentLoaded', async function () {
     var nick = document.getElementById('sa-nickname');
     if (lineName && nick && !nick.value) nick.value = lineName;
   }
+  // 把存起來的推薦碼自動填進輸入框
+  var savedRef = localStorage.getItem('signup_ref');
+  var refBox = document.getElementById('sa-refcode');
+  if (savedRef && refBox && !refBox.value) refBox.value = savedRef;
   localStorage.removeItem('signup_role');
 });
 
@@ -1185,9 +1200,35 @@ async function handleSubmit() {
     role_detail: { real_name: realname, age: age, gender: gender, other_name: otherName }
   }).eq('id', user.id);
   if (up.error) {
-    alert('資料儲存失敗:' + up.error.message);
+    if (up.error.code === '23505') {
+      var dupMsg = '此手機/信箱/LINE 已被註冊';
+      var m = up.error.message || '';
+      if (m.indexOf('phone') > -1) dupMsg = '此手機已被其他帳號註冊';
+      else if (m.indexOf('email') > -1) dupMsg = '此信箱已被其他帳號註冊';
+      else if (m.indexOf('line') > -1) dupMsg = '此 LINE 已被其他帳號註冊';
+      alert(dupMsg);
+    } else {
+      alert('資料儲存失敗:' + up.error.message);
+    }
     if (btn) btn.disabled = false;
     return;
+  }
+
+  // 1b. 補自己的推薦碼 ref_code(空才寫,公式同後台:id 去橫線取前 6 碼大寫)
+  var myCode = user.id.replace(/-/g, '').substr(0, 6).toUpperCase();
+  await sb.from('users').update({ ref_code: myCode }).eq('id', user.id).is('ref_code', null);
+
+  // 1c. 解析推薦碼 → referred_by(空才寫、不能是自己)。先用畫面手填,沒填再用網址 ?ref= 存起來的
+  var manualRef = (document.getElementById('sa-refcode').value || '').trim().toUpperCase();
+  var refCode = manualRef || (localStorage.getItem('signup_ref') || '').trim();
+  if (refCode) {
+    var refRes = await sb.from('users').select('id').ilike('ref_code', refCode).maybeSingle();
+    if (refRes.data && refRes.data.id && refRes.data.id !== user.id) {
+      await sb.from('users').update({ referred_by: refRes.data.id }).eq('id', user.id).is('referred_by', null);
+    } else {
+      alert('找不到推薦碼「' + refCode + '」對應的帳號,已略過(其餘資料仍會儲存)。');
+    }
+    localStorage.removeItem('signup_ref');
   }
 
   // 2. 建立 suncar 角色：status pending，等審核 + 驗證
