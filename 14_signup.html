@@ -362,6 +362,12 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
       <div class="hint">用於配對附近的順咖,可日後修改、新增其他地址</div>
     </div>
 
+    <div class="field">
+      <label>推薦碼 <span style="color:var(--ink-light);font-weight:400;font-size:0.74rem;">(選填)</span></label>
+      <input type="text" id="su-refcode" placeholder="有朋友推薦你嗎?填他的推薦碼" maxlength="12" style="text-transform:uppercase;">
+      <div class="hint">朋友分享連結給你的話會自動帶入,也可以手動輸入</div>
+    </div>
+
     <div class="info-box" style="margin-top:1rem;">
       <svg><use href="#i-info"/></svg>
       <div>身分證、信用卡這些<strong>下單時再加</strong>就好,不用一開始就填</div>
@@ -673,6 +679,10 @@ async function prefillStep3() {
   var user = ures.data ? ures.data.user : null;
   document.getElementById('auth-msg').textContent = '已用 LINE 完成身分驗證';
   document.getElementById('auth-detail').textContent = '系統收到:LINE 暱稱、頭像(姓名、電話需自填)';
+  // 網址 ?ref= 存起來的推薦碼自動填進輸入框
+  var savedRef = localStorage.getItem('signup_ref');
+  var refBox = document.getElementById('su-refcode');
+  if (savedRef && refBox && !refBox.value) refBox.value = savedRef;
   if (user) {
     var lineName = (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) || '';
     var nick = document.getElementById('su-nickname');
@@ -754,11 +764,15 @@ async function completeSignup() {
   await sb.from('users').update({ ref_code: myCode }).eq('id', user.id).is('ref_code', null);
 
   // 1c. 解析推薦碼 → referred_by（空才寫、不能是自己）
-  var refCode = (localStorage.getItem('signup_ref') || '').trim();
+  // 優先用畫面上手動填的,沒填再用網址 ?ref= 存起來的
+  var manualRef = (document.getElementById('su-refcode').value || '').trim().toUpperCase();
+  var refCode = manualRef || (localStorage.getItem('signup_ref') || '').trim();
   if (refCode) {
     var refRes = await sb.from('users').select('id').ilike('ref_code', refCode).maybeSingle();
     if (refRes.data && refRes.data.id && refRes.data.id !== user.id) {
       await sb.from('users').update({ referred_by: refRes.data.id }).eq('id', user.id).is('referred_by', null);
+    } else {
+      alert('找不到推薦碼「' + refCode + '」對應的帳號,已略過(其餘資料仍會儲存)。');
     }
     localStorage.removeItem('signup_ref');
   }
