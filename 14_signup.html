@@ -737,13 +737,16 @@ async function completeSignup() {
   var addrdetail = document.getElementById('su-addrdetail').value.trim();
   var addressFull = city + district + street + addrdetail;
 
-  // 1. 更新 users：稱呼當公開顯示名、手機、email（獨立欄位）、真實姓名放 role_detail
-  var up = await sb.from('users').update({
+  // 1. 寫入 users:用 upsert(有就更新、沒有就當場建立),確保這筆一定存在,
+  //    後面建 client 角色才不會卡外鍵(不再依賴後台 handle_new_user 是否已先建好)。
+  //    稱呼當公開顯示名、手機、email(獨立欄位)、真實姓名放 role_detail
+  var up = await sb.from('users').upsert({
+    id: user.id,
     display_name: nickname,
     phone: phone,
     email: email,
     role_detail: { real_name: realname }
-  }).eq('id', user.id);
+  });
   if (up.error) {
     if (up.error.code === '23505') {
       var dupMsg = '此手機/信箱/LINE 已被註冊';
