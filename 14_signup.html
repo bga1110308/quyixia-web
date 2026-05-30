@@ -759,9 +759,7 @@ async function completeSignup() {
     return;
   }
 
-  // 1b. 補推薦碼 ref_code（空才寫，公式同後台：id 去橫線取前 6 碼大寫）
-  var myCode = user.id.replace(/-/g, '').substr(0, 6).toUpperCase();
-  await sb.from('users').update({ ref_code: myCode }).eq('id', user.id).is('ref_code', null);
+  // 推薦碼 ref_code 由後台 trg_set_ref_code 在建立帳號時自動產生,此處不再處理
 
   // 1c. 解析推薦碼 → referred_by（空才寫、不能是自己）
   // 優先用畫面上手動填的,沒填再用網址 ?ref= 存起來的
