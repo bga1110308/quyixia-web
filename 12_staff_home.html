@@ -491,6 +491,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 /* === 接 Supabase:順咖端讀真實資料 === */
 var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
 (function(){
+  var currentUserId = null; /* init 取得登入者後填入,接單時把單指派給這個人 */
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
@@ -511,8 +512,26 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div></div>';
   }
   function openCard(o){
-    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">可接單</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); alert(\'接單功能稍後接上\')">接單</button></div>'+price(o)+'</div></div>';
+    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">可接單</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button></div>'+price(o)+'</div></div>';
   }
+
+  /* 接單:把這張媒合中的單指派給自己,狀態改成 active(進行中)。
+     更新條件帶 status=matching 且 suncar_id is null,兩人同時搶同一張時,
+     只有第一個會成功,第二個會影響 0 筆,藉此判斷已被接走(防搶單)。 */
+  window.takeOrder = async function(orderId, btnEl){
+    if(!canAcceptJobs){ alert('你的順咖申請審核中,通過後才能接單'); return; }
+    if(!currentUserId){ alert('請重新整理頁面後再試'); return; }
+    if(!confirm('確定要接這張單嗎?\n接單後若取消會扣信用分。')) return;
+    btnEl.disabled = true; btnEl.textContent = '處理中…';
+    var res = await sb.from('orders')
+      .update({ suncar_id: currentUserId, status: 'active' })
+      .eq('id', orderId).eq('status', 'matching').is('suncar_id', null)
+      .select('id');
+    if(res.error){ alert('接單失敗:' + res.error.message); btnEl.disabled = false; btnEl.textContent = '接單'; return; }
+    if(!res.data || !res.data.length){ alert('這張單剛剛已被其他順咖接走了'); location.reload(); return; }
+    alert('接單成功!可在「進行中」看到這筆服務。');
+    location.reload();
+  };
 
   async function init(){
     if(typeof window.sb === 'undefined'){ console.error('supabase-init.js 未載入'); return; }
@@ -527,6 +546,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       user = (ures && ures.data) ? ures.data.user : null;
     }
     if(!user){ window.location.href = '13_login.html'; return; }
+    currentUserId = user.id;
 
     /* 本人 users */
     var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score,role_detail').eq('id', user.id).maybeSingle();
