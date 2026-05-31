@@ -201,7 +201,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .suc-btn-secondary:hover{background:rgba(95,181,142,0.15);}
 
 /* 全站統一聯絡按鈕 */
-.contact-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.contact-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;}
 .contact-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 12px;border-radius:10px;font-size:0.9rem;font-weight:600;text-decoration:none;color:#fff;cursor:pointer;transition:all 0.2s;border:none;font-family:inherit;}
 .contact-btn.call{background:linear-gradient(135deg,var(--mint),var(--forest));box-shadow:0 4px 12px rgba(47,96,72,0.25);}
 .contact-btn.line{background:var(--line-green);box-shadow:0 4px 12px rgba(6,199,85,0.25);}
@@ -209,6 +209,9 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .contact-icon{font-size:1em;}
 
 .contact-hint{font-size:0.76rem;color:var(--ink-soft);margin-top:10px;padding:8px 12px;background:var(--champagne-soft);border-radius:10px;border:1px dashed var(--border);line-height:1.55;}
+/* 順咖視角:綠色識別(風格規範:順咖端底色綠灰、頂條改森林綠,跟案家金色區隔) */
+body.staff-view{background:#F2F7F4;}
+body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(--forest) 100%);}
 
 @media (max-width:480px){
   .sb-title{font-size:1.2rem;}
@@ -435,20 +438,20 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   <!-- 費用 -->
   <div class="section-card">
-    <div class="sec-title"><svg><use href="#i-money"/></svg>費用明細</div>
+    <div class="sec-title" id="fee-sec-title"><svg><use href="#i-money"/></svg>費用明細</div>
     <div class="fee-row">
       <span>服務報酬</span>
       <span class="fee-price" id="fee-amount">$ —</span>
     </div>
-    <div class="fee-row">
+    <div class="fee-row" id="fee-points-row">
       <span>平台服務費(已扣點數)</span>
       <span class="fee-price" id="fee-points">— 點</span>
     </div>
     <div class="fee-row total">
-      <span>應付服務報酬</span>
+      <span id="fee-total-label">應付服務報酬</span>
       <span class="price" id="fee-total">$ —</span>
     </div>
-    <div style="font-size:0.74rem;color:var(--ink-light);margin-top:8px;line-height:1.65;">
+    <div style="font-size:0.74rem;color:var(--ink-light);margin-top:8px;line-height:1.65;" id="fee-note">
       服務報酬由案家於服務完成後直接支付給順咖,平台不經手金流
     </div>
   </div>
@@ -516,9 +519,15 @@ async function init(){
   /* 判斷看的人是這單的順咖還是案家,決定整頁視角 */
   var viewerRole = (o.suncar_id && o.suncar_id === user.id) ? 'suncar' : 'client';
   if(viewerRole === 'suncar'){
+    document.body.classList.add('staff-view'); // 綠色識別:一眼看出是順咖頁
     var rlab = document.querySelector('.role-label'); if(rlab){ rlab.textContent = '順咖服務台 · 訂單詳情'; }
     var rl = document.querySelector('.role-switch-link'); if(rl){ rl.href = '12_staff_home.html'; rl.textContent = '回我的接單'; }
     var bk = document.querySelector('.back-btn'); if(bk){ bk.setAttribute('onclick', "window.location.href='12_staff_home.html'"); }
+    // 費用:順咖只看「案家應付給我多少」,平台扣點是案家的事,隱藏
+    var fst = document.getElementById('fee-sec-title'); if(fst){ fst.innerHTML = '<svg><use href="#i-money"/></svg>案家應付'; }
+    var fpr = document.getElementById('fee-points-row'); if(fpr){ fpr.style.display = 'none'; }
+    var ftl = document.getElementById('fee-total-label'); if(ftl){ ftl.textContent = '案家應付給你'; }
+    var fn = document.getElementById('fee-note'); if(fn){ fn.textContent = '案家於服務完成後直接付給你,平台不經手金流'; }
   }
 
   /* 狀態大卡(依視角選文案) */
@@ -590,6 +599,17 @@ async function init(){
       if(st.is_realname) badges += '<span class="bm bm-verified"><svg><use href="#i-check"/></svg>實名</span>';
       if(st.has_caregiver_cert) badges += '<span class="bm bm-cna"><svg><use href="#i-star"/></svg>照服</span>';
       document.getElementById('staff-badges').innerHTML = badges;
+      // 訂單成立後(待服務/服務中)案家可聯絡順咖,查順咖電話(client_read_my_suncars 政策放行)
+      if(o.status === 'accepted' || o.status === 'active'){
+        var sp = await sb.from('users').select('phone').eq('id', o.suncar_id).maybeSingle();
+        var sphone = (sp && sp.data) ? sp.data.phone : null;
+        if(sphone){
+          var lb = document.querySelector('#staff-contact-actions .contact-btn.line'); if(lb) lb.style.display = 'none';
+          var cb2 = document.querySelector('#staff-contact-actions .contact-btn.call'); if(cb2) cb2.href = 'tel:' + sphone;
+          document.getElementById('staff-contact-actions').style.display = '';
+          document.getElementById('contact-hint-msg').style.display = 'none';
+        }
+      }
       staffSection.style.display = '';
     } else {
       staffSection.style.display = 'none';
