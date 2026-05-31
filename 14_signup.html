@@ -690,30 +690,41 @@ async function prefillStep3() {
   }
 }
 
+/* 驗證失敗統一處理:提醒 + 捲到該欄位置中 + 紅框閃一下 + 聚焦。全站共用做法 */
+function fail(el, msg) {
+  alert(msg);
+  if (el) {
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){}
+    el.style.outline = '2px solid var(--danger)';
+    el.style.outlineOffset = '2px';
+    setTimeout(function(){ el.style.outline=''; el.style.outlineOffset=''; }, 2200);
+    try { el.focus({ preventScroll: true }); } catch(e){}
+  }
+}
+
 async function completeSignup() {
   var inputs = document.querySelectorAll('#step-3 input');
   var required = [0,1,2,4,5,6,7];
   var ok = true;
+  var firstBad = null;
   required.forEach(function(idx){
     var inp = inputs[idx];
     if (inp && !inp.value.trim() && inp.placeholder.indexOf('選填') === -1) {
       inp.style.borderColor = 'var(--danger)';
+      if (!firstBad) firstBad = inp;  // 記住第一個沒填的,等下捲過去
       ok = false;
     } else if (inp) {
       inp.style.borderColor = '';
     }
   });
   if (!ok) {
-    alert('請填完帶 * 的必填欄位');
-    return;
+    return fail(firstBad, '請填完帶 * 的必填欄位');
   }
   if (!readStatus.terms || !readStatus.privacy) {
-    alert('請先閱讀服務條款與隱私權政策');
-    return;
+    return fail(document.getElementById('link-terms'), '請先閱讀服務條款與隱私權政策');
   }
   if (!document.getElementById('agree').checked) {
-    alert('請勾選同意條款');
-    return;
+    return fail(document.getElementById('agree'), '請勾選同意條款');
   }
 
   var btn = document.getElementById('submit-btn');

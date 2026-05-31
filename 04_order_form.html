@@ -800,6 +800,10 @@ function fail(el, msg) {
   alert(msg);
   if (el) {
     try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){}
+    // 紅框閃 2.2 秒,讓使用者按掉提示後一眼看到是哪一欄沒填對
+    el.style.outline = '2px solid var(--danger)';
+    el.style.outlineOffset = '2px';
+    setTimeout(function(){ el.style.outline=''; el.style.outlineOffset=''; }, 2200);
     try { el.focus({ preventScroll: true }); } catch(e){}
   }
 }
@@ -926,9 +930,7 @@ function handleSubmit() {
   /* 收集已選服務項目,判斷是否需要照服員(pool B) */
   var svcEls = document.querySelectorAll('#service-grid .stag.on');
   if (svcEls.length === 0) {
-    alert('請至少選擇一個服務項目');
-    document.getElementById('service-grid').scrollIntoView({behavior:'smooth', block:'center'});
-    return;
+    return fail(document.getElementById('service-grid'), '請至少選擇一個服務項目');
   }
   var svcNames = [];
   var needPro = false;
@@ -1108,17 +1110,15 @@ function completeReg() {
   var email = document.getElementById('reg-email').value.trim();
   var agreed = document.getElementById('reg-agree').checked;
 
-  if (!nickname) { alert('請輸入暱稱'); return; }
-  if (!email) { alert('請輸入 Email'); return; }
+  if (!nickname) { return fail(document.getElementById('reg-nickname'), '請輸入暱稱'); }
+  if (!email) { return fail(document.getElementById('reg-email'), '請輸入 Email'); }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    alert('請輸入正確的 Email 格式');
-    return;
+    return fail(document.getElementById('reg-email'), '請輸入正確的 Email 格式');
   }
   if (!regReadStatus.terms || !regReadStatus.privacy) {
-    alert('請先閱讀服務條款與隱私政策');
-    return;
+    return fail(document.getElementById('link-reg-terms'), '請先閱讀服務條款與隱私政策');
   }
-  if (!agreed) { alert('請勾選同意條款'); return; }
+  if (!agreed) { return fail(document.getElementById('reg-agree'), '請勾選同意條款'); }
 
   closeRegModal();
   window.location.href = '13_login.html';

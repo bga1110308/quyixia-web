@@ -25,6 +25,7 @@
   --border-mint:rgba(95,181,142,0.3);
   --warn:#E89544;
   --warn-pale:#FFF1E0;
+  --danger:#D9534F;
 }
 body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 50%,var(--mint-pale) 100%);color:var(--ink);min-height:100vh;padding:1.25rem;line-height:1.6;}
 
@@ -305,13 +306,24 @@ document.getElementById('card-exp').addEventListener('input', function(e){
   e.target.value = v;
 });
 
+/* 驗證失敗統一處理:提醒 + 捲到該欄位置中 + 紅框閃一下 + 聚焦。全站共用做法。
+   信用卡欄位只做捲動與紅框提示,絕不自動填入任何值 */
+function fail(el, msg) {
+  alert(msg);
+  if (el) {
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){}
+    el.style.outline = '2px solid var(--danger)';
+    el.style.outlineOffset = '2px';
+    setTimeout(function(){ el.style.outline=''; el.style.outlineOffset=''; }, 2200);
+    try { el.focus({ preventScroll: true }); } catch(e){}
+  }
+}
+
 async function confirmPay() {
   if (!currentPlan) return;
 
   if (!currentMethod) {
-    alert('請先選擇付款方式');
-    document.querySelector('.pay-methods').scrollIntoView({behavior:'smooth', block:'center'});
-    return;
+    return fail(document.querySelector('.pay-methods'), '請先選擇付款方式');
   }
 
   if (currentMethod === 'card') {
@@ -319,19 +331,13 @@ async function confirmPay() {
     var exp = document.getElementById('card-exp').value;
     var cvv = document.getElementById('card-cvv').value;
     if (num.length < 13) {
-      alert('請輸入正確的卡號');
-      document.getElementById('card-num').focus();
-      return;
+      return fail(document.getElementById('card-num'), '請輸入正確的卡號');
     }
     if (!/^\d{2}\/\d{2}$/.test(exp)) {
-      alert('請輸入到期日(MM/YY)');
-      document.getElementById('card-exp').focus();
-      return;
+      return fail(document.getElementById('card-exp'), '請輸入到期日(MM/YY)');
     }
     if (cvv.length < 3) {
-      alert('請輸入安全碼');
-      document.getElementById('card-cvv').focus();
-      return;
+      return fail(document.getElementById('card-cvv'), '請輸入安全碼');
     }
   }
 
