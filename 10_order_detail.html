@@ -458,6 +458,16 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
     </div>
   </div>
 
+  <!-- 順咖預覽未接單時的接單區(預設隱藏,只有「順咖看別人還沒接的單」這種視角才顯示) -->
+  <div class="section-card" id="take-order-bar" style="display:none;">
+    <button class="confirm-btn-ok" id="take-order-btn" style="width:100%;font-size:1.02rem;padding:1rem;" onclick="takeThisOrder()">
+      <svg><use href="#i-check-circle"/></svg>我要接這筆單
+    </button>
+    <div style="font-size:0.74rem;color:var(--ink-light);margin-top:9px;line-height:1.65;text-align:center;">
+      接單後這筆會進入你的「待服務」,並開放案家聯絡方式
+    </div>
+  </div>
+
   <!-- 底部操作 -->
   <div class="bottom-actions" id="bottom-actions" style="display:none;">
     <button class="btn btn-outline" style="grid-column:span 2;" onclick="reportProblem()"><svg><use href="#i-flag"/></svg>回報問題</button>
@@ -472,6 +482,14 @@ function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=
 function fmtDT(v){ if(!v) return '—'; var d=new Date(v); if(isNaN(d)) return '—'; var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
 function durText(m){ if(m==null) return '時數待討論'; if(m>=60){ var h=Math.floor(m/60); var mm=m%60; return '預計 '+h+' 小時'+(mm?(' '+mm+' 分'):''); } return '預計 '+m+' 分鐘'; }
 
+/* 媒合前(順咖還沒接單)遮蔽備註裡的「聯絡人:姓名 電話」那段,接單後才開放。
+   備註是用「；」串起來的,只要濾掉含「聯絡人」的那段即可 */
+function maskContact(note){
+  if(!note) return note;
+  var parts = String(note).split('；').filter(function(p){ return p.indexOf('聯絡人') === -1; });
+  return parts.join('；') || '無';
+}
+
 /* 狀態對應顯示 */
 var STATUS_UI = {
   matching: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>媒合中',   title:'正在幫你找順咖', desc:'附近的順咖看到任務後會主動聯繫你' },
@@ -481,7 +499,12 @@ var STATUS_UI = {
   cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }
 };
 
-/* 順咖視角的狀態文案(同一頁,看的人是順咖時改用這組,站在順咖角度說話) */
+/* 順咖在預覽「還沒接的單」時的文案(站在順咖角度,鼓勵接單)。只會用到 matching */
+var STATUS_UI_PREVIEW = {
+  matching: { cls:'', tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>等待接單', title:'這筆任務正在尋找順咖', desc:'確認下方服務內容後,可按最下方按鈕接下這筆單' }
+};
+
+/* 順咖已接單後的視角文案(站在順咖角度說話) */
 var STATUS_UI_STAFF = {
   matching: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>媒合中',   title:'尚未接單',       desc:'這筆還在等待接單' },
   accepted: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>待服務',   title:'你已接下這筆單', desc:'請於約定時間到場,並在順咖首頁按「開始服務」' },
@@ -518,23 +541,54 @@ async function init(){
     return;
   }
 
-  /* 判斷看的人是這單的順咖還是案家,決定整頁視角 */
-  var viewerRole = (o.suncar_id && o.suncar_id === user.id) ? 'suncar' : 'client';
-  if(viewerRole === 'suncar'){
+  /* 判斷看的人跟這張單的關係,決定整頁視角:
+       client  = 我下的單,看自己填的完整資訊(金色)
+       suncar  = 我已接的單,接單後可聯絡案家(綠色)
+       preview = 別人的單還沒人接、而我是順咖,遮蔽電話並顯示接單鈕(綠色)
+       denied  = 跟我無關又輪不到我接,擋掉 */
+  var canTakePoolB = false;
+  var viewerRole;
+  if(o.client_id === user.id){
+    viewerRole = 'client';
+  } else if(o.suncar_id && o.suncar_id === user.id){
+    viewerRole = 'suncar';
+  } else if(o.status === 'matching' && !o.suncar_id){
+    // 還沒人接的單:確認我是審核通過的順咖,才給接單視角
+    var mr = await sb.from('user_roles').select('status').eq('user_id', user.id).eq('role', 'suncar').maybeSingle();
+    if(mr && mr.data && mr.data.status === 'active'){
+      viewerRole = 'preview';
+      var mp = await sb.from('users').select('has_caregiver_cert').eq('id', user.id).maybeSingle();
+      canTakePoolB = !!(mp && mp.data && mp.data.has_caregiver_cert);
+    } else {
+      viewerRole = 'denied';
+    }
+  } else {
+    viewerRole = 'denied';
+  }
+
+  if(viewerRole === 'denied'){
+    document.getElementById('status-title').textContent = '無法查看這筆訂單';
+    document.getElementById('status-desc').textContent = '這筆訂單跟你的帳號沒有關聯';
+    return;
+  }
+
+  /* 順咖端(已接單 suncar、預覽 preview)共用綠色識別與費用措辭 */
+  var isPreview = (viewerRole === 'preview');
+  if(viewerRole === 'suncar' || isPreview){
     document.body.classList.add('staff-view'); // 綠色識別:一眼看出是順咖頁
-    var rlab = document.querySelector('.role-label'); if(rlab){ rlab.textContent = '順咖服務台 · 訂單詳情'; }
+    var rlab = document.querySelector('.role-label'); if(rlab){ rlab.textContent = isPreview ? '順咖任務詳情' : '順咖服務台 · 訂單詳情'; }
     var rl = document.querySelector('.role-switch-link'); if(rl){ rl.href = '12_staff_home.html'; rl.textContent = '回我的接單'; }
     var bk = document.querySelector('.back-btn'); if(bk){ bk.setAttribute('onclick', "window.location.href='12_staff_home.html'"); }
     // 費用:順咖只看「案家應付給我多少」,平台扣點是案家的事,隱藏
-    var fst = document.getElementById('fee-sec-title'); if(fst){ fst.innerHTML = '<svg><use href="#i-money"/></svg>案家應付'; }
+    var fst = document.getElementById('fee-sec-title'); if(fst){ fst.innerHTML = '<svg><use href="#i-money"/></svg>' + (isPreview ? '接單後可得' : '案家應付'); }
     var fpr = document.getElementById('fee-points-row'); if(fpr){ fpr.style.display = 'none'; }
-    var ftl = document.getElementById('fee-total-label'); if(ftl){ ftl.textContent = '案家應付給你'; }
+    var ftl = document.getElementById('fee-total-label'); if(ftl){ ftl.textContent = isPreview ? '接單後案家應付給你' : '案家應付給你'; }
     var fn = document.getElementById('fee-note'); if(fn){ fn.textContent = '案家於服務完成後直接付給你,平台不經手金流'; }
   }
 
   /* 狀態大卡(依視角選文案) */
-  var uiMap = (viewerRole === 'suncar') ? STATUS_UI_STAFF : STATUS_UI;
-  var ui = uiMap[o.status] || uiMap.matching;
+  var uiMap = (viewerRole === 'suncar') ? STATUS_UI_STAFF : (isPreview ? STATUS_UI_PREVIEW : STATUS_UI);
+  var ui = uiMap[o.status] || STATUS_UI.matching;
   var banner = document.getElementById('status-banner');
   banner.className = 'status-banner ' + ui.cls;
   var tag = document.getElementById('status-tag');
@@ -552,7 +606,9 @@ async function init(){
   document.getElementById('oi-service').innerHTML = esc(o.service_type || '—') + poolChip;
   document.getElementById('oi-place').textContent = (o.service_district || '') + (o.service_address ? (' · ' + o.service_address) : '') || '—';
   document.getElementById('oi-time').textContent = fmtDT(o.service_time) + ' · ' + durText(o.duration_minutes);
-  document.getElementById('oi-note').textContent = o.address_note || '無';
+  var noteText = o.address_note || '無';
+  if(isPreview){ noteText = maskContact(noteText); }  // 媒合前遮蔽聯絡電話,接單後才開放
+  document.getElementById('oi-note').textContent = noteText;
 
   /* 費用 */
   document.getElementById('fee-amount').textContent = (o.amount != null ? ('$ ' + o.amount) : '$ —');
@@ -561,7 +617,15 @@ async function init(){
 
   /* 對方資訊卡:案家看順咖、順咖看案家 */
   var staffSection = document.getElementById('staff-section');
-  if(viewerRole === 'suncar'){
+  if(isPreview){
+    // 接單前不顯示案家聯絡卡(避免電話外洩),改顯示接單按鈕
+    staffSection.style.display = 'none';
+    window._orderId = o.id;
+    window._viewerId = user.id;
+    window._orderPool = o.pool;
+    window._canTakePoolB = canTakePoolB;
+    document.getElementById('take-order-bar').style.display = '';
+  } else if(viewerRole === 'suncar'){
     /* 順咖看案家:顯示案家姓名電話,訂單成立後(待服務/服務中)開放聯絡 */
     var secT = document.querySelector('#staff-section .sec-title'); if(secT) secT.textContent = '案家';
     var lineBtn = document.querySelector('#staff-contact-actions .contact-btn.line');
@@ -620,6 +684,36 @@ async function init(){
     staffSection.style.display = 'none';
   }
 }
+
+/* 接單:跟 12 首頁同一套寫法。更新帶 status=matching 且 suncar_id is null,
+   兩人同時搶同一張時只有第一個成功,第二個影響 0 筆 → 判定被接走(防搶單)。
+   接單成功後留在本頁重整,會自動切換成「已接單」順咖視角,看得到案家聯絡方式。 */
+window.takeThisOrder = async function(){
+  var btn = document.getElementById('take-order-btn');
+  // pool B(需照服員證)的單,沒有照服證不能接
+  if(window._orderPool === 'B' && !window._canTakePoolB){
+    alert('這筆需要照服員證才能接,你的帳號尚未通過照服員證驗證。');
+    return;
+  }
+  if(!confirm('確定要接這張單嗎?\n接單後若取消會扣信用分。')) return;
+  btn.disabled = true; btn.textContent = '處理中…';
+  var res = await sb.from('orders')
+    .update({ suncar_id: window._viewerId, status: 'accepted' })
+    .eq('id', window._orderId).eq('status', 'matching').is('suncar_id', null)
+    .select('id');
+  if(res.error){
+    alert('接單失敗:' + res.error.message);
+    btn.disabled = false; btn.innerHTML = '<svg><use href="#i-check-circle"/></svg>我要接這筆單';
+    return;
+  }
+  if(!res.data || !res.data.length){
+    alert('這張單剛剛已被其他順咖接走了');
+    window.location.href = '12_staff_home.html';
+    return;
+  }
+  alert('接單成功!這筆已進入你的「待服務」,服務當天記得按「開始服務」。');
+  location.reload();
+};
 
 init();
 </script>
