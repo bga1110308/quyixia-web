@@ -470,6 +470,7 @@ function durText(m){ if(m==null) return '時數待討論'; if(m>=60){ var h=Math
 /* 狀態對應顯示 */
 var STATUS_UI = {
   matching: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>媒合中',   title:'正在幫你找順咖', desc:'附近的順咖看到任務後會主動聯繫你' },
+  accepted: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>待服務',   title:'順咖已接單',     desc:'順咖已接下這筆,將於約定時間開始服務' },
   active:   { cls:'active-banner', tagCls:'sb-active',   tag:'<svg><use href="#i-radio"/></svg>服務中',    title:'順咖服務中',     desc:'服務進行中,有問題可直接聯絡順咖' },
   done:     { cls:'done-banner',   tagCls:'sb-done',     tag:'<svg><use href="#i-check-circle"/></svg>已完成', title:'服務完成',       desc:'感謝你使用去一下' },
   cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }

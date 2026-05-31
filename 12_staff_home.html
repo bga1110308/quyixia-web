@@ -401,6 +401,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </div>
   </div>
 
+  <!-- 待服務(已接單、約定時間還沒開始) -->
+  <div id="pending-section" style="display:none;">
+  <div class="sec-h">
+    <div class="sec-title">待服務</div>
+  </div>
+  <div id="pending-list"></div>
+  </div>
+
   <!-- 進行中 -->
   <div id="active-section" style="display:none;">
   <div class="sec-h">
@@ -508,6 +516,10 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
     return '<div class="order-card active-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-active"><svg><use href="#i-radio"/></svg>服務中</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-green" onclick="event.stopPropagation(); alert(\'標記完成功能稍後接上\')">標記完成</button></div>'+price(o)+'</div></div>';
   }
+  function pendingCard(o, clientName, clientPhone){
+    var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
+    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">待服務</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-green" onclick="event.stopPropagation(); window.startService(\''+esc(o.id)+'\', this)">開始服務</button></div>'+price(o)+'</div></div>';
+  }
   function doneCard(o){
     return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div></div>';
   }
@@ -515,7 +527,8 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">可接單</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button></div>'+price(o)+'</div></div>';
   }
 
-  /* 接單:把這張媒合中的單指派給自己,狀態改成 active(進行中)。
+  /* 接單:把這張媒合中的單指派給自己,狀態改成 accepted(待服務)。
+     之後順咖按「開始服務」才會變 active(服務中)。
      更新條件帶 status=matching 且 suncar_id is null,兩人同時搶同一張時,
      只有第一個會成功,第二個會影響 0 筆,藉此判斷已被接走(防搶單)。 */
   window.takeOrder = async function(orderId, btnEl){
@@ -524,12 +537,27 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(!confirm('確定要接這張單嗎?\n接單後若取消會扣信用分。')) return;
     btnEl.disabled = true; btnEl.textContent = '處理中…';
     var res = await sb.from('orders')
-      .update({ suncar_id: currentUserId, status: 'active' })
+      .update({ suncar_id: currentUserId, status: 'accepted' })
       .eq('id', orderId).eq('status', 'matching').is('suncar_id', null)
       .select('id');
     if(res.error){ alert('接單失敗:' + res.error.message); btnEl.disabled = false; btnEl.textContent = '接單'; return; }
     if(!res.data || !res.data.length){ alert('這張單剛剛已被其他順咖接走了'); location.reload(); return; }
-    alert('接單成功!可在「進行中」看到這筆服務。');
+    alert('接單成功!可在「待服務」看到這筆,服務當天按「開始服務」即可。');
+    location.reload();
+  };
+
+  /* 開始服務:把自己的待服務單(accepted)改成服務中(active) */
+  window.startService = async function(orderId, btnEl){
+    if(!currentUserId){ alert('請重新整理頁面後再試'); return; }
+    if(!confirm('確定要開始這筆服務嗎?')) return;
+    btnEl.disabled = true; btnEl.textContent = '處理中…';
+    var res = await sb.from('orders')
+      .update({ status: 'active' })
+      .eq('id', orderId).eq('suncar_id', currentUserId).eq('status', 'accepted')
+      .select('id');
+    if(res.error){ alert('操作失敗:' + res.error.message); btnEl.disabled = false; btnEl.textContent = '開始服務'; return; }
+    if(!res.data || !res.data.length){ alert('這筆單狀態已改變,請重新整理'); location.reload(); return; }
+    alert('已開始服務!');
     location.reload();
   };
 
@@ -593,15 +621,21 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     /* 本人接的單(suncar_id = 我) */
     var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id').eq('suncar_id', user.id).order('service_time',{ascending:false});
     var myOrders = ores.data || [];
+    var pendingOrders = myOrders.filter(function(o){ return o.status==='accepted'; });
     var activeOrders = myOrders.filter(function(o){ return o.status==='active'; });
     var doneOrders = myOrders.filter(function(o){ return o.status==='done'; });
 
-    /* 進行中服務需要案家聯絡資訊 */
+    /* 待服務與服務中都要案家聯絡資訊,一起撈 */
     var clientById = {};
-    var clientIds = activeOrders.map(function(o){ return o.client_id; }).filter(Boolean);
+    var clientIds = pendingOrders.concat(activeOrders).map(function(o){ return o.client_id; }).filter(Boolean);
     if(clientIds.length){
       var cres = await sb.from('users').select('id,display_name,phone').in('id', clientIds);
       (cres.data||[]).forEach(function(c){ clientById[c.id]=c; });
+    }
+
+    if(pendingOrders.length){
+      $('pending-list').innerHTML = pendingOrders.map(function(o){ var c=clientById[o.client_id]||{}; return pendingCard(o, c.display_name, c.phone); }).join('');
+      $('pending-section').style.display = '';
     }
 
     if(activeOrders.length){
