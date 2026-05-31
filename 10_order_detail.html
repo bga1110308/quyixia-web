@@ -476,14 +476,25 @@ var STATUS_UI = {
   cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }
 };
 
+/* 順咖視角的狀態文案(同一頁,看的人是順咖時改用這組,站在順咖角度說話) */
+var STATUS_UI_STAFF = {
+  matching: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>媒合中',   title:'尚未接單',       desc:'這筆還在等待接單' },
+  accepted: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>待服務',   title:'你已接下這筆單', desc:'請於約定時間到場,並在順咖首頁按「開始服務」' },
+  active:   { cls:'active-banner', tagCls:'sb-active',   tag:'<svg><use href="#i-radio"/></svg>服務中',    title:'服務進行中',     desc:'完成後請在順咖首頁按「標記完成」' },
+  done:     { cls:'done-banner',   tagCls:'sb-done',     tag:'<svg><use href="#i-check-circle"/></svg>已完成', title:'服務已完成',     desc:'感謝你的服務' },
+  cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }
+};
+
 async function init(){
   if(typeof window.sb === 'undefined'){ alert('系統未就緒,請重新整理頁面'); return; }
 
   var params = new URLSearchParams(window.location.search);
   var orderId = params.get('id');
 
-  var ures = await sb.auth.getUser();
-  var user = (ures && ures.data) ? ures.data.user : null;
+  var user = null;
+  var sres = await sb.auth.getSession();
+  if(sres.data && sres.data.session && sres.data.session.user){ user = sres.data.session.user; }
+  else { var ures = await sb.auth.getUser(); user = (ures && ures.data) ? ures.data.user : null; }
   if(!user){ window.location.href = '13_login.html'; return; }
 
   if(!orderId){
@@ -502,8 +513,17 @@ async function init(){
     return;
   }
 
-  /* 狀態大卡 */
-  var ui = STATUS_UI[o.status] || STATUS_UI.matching;
+  /* 判斷看的人是這單的順咖還是案家,決定整頁視角 */
+  var viewerRole = (o.suncar_id && o.suncar_id === user.id) ? 'suncar' : 'client';
+  if(viewerRole === 'suncar'){
+    var rlab = document.querySelector('.role-label'); if(rlab){ rlab.textContent = '順咖服務台 · 訂單詳情'; }
+    var rl = document.querySelector('.role-switch-link'); if(rl){ rl.href = '12_staff_home.html'; rl.textContent = '回我的接單'; }
+    var bk = document.querySelector('.back-btn'); if(bk){ bk.setAttribute('onclick', "window.location.href='12_staff_home.html'"); }
+  }
+
+  /* 狀態大卡(依視角選文案) */
+  var uiMap = (viewerRole === 'suncar') ? STATUS_UI_STAFF : STATUS_UI;
+  var ui = uiMap[o.status] || uiMap.matching;
   var banner = document.getElementById('status-banner');
   banner.className = 'status-banner ' + ui.cls;
   var tag = document.getElementById('status-tag');
@@ -528,9 +548,30 @@ async function init(){
   document.getElementById('fee-points').textContent = (o.points_cost != null ? o.points_cost : 0) + ' 點';
   document.getElementById('fee-total').textContent = (o.amount != null ? ('$ ' + o.amount) : '$ —');
 
-  /* 指定順咖卡 */
+  /* 對方資訊卡:案家看順咖、順咖看案家 */
   var staffSection = document.getElementById('staff-section');
-  if(o.suncar_id){
+  if(viewerRole === 'suncar'){
+    /* 順咖看案家:顯示案家姓名電話,訂單成立後(待服務/服務中)開放聯絡 */
+    var secT = document.querySelector('#staff-section .sec-title'); if(secT) secT.textContent = '案家';
+    var lineBtn = document.querySelector('#staff-contact-actions .contact-btn.line');
+    if(lineBtn) lineBtn.style.display = 'none'; // LINE 尚未串接,先只開放電話
+    var cres = await sb.from('users').select('display_name,phone').eq('id', o.client_id).maybeSingle();
+    var c = (cres && cres.data) ? cres.data : {};
+    var cname = c.display_name || '案家';
+    var cav = document.getElementById('staff-avatar');
+    cav.classList.remove('cna');
+    cav.textContent = firstChar(cname);
+    document.getElementById('staff-name').textContent = cname;
+    document.getElementById('staff-rating').textContent = c.phone ? ('電話 ' + c.phone) : '';
+    document.getElementById('staff-badges').innerHTML = '';
+    if(c.phone && (o.status === 'accepted' || o.status === 'active')){
+      var callBtn = document.querySelector('#staff-contact-actions .contact-btn.call');
+      if(callBtn) callBtn.href = 'tel:' + c.phone;
+      document.getElementById('staff-contact-actions').style.display = '';
+      document.getElementById('contact-hint-msg').style.display = 'none';
+    }
+    staffSection.style.display = '';
+  } else if(o.suncar_id){
     var sres = await sb.from('public_suncars')
       .select('id,display_name,avatar_url,credit_score,is_realname,has_caregiver_cert')
       .eq('id', o.suncar_id).maybeSingle();
