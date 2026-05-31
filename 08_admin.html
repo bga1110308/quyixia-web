@@ -903,12 +903,25 @@ function setReviewCount(n){
 /* 讀「待審核的順咖」:user_roles role=suncar 且 status=pending,順便帶出申請人的 users 資料 */
 async function loadReviewList(){
   var box=document.getElementById('review-list');
-  var res=await sb.from('user_roles')
-    .select('user_id,status,created_at,role_data,users(display_name,phone,role_detail)')
+  // 分兩步查,不用「一句撈兩表」。因為 user_roles 對 users 有不只一條關聯,
+  // 一句撈會不知道走哪條而報錯。分開查最穩,以後改關聯也不會壞。
+  // 第一步:撈待審核的順咖角色
+  var rolesRes=await sb.from('user_roles')
+    .select('user_id,status,created_at,role_data')
     .eq('role','suncar').eq('status','pending')
     .order('created_at',{ascending:true});
-  if(res.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(res.error.message)+'</div>'; return; }
-  renderReviewCards(res.data||[]);
+  if(rolesRes.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(rolesRes.error.message)+'</div>'; return; }
+  var roles=rolesRes.data||[];
+  if(!roles.length){ renderReviewCards([]); return; }
+  // 第二步:用這些人的編號去撈姓名電話
+  var ids=roles.map(function(r){ return r.user_id; });
+  var usersRes=await sb.from('users').select('id,display_name,phone,role_detail').in('id',ids);
+  if(usersRes.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(usersRes.error.message)+'</div>'; return; }
+  // 第三步:把姓名電話接回每一筆申請
+  var umap={};
+  (usersRes.data||[]).forEach(function(u){ umap[u.id]=u; });
+  roles.forEach(function(r){ r.users=umap[r.user_id]||{}; });
+  renderReviewCards(roles);
 }
 
 /* 把申請資料畫成審核卡 */
