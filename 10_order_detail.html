@@ -207,6 +207,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .contact-btn.line{background:var(--line-green);box-shadow:0 4px 12px rgba(6,199,85,0.25);}
 .contact-btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.2);}
 .contact-icon{font-size:1em;}
+.call-icon svg{width:1.1em;height:1.1em;fill:var(--danger);vertical-align:middle;}
 
 .contact-hint{font-size:0.76rem;color:var(--ink-soft);margin-top:10px;padding:8px 12px;background:var(--champagne-soft);border-radius:10px;border:1px dashed var(--border);line-height:1.55;}
 /* 順咖視角:綠色識別(風格規範:順咖端底色綠灰、頂條改森林綠,跟案家金色區隔) */
@@ -244,6 +245,7 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z"/></symbol>
 </defs>
 </svg>
 
@@ -329,7 +331,7 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
     <!-- 統一聯絡按鈕 -->
     <div class="contact-row" id="staff-contact-actions" style="display:none;">
       <a class="contact-btn call" href="tel:0911234567">
-        <span class="contact-icon">📞</span>
+        <span class="contact-icon call-icon"><svg><use href="#i-phone"/></svg></span>
         <span>撥打電話</span>
       </a>
       <a class="contact-btn line" href="https://line.me/R/ti/p/~quyixia_demo" target="_blank">
