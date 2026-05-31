@@ -292,7 +292,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <div class="nav-item" onclick="go('clients',this)"><svg class="icon"><use href="#i-heart"/></svg>案家資料<span class="cnt">12</span></div>
       <div class="nav-item" onclick="go('workers',this)"><svg class="icon"><use href="#i-users"/></svg>順咖資料<span class="cnt">8</span></div>
       <div class="nav-section">審核 / 訂單</div>
-      <div class="nav-item active" onclick="go('review',this)"><svg class="icon"><use href="#i-check"/></svg>順咖審核<span class="cnt">3</span></div>
+      <div class="nav-item active" onclick="go('review',this)"><svg class="icon"><use href="#i-check"/></svg>順咖審核<span class="cnt" id="nav-review-count">0</span></div>
       <div class="nav-item" onclick="go('orders',this)"><svg class="icon"><use href="#i-clipboard"/></svg>訂單總覽</div>
       <div class="nav-section">設定 / 報表</div>
       <div class="nav-item" onclick="go('announce',this)"><svg class="icon"><use href="#i-speaker"/></svg>公告管理</div>
@@ -403,51 +403,18 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <!-- 順咖審核 -->
       <div class="page active" id="page-review">
         <div class="sec-header">
-          <div style="display:flex;align-items:center;gap:9px;"><span class="sec-title">順咖審核</span><span style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-size:11.5px;padding:3px 10px;border-radius:99px;font-weight:700;box-shadow:0 3px 8px rgba(239,159,39,0.3);">3</span></div>
-          <div style="font-size:12.5px;color:var(--ink-soft);">AI 已預審,等候最終裁定</div>
+          <div style="display:flex;align-items:center;gap:9px;"><span class="sec-title">順咖審核</span><span id="review-count" style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-size:11.5px;padding:3px 10px;border-radius:99px;font-weight:700;box-shadow:0 3px 8px rgba(239,159,39,0.3);">0</span></div>
+          <div style="font-size:12.5px;color:var(--ink-soft);">待審核的順咖申請</div>
         </div>
-        <div class="search-bar" style="margin-bottom:13px;">
+        <!-- AI 風險預審尚未接,先隱藏這排篩選;等 Phase 3 做了 AI 預審再開 -->
+        <div class="search-bar" style="margin-bottom:13px;display:none;">
           <button class="filter-btn on" onclick="filterRisk('all',this)">全部</button>
           <button class="filter-btn" onclick="filterRisk('red',this)">🔴 高風險</button>
           <button class="filter-btn" onclick="filterRisk('yellow',this)">🟡 待確認</button>
           <button class="filter-btn" onclick="filterRisk('green',this)">🟢 低風險</button>
         </div>
-        <div class="applicant-card risk-red" data-risk="red">
-          <div class="avatar av-r" style="width:40px;height:40px;font-size:14px;">陳</div>
-          <div style="flex:1;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">陳○明</span><span class="risk-pill red">🔴 高風險</span></div>
-            <div class="ai-reason">AI 分析:證照影像模糊;服務區域與戶籍地差異過大;緊急聯絡人空白。</div>
-            <div class="card-meta"><span>申請 05/21 09:14</span><span>身體照顧</span><span class="pill p-poolB" style="font-size:10px;">申請解鎖照服員池</span></div>
-          </div>
-          <div class="card-actions">
-            <button class="btn-approve" onclick="act(this)">通過</button>
-            <button class="btn-reject" onclick="act(this)">拒絕</button>
-          </div>
-        </div>
-        <div class="applicant-card risk-yellow" data-risk="yellow">
-          <div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">王</div>
-          <div style="flex:1;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">王○芳</span><span class="risk-pill yellow">🟡 待確認</span></div>
-            <div class="ai-reason">AI 分析:持結業證書非丙級術科,建議確認是否符合收案條件。</div>
-            <div class="card-meta"><span>申請 05/20 15:33</span><span>家事服務</span><span class="pill p-poolA" style="font-size:10px;">一般跑腿池</span></div>
-          </div>
-          <div class="card-actions">
-            <button class="btn-approve" onclick="act(this)">通過</button>
-            <button class="btn-reject" onclick="act(this)">拒絕</button>
-          </div>
-        </div>
-        <div class="applicant-card risk-green" data-risk="green">
-          <div class="avatar av-g" style="width:40px;height:40px;font-size:14px;">林</div>
-          <div style="flex:1;">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">林○珠</span><span class="risk-pill green">🟢 低風險</span></div>
-            <div class="ai-reason">AI 分析:證照清晰有效,資料完整,服務範圍合理,建議直接通過。</div>
-            <div class="card-meta"><span>申請 05/19 11:02</span><span>身體照顧、陪同外出</span><span class="pill p-poolB" style="font-size:10px;">申請解鎖照服員池</span></div>
-          </div>
-          <div class="card-actions">
-            <button class="btn-approve" onclick="act(this)">通過</button>
-            <button class="btn-reject" onclick="act(this)">拒絕</button>
-          </div>
-        </div>
+        <!-- 真資料審核卡由 loadReviewList() 填入此處 -->
+        <div id="review-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
       </div>
 
       <!-- 訂單總覽 -->
@@ -815,6 +782,9 @@ textarea.form-input{min-height:80px;resize:vertical;}
   </div>
 </div>
 
+<!-- 連線後台:跟 11/12 同一套,sb 由 supabase-init.js 建立 -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 <script>
 const CLIENTS={
   '張○美':{phone:'0912-***-456',addr:'新北市板橋區文化路',age:78,relation:'女兒代為聯絡',service:'身體照顧(含沐浴、翻身)',freq:'每週三次',prefer:'林○珠',orders:5,status:'活躍',note:'有糖尿病,需注意飲食;女兒在新加坡,需主動回報'},
@@ -917,10 +887,95 @@ function filterRisk(risk,btn){
   });
 }
 
-function act(btn){
-  const card=btn.closest('.applicant-card');
-  card.style.opacity='0.4';
-  card.style.pointerEvents='none';
+/* ===== 後台:順咖審核接真資料(取代原本只把卡片變灰的假動作) ===== */
+
+/* 顯示用小工具:把資料當純文字輸出,避免被當成 HTML */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function fmtDate(iso){ if(!iso) return ''; var d=new Date(iso); if(isNaN(d)) return ''; var p=function(n){return n<10?'0'+n:''+n;}; return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
+var IDENTITY_TEXT={ general:'一般民眾', cna:'專業照服', cert:'有證人員' };
+
+/* 同步標題與側欄的待審核數字,兩處一起更新避免不一致 */
+function setReviewCount(n){
+  var a=document.getElementById('review-count'); if(a) a.textContent=n;
+  var b=document.getElementById('nav-review-count'); if(b) b.textContent=n;
+}
+
+/* 讀「待審核的順咖」:user_roles role=suncar 且 status=pending,順便帶出申請人的 users 資料 */
+async function loadReviewList(){
+  var box=document.getElementById('review-list');
+  var res=await sb.from('user_roles')
+    .select('user_id,status,created_at,role_data,users(display_name,phone,role_detail)')
+    .eq('role','suncar').eq('status','pending')
+    .order('created_at',{ascending:true});
+  if(res.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(res.error.message)+'</div>'; return; }
+  renderReviewCards(res.data||[]);
+}
+
+/* 把申請資料畫成審核卡 */
+function renderReviewCards(list){
+  var box=document.getElementById('review-list');
+  setReviewCount(list.length);
+  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的順咖申請</div>'; return; }
+  box.innerHTML=list.map(function(r){
+    var u=r.users||{};
+    var rd=r.role_data||{};
+    var name=(u.role_detail && u.role_detail.real_name) || u.display_name || '未填姓名';
+    var addr=rd.address||{};
+    var area=[addr.city,addr.district].filter(Boolean).join(' ');
+    var idtext=IDENTITY_TEXT[rd.identity]||rd.identity||'';
+    var metaParts=['申請 '+fmtDate(r.created_at)];
+    if(idtext) metaParts.push(idtext);
+    if(area) metaParts.push(area);
+    if(u.phone) metaParts.push(u.phone);
+    var meta=metaParts.map(function(t){return '<span>'+esc(t)+'</span>';}).join('');
+    var bio=rd.bio?'<div class="ai-reason">'+esc(rd.bio)+'</div>':'';
+    return '<div class="applicant-card" data-uid="'+esc(r.user_id)+'">'+
+      '<div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">'+esc(name.charAt(0))+'</div>'+
+      '<div style="flex:1;">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(name)+'</span></div>'+
+        bio+
+        '<div class="card-meta">'+meta+'</div>'+
+      '</div>'+
+      '<div class="card-actions">'+
+        '<button class="btn-approve" onclick="reviewAct(\''+esc(r.user_id)+'\',\'active\',this)">通過</button>'+
+        '<button class="btn-reject" onclick="reviewAct(\''+esc(r.user_id)+'\',\'rejected\',this)">拒絕</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+/* 真的改狀態:通過=active(順咖才能在 12 顯示已通過並接單)、拒絕=rejected */
+async function reviewAct(userId, decision, btnEl){
+  var word=decision==='active'?'通過':'拒絕';
+  if(!confirm('確定要「'+word+'」這位順咖嗎?')) return;
+  var card=btnEl.closest('.applicant-card');
+  card.style.pointerEvents='none'; card.style.opacity='0.6';
+  var res=await sb.from('user_roles').update({status:decision})
+    .eq('user_id',userId).eq('role','suncar');
+  if(res.error){
+    alert('更新失敗:'+res.error.message);
+    card.style.pointerEvents=''; card.style.opacity='';
+    return;
+  }
+  // 成功就把這張卡移除,並把數字減一
+  card.remove();
+  var left=document.querySelectorAll('#review-list .applicant-card').length;
+  setReviewCount(left);
+  if(!left){ document.getElementById('review-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的順咖申請</div>'; }
+}
+
+/* 進頁守門:只有管理員能用後台。沿用 11/12 那套 getSession 為主、getUser 備援 */
+async function initAdmin(){
+  if(typeof window.sb==='undefined'){ alert('連線元件未載入,請重新整理頁面'); return; }
+  var user=null;
+  var sres=await sb.auth.getSession();
+  if(sres.data && sres.data.session && sres.data.session.user){ user=sres.data.session.user; }
+  else { var ures=await sb.auth.getUser(); user=(ures&&ures.data)?ures.data.user:null; }
+  if(!user){ window.location.href='13_login.html'; return; }
+  // 確認是不是管理員(讀自己那筆的 is_admin),不是就擋掉
+  var me=await sb.from('users').select('is_admin').eq('id',user.id).maybeSingle();
+  if(!me.data || !me.data.is_admin){ alert('此頁僅限管理員使用'); window.location.href='11_client_home.html'; return; }
+  loadReviewList();
 }
 
 function switchTab(status,el){
@@ -969,6 +1024,9 @@ if(bc){
     bc.appendChild(w);
   });
 }
+
+/* 進頁就守門並載入審核清單 */
+document.addEventListener('DOMContentLoaded', initAdmin);
 </script>
 </body>
 </html>
