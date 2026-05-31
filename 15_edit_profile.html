@@ -849,7 +849,14 @@ var serviceCategories = [
     ]
   }
 ];
-var selectedSvcs = ['buy-food','deliver','queue','home-help','companion-elder','digital-help','pet'];
+/* 預設可接全部非鎖定項目(身體照顧需照服員證,維持鎖定不預選)。
+   載入時若資料庫已有存過服務項目,會在下方用存的值覆蓋。 */
+function allUnlockedSvcKeys(){
+  var keys = [];
+  serviceCategories.forEach(function(cat){ cat.items.forEach(function(s){ if(!s.locked) keys.push(s.k); }); });
+  return keys;
+}
+var selectedSvcs = allUnlockedSvcKeys();
 
 function renderServices() {
   var html = '';
@@ -990,17 +997,30 @@ function deleteCert(key) {
 }
 
 /* ============ 儲存 / 取消 ============ */
+/* 補填提示:捲到該欄位、框紅一下、聚焦,再跳提示。全站表單共用同一套寫法。 */
+function gotoField(elId, msg){
+  var el = document.getElementById(elId);
+  if(el){
+    el.scrollIntoView({behavior:'smooth', block:'center'});
+    el.style.outline = '2px solid var(--danger)';
+    el.style.outlineOffset = '2px';
+    setTimeout(function(){ el.style.outline=''; el.style.outlineOffset=''; }, 2200);
+    try { el.focus({preventScroll:true}); } catch(e){}
+  }
+  alert(msg);
+}
+
 async function saveProfile() {
   var nick = document.getElementById('nickname').value.trim();
   var phone = document.getElementById('phone').value.trim();
   var email = document.getElementById('email').value.trim();
 
-  if (!nick) { alert('請填寫暱稱'); return; }
-  if (!/^09\d{8}$/.test(phone)) { alert('請輸入正確的手機號碼(09xx-xxx-xxx)'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('請輸入正確的 Email'); return; }
+  if (!nick) { gotoField('nickname','請填寫暱稱'); return; }
+  if (!/^09\d{8}$/.test(phone)) { gotoField('phone','請輸入正確的手機號碼(09xx-xxx-xxx)'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { gotoField('email','請輸入正確的 Email'); return; }
 
   var pwd = document.getElementById('password').value;
-  if (pwd && pwd.length < 8) { alert('密碼至少 8 字'); return; }
+  if (pwd && pwd.length < 8) { gotoField('password','密碼至少 8 字'); return; }
 
   /* 順咖額外驗證 */
   if (role === 'staff') {
@@ -1009,7 +1029,7 @@ async function saveProfile() {
     if (sel === 'custom') {
       rate = parseInt(document.getElementById('hourly-rate-custom').value);
       if (!rate || rate < 160 || rate > 20000) {
-        alert('期望時薪請填寫 160-20000 之間');
+        gotoField('hourly-rate-custom','期望時薪請填寫 160-20000 之間');
         return;
       }
     } else {
@@ -1018,12 +1038,12 @@ async function saveProfile() {
 
     /* 至少選一個服務區域 */
     if (selectedAreas.length === 0) {
-      alert('請至少選擇一個服務區域');
+      gotoField('area-chips','請至少選擇一個服務區域');
       return;
     }
     /* 至少選一個服務項目 */
     if (selectedSvcs.length === 0) {
-      alert('請至少選擇一個服務項目');
+      gotoField('svc-list','請至少選擇一個服務項目');
       return;
     }
   }

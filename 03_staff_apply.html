@@ -397,8 +397,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="field">
       <label>性別<span class="req">*</span></label>
       <select id="gender-sel" onchange="onGenderChange(this)">
-        <option value="male" selected>男</option>
-        <option value="female">女</option>
+        <option value="male">男</option>
+        <option value="female" selected>女</option>
         <option value="other">其他</option>
       </select>
       <div class="other-name-row" id="other-name-row">
@@ -1149,7 +1149,7 @@ async function handleSubmit() {
     return;
   }
 
-  // 必填基本資料檢查
+  // 必填基本資料檢查:逐欄檢查,捲到第一個沒填的欄位
   var realname = document.getElementById('sa-realname').value.trim();
   var nickname = document.getElementById('sa-nickname').value.trim();
   var phone = document.getElementById('sa-phone').value.trim();
@@ -1157,9 +1157,17 @@ async function handleSubmit() {
   var distance = document.getElementById('sa-distance').value;
   var city = document.getElementById('city-sel').value;
   var district = document.getElementById('sa-district').value.trim();
-  if (!realname || !nickname || !phone || !age || !distance || !city || !district) {
-    alert('請填完基本資料的必填欄位(姓名、暱稱、手機、年齡、性別、地址、能跑多遠)');
-    return;
+  var required = [
+    ['sa-realname', realname, '請填寫真實姓名'],
+    ['sa-nickname', nickname, '請填寫暱稱'],
+    ['sa-phone', phone, '請填寫手機號碼'],
+    ['sa-age', age, '請填寫年齡'],
+    ['city-sel', city, '請選擇縣市'],
+    ['sa-district', district, '請填寫地區'],
+    ['sa-distance', distance, '請選擇能跑多遠']
+  ];
+  for (var ri = 0; ri < required.length; ri++) {
+    if (!required[ri][1]) { gotoField(required[ri][0], required[ri][2]); return; }
   }
 
   var gender = document.getElementById('gender-sel').value;
