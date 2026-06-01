@@ -219,6 +219,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .btn-green:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(47,96,72,0.35);}
 .btn-outline{background:#fff;color:var(--forest);border-color:var(--mint);}
 .btn-outline:hover{background:var(--mint-pale);}
+.btn-red{background:#fff;color:var(--danger);border-color:var(--danger);}
+.btn-red:hover{background:var(--danger);color:#fff;}
 
 /* 篩選 */
 .filter-bar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:0.85rem;}
@@ -518,7 +520,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   }
   function pendingCard(o, clientName, clientPhone){
     var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
-    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">待服務</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-green" onclick="event.stopPropagation(); window.startService(\''+esc(o.id)+'\', this)">開始服務</button></div>'+price(o)+'</div></div>';
+    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">待服務</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-red" onclick="event.stopPropagation(); window.releaseOrder(\''+esc(o.id)+'\', this)">取消接單</button><button class="btn btn-green" onclick="event.stopPropagation(); window.startService(\''+esc(o.id)+'\', this)">開始服務</button></div>'+price(o)+'</div></div>';
   }
   function doneCard(o){
     return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div></div>';
@@ -558,6 +560,23 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(res.error){ alert('操作失敗:' + res.error.message); btnEl.disabled = false; btnEl.textContent = '開始服務'; return; }
     if(!res.data || !res.data.length){ alert('這筆單狀態已改變,請重新整理'); location.reload(); return; }
     alert('已開始服務!');
+    location.reload();
+  };
+
+  /* 取消接單:把自己接的待服務單(accepted)退回媒合中(matching)並清掉 suncar_id,
+     讓這筆回到「可接任務」、案家端回到媒合中重新媒合。只在開始服務前(accepted)能退。
+     條件帶 suncar_id=本人 且 status=accepted,確保只退得了自己手上、還沒開始的單。 */
+  window.releaseOrder = async function(orderId, btnEl){
+    if(!currentUserId){ alert('請重新整理頁面後再試'); return; }
+    if(!confirm('確定要取消接這筆單嗎?\n取消後這筆會退回平台重新媒合。接單後取消可能影響信用分。')) return;
+    btnEl.disabled = true; btnEl.textContent = '處理中…';
+    var res = await sb.from('orders')
+      .update({ suncar_id: null, status: 'matching' })
+      .eq('id', orderId).eq('suncar_id', currentUserId).eq('status', 'accepted')
+      .select('id');
+    if(res.error){ alert('取消失敗:' + res.error.message); btnEl.disabled = false; btnEl.textContent = '取消接單'; return; }
+    if(!res.data || !res.data.length){ alert('這筆狀態已改變,無法取消,請重新整理'); location.reload(); return; }
+    alert('已取消接單,這筆已退回平台重新媒合。');
     location.reload();
   };
 

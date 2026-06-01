@@ -427,6 +427,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   function buildCard(o, staffName){
     var st = STATUS[o.status] || STATUS.matching;
+    // 只有「媒合中、待服務」可由案家取消;服務中/已完成不給取消,要走後台
+    var canCancel = (o.status === 'matching' || o.status === 'accepted');
     var loc = [o.service_district, o.service_address].filter(Boolean).join(' · ');
     var metaTime = hoursText(o.duration_minutes);
     var priceLabel = st.group==='done' ? '已付' : (st.group==='matching' ? '願付' : '總計');
@@ -449,8 +451,27 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
             : '<div style="font-size:0.74rem;color:var(--ink-light);">'+(st.group==='matching'?'媒合中,等待順咖接單':'')+'</div>')+
           '<div><span class="oc-price-label">'+priceLabel+'</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'+
         '</div>'+
+        (canCancel ? '<div style="margin-top:10px;text-align:right;"><button onclick="event.stopPropagation(); window.cancelClientOrder(\''+esc(o.id)+'\')" style="background:#fff;border:1.5px solid var(--danger);color:var(--danger);font-family:inherit;font-size:0.78rem;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;">取消訂單</button></div>' : '')+
       '</div>';
   }
+
+  var _clientUserId = null;
+
+  /* 案家取消自己的訂單:軟取消,status 改 cancelled(不是真刪除,後台仍查得到)。
+     條件帶 client_id=本人 且 status 在 媒合中/待服務,服務中/已完成不給取消。
+     取消成功後重整,因為已被濾掉所以不再出現。 */
+  window.cancelClientOrder = async function(orderId){
+    if(!_clientUserId){ alert('請重新整理頁面後再試'); return; }
+    if(!confirm('確定要取消這筆訂單嗎?\n取消後你和順咖都不會再看到這筆。')) return;
+    var res = await sb.from('orders')
+      .update({ status: 'cancelled' })
+      .eq('id', orderId).eq('client_id', _clientUserId).in('status', ['matching','accepted'])
+      .select('id');
+    if(res.error){ alert('取消失敗:' + res.error.message); return; }
+    if(!res.data || !res.data.length){ alert('這筆狀態已改變,無法取消,請重新整理。'); location.reload(); return; }
+    alert('已取消這筆訂單。');
+    location.reload();
+  };
 
   async function init(){
     if(typeof window.sb === 'undefined'){ console.error('supabase-init.js 未載入'); return; }
@@ -465,6 +486,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       user = (ures && ures.data) ? ures.data.user : null;
     }
     if(!user){ window.location.href = '13_login.html'; return; }
+    _clientUserId = user.id; // 存本人 id,取消訂單時用來限定只能取消自己的單
 
     /* 本人 users */
     var prof = await sb.from('users').select('display_name,member_no,client_points,phone,is_verified,is_realname,role_detail').eq('id', user.id).maybeSingle();
@@ -503,7 +525,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
     /* 本人訂單 */
     var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,suncar_id').eq('client_id', user.id).order('created_at',{ascending:false});
-    var orders = ores.data || [];
+    // 濾掉已取消的單:案家畫面與所有計數都不顯示 cancelled(只有後台查得到)
+    var orders = (ores.data || []).filter(function(o){ return o.status !== 'cancelled'; });
 
     var suncarIds = orders.map(function(o){ return o.suncar_id; }).filter(Boolean);
     var nameById = {};

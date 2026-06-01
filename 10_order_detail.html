@@ -468,6 +468,12 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
     </div>
   </div>
 
+  <!-- 取消區(預設隱藏)。案家=取消整張訂單;順咖=取消接單退回媒合中。文案與按鈕動作由 JS 依視角設定 -->
+  <div class="section-card" id="cancel-bar" style="display:none;">
+    <button class="confirm-btn-issue" id="cancel-btn" style="width:100%;font-size:1rem;padding:0.95rem;">取消</button>
+    <div style="font-size:0.74rem;color:var(--ink-light);margin-top:9px;line-height:1.65;text-align:center;" id="cancel-hint"></div>
+  </div>
+
   <!-- 底部操作 -->
   <div class="bottom-actions" id="bottom-actions" style="display:none;">
     <button class="btn btn-outline" style="grid-column:span 2;" onclick="reportProblem()"><svg><use href="#i-flag"/></svg>回報問題</button>
@@ -683,6 +689,25 @@ async function init(){
   } else {
     staffSection.style.display = 'none';
   }
+
+  /* 取消區:案家可取消自己的單(媒合中/待服務);順咖可取消接單(待服務,退回媒合中)。
+     服務中/已完成/已取消都不顯示,需走後台。文案與動作依視角設定。 */
+  var cancelBar = document.getElementById('cancel-bar');
+  var cancelBtn = document.getElementById('cancel-btn');
+  var cancelHint = document.getElementById('cancel-hint');
+  if(viewerRole === 'client' && (o.status === 'matching' || o.status === 'accepted')){
+    cancelBtn.textContent = '取消訂單';
+    cancelHint.textContent = (o.status === 'accepted')
+      ? '已有順咖接單,取消前建議先聯絡對方。取消後雙方都看不到這筆。'
+      : '取消後這筆會關閉,你和順咖都不會再看到。';
+    cancelBtn.onclick = function(){ window.cancelMyOrder(o.id, user.id); };
+    cancelBar.style.display = '';
+  } else if(viewerRole === 'suncar' && o.status === 'accepted'){
+    cancelBtn.textContent = '取消接單';
+    cancelHint.textContent = '取消後這筆會退回平台重新媒合,案家仍會收到服務。接單後取消可能影響信用分。';
+    cancelBtn.onclick = function(){ window.releaseMyOrder(o.id, user.id); };
+    cancelBar.style.display = '';
+  }
 }
 
 /* 接單:跟 12 首頁同一套寫法。更新帶 status=matching 且 suncar_id is null,
@@ -713,6 +738,35 @@ window.takeThisOrder = async function(){
   }
   alert('接單成功!這筆已進入你的「待服務」,服務當天記得按「開始服務」。');
   location.reload();
+};
+
+/* 案家取消自己的訂單:軟取消,status 改 cancelled(不是真刪除,後台仍查得到)。
+   條件帶 client_id=本人 且 status 在 媒合中/待服務,服務中/已完成不給取消。
+   取消後回案家首頁,因為已被濾掉所以不再出現。 */
+window.cancelMyOrder = async function(orderId, clientId){
+  if(!confirm('確定要取消這筆訂單嗎?\n取消後你和順咖都不會再看到這筆。')) return;
+  var res = await sb.from('orders')
+    .update({ status: 'cancelled' })
+    .eq('id', orderId).eq('client_id', clientId).in('status', ['matching','accepted'])
+    .select('id');
+  if(res.error){ alert('取消失敗:' + res.error.message); return; }
+  if(!res.data || !res.data.length){ alert('這筆狀態已改變,無法取消,請重新整理。'); location.reload(); return; }
+  alert('已取消這筆訂單。');
+  window.location.href = '11_client_home.html';
+};
+
+/* 順咖取消接單:把自己接的待服務單(accepted)退回媒合中(matching)並清掉 suncar_id。
+   條件帶 suncar_id=本人 且 status=accepted,只在開始服務前能退。退回後這筆重新媒合,案家仍會收到服務。 */
+window.releaseMyOrder = async function(orderId, suncarId){
+  if(!confirm('確定要取消接這筆單嗎?\n取消後這筆會退回平台重新媒合。接單後取消可能影響信用分。')) return;
+  var res = await sb.from('orders')
+    .update({ suncar_id: null, status: 'matching' })
+    .eq('id', orderId).eq('suncar_id', suncarId).eq('status', 'accepted')
+    .select('id');
+  if(res.error){ alert('取消失敗:' + res.error.message); return; }
+  if(!res.data || !res.data.length){ alert('這筆狀態已改變,無法取消,請重新整理。'); location.reload(); return; }
+  alert('已取消接單,這筆已退回平台重新媒合。');
+  window.location.href = '12_staff_home.html';
 };
 
 init();
