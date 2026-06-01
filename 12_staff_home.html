@@ -538,7 +538,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     btnEl.disabled = true; btnEl.textContent = '處理中…';
     var res = await sb.from('orders')
       .update({ suncar_id: currentUserId, status: 'accepted' })
-      .eq('id', orderId).eq('status', 'matching').is('suncar_id', null)
+      .eq('id', orderId).eq('status', 'matching').is('suncar_id', null).neq('client_id', currentUserId)
       .select('id');
     if(res.error){ alert('接單失敗:' + res.error.message); btnEl.disabled = false; btnEl.textContent = '接單'; return; }
     if(!res.data || !res.data.length){ alert('這張單剛剛已被其他順咖接走了'); location.reload(); return; }
@@ -662,7 +662,8 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
 
     /* 可接任務(媒合中且尚無人接,審核通過才查) */
     if(canAcceptJobs){
-      var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount').eq('status','matching').is('suncar_id', null).order('service_time',{ascending:true});
+      // neq client_id:排除自己下的單,順咖不能接到自己當案家下的單(第一層,清單就不列出)
+      var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount').eq('status','matching').is('suncar_id', null).neq('client_id', user.id).order('service_time',{ascending:true});
       var openOrders = (open.data || []).filter(function(o){ return o.pool==='A' || (o.pool==='B' && u.has_caregiver_cert); });
       $('stat-open').textContent = openOrders.length;
       $('open-badge').textContent = openOrders.length + ' 筆';

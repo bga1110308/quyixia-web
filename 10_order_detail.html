@@ -699,7 +699,7 @@ window.takeThisOrder = async function(){
   btn.disabled = true; btn.textContent = '處理中…';
   var res = await sb.from('orders')
     .update({ suncar_id: window._viewerId, status: 'accepted' })
-    .eq('id', window._orderId).eq('status', 'matching').is('suncar_id', null)
+    .eq('id', window._orderId).eq('status', 'matching').is('suncar_id', null).neq('client_id', window._viewerId)
     .select('id');
   if(res.error){
     alert('接單失敗:' + res.error.message);
