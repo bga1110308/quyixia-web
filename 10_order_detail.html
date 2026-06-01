@@ -458,6 +458,11 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
     </div>
   </div>
 
+  <!-- 順咖預覽未接單時顯示案家信譽:免費只看得到標題+鎖頭,付費後才看「低/中/高」 -->
+  <div class="section-card" id="client-trust" style="display:none;font-size:0.88rem;">
+    案家取消率:<span id="client-trust-val" style="color:var(--ink-light);">🔒 升級後可查看</span>
+  </div>
+
   <!-- 順咖預覽未接單時的接單區(預設隱藏,只有「順咖看別人還沒接的單」這種視角才顯示) -->
   <div class="section-card" id="take-order-bar" style="display:none;">
     <button class="confirm-btn-ok" id="take-order-btn" style="width:100%;font-size:1.02rem;padding:1rem;" onclick="takeThisOrder()">
@@ -519,6 +524,9 @@ var STATUS_UI_STAFF = {
   cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }
 };
 
+/* 信用分換算等級:高(80↑)、中(50到79)、低(50↓),跟取消率同一種摘要風格 */
+function creditBand(s){ s = (s == null ? 100 : s); return s >= 80 ? '高' : (s >= 50 ? '中' : '低'); }
+
 async function init(){
   if(typeof window.sb === 'undefined'){ alert('系統未就緒,請重新整理頁面'); return; }
 
@@ -546,6 +554,10 @@ async function init(){
     document.getElementById('status-desc').textContent = '訂單不存在,或你沒有權限查看';
     return;
   }
+
+  // 看的人是不是「可看精確值/摘要」的特權身分:目前=後台管理員,之後再加「已付費」一起算
+  var meRow = await sb.from('users').select('is_admin').eq('id', user.id).maybeSingle();
+  var isPrivileged = !!(meRow && meRow.data && meRow.data.is_admin);
 
   /* 判斷看的人跟這張單的關係,決定整頁視角:
        client  = 我下的單,看自己填的完整資訊(金色)
@@ -631,6 +643,12 @@ async function init(){
     window._orderPool = o.pool;
     window._canTakePoolB = canTakePoolB;
     document.getElementById('take-order-bar').style.display = '';
+    document.getElementById('client-trust').style.display = '';
+    // 特權身分(後台/之後付費)看得到案家取消率摘要;其餘維持鎖頭
+    if(isPrivileged){
+      var ct = await sb.from('public_trust').select('cancel_band').eq('user_id', o.client_id).maybeSingle();
+      if(ct && ct.data){ document.getElementById('client-trust-val').textContent = ct.data.cancel_band; }
+    }
   } else if(viewerRole === 'suncar'){
     /* 順咖看案家:顯示案家姓名電話,訂單成立後(待服務/服務中)開放聯絡 */
     var secT = document.querySelector('#staff-section .sec-title'); if(secT) secT.textContent = '案家';
@@ -666,7 +684,13 @@ async function init(){
         av.textContent = firstChar(sname);
       }
       document.getElementById('staff-name').textContent = sname;
-      document.getElementById('staff-rating').innerHTML = '<svg><use href="#i-star"/></svg>信用分 ' + (st.credit_score != null ? st.credit_score : '—');
+      // 特權身分(後台/之後付費)看精確值+等級;其餘只看標題+鎖頭。本人在 12 看自己精確值
+      if(isPrivileged){
+        var csv = (st.credit_score != null ? st.credit_score : 100);
+        document.getElementById('staff-rating').innerHTML = '<svg><use href="#i-star"/></svg>信用分 ' + csv + '(' + creditBand(csv) + ')';
+      } else {
+        document.getElementById('staff-rating').innerHTML = '<svg><use href="#i-star"/></svg>信用分 <span style="color:var(--ink-light);font-weight:400;">🔒 升級後可查看</span>';
+      }
       var badges = '';
       if(st.is_realname) badges += '<span class="bm bm-verified"><svg><use href="#i-check"/></svg>實名</span>';
       if(st.has_caregiver_cert) badges += '<span class="bm bm-cna"><svg><use href="#i-star"/></svg>照服</span>';
