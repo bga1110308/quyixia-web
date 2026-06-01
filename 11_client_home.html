@@ -324,6 +324,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </div>
   </div>
 
+  <!-- 我的取消率(案家本人看精確值;之後別人接單時看到的是「低/中/高」摘要) -->
+  <div id="cancel-stat" style="display:none;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:14px;font-size:0.86rem;color:var(--ink-soft);">
+    我的取消率:<b id="cancel-rate" style="color:var(--ink);">0%</b> <span style="color:var(--ink-light);">(待服務後取消 <span id="cancel-cnt">0</span> 次)</span>
+  </div>
+
   <!-- ============ 進行中的任務 ============ -->
   <div id="active-section" style="display:none;">
   <div class="sec-h">
@@ -548,6 +553,16 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     $('cnt-matching').textContent = cnt.matching;
     $('cnt-active').textContent = cnt.active;
     $('cnt-done').textContent = cnt.done;
+
+    // 取消率:分子=待服務後自己取消的次數(取消紀錄表),分母=分子+目前已被接走的單(待服務/服務中/已完成)
+    var cancRes = await sb.from('order_cancellations').select('id').eq('client_id', user.id).eq('canceller_role', 'client');
+    var cancCnt = (cancRes.data || []).length;
+    var committedCnt = orders.filter(function(o){ return o.status==='accepted'||o.status==='active'||o.status==='done'; }).length;
+    var cancDenom = cancCnt + committedCnt;
+    var cancRate = cancDenom > 0 ? Math.round(cancCnt / cancDenom * 100) : 0;
+    $('cancel-rate').textContent = cancRate + '%';
+    $('cancel-cnt').textContent = cancCnt;
+    $('cancel-stat').style.display = '';
 
     var activeOrders = orders.filter(function(o){ var g=(STATUS[o.status]||{}).group; return g==='active'||g==='matching'; });
     if(activeOrders.length){
