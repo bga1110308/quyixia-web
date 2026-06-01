@@ -451,7 +451,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
             : '<div style="font-size:0.74rem;color:var(--ink-light);">'+(st.group==='matching'?'媒合中,等待順咖接單':'')+'</div>')+
           '<div><span class="oc-price-label">'+priceLabel+'</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'+
         '</div>'+
-        (canCancel ? '<div style="margin-top:10px;text-align:right;"><button onclick="event.stopPropagation(); window.cancelClientOrder(\''+esc(o.id)+'\')" style="background:#fff;border:1.5px solid var(--danger);color:var(--danger);font-family:inherit;font-size:0.78rem;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;">取消訂單</button></div>' : '')+
+        (canCancel ? '<div style="margin-top:10px;text-align:right;"><button onclick="event.stopPropagation(); window.cancelClientOrder(\''+esc(o.id)+'\', \''+esc(o.status)+'\')" style="background:#fff;border:1.5px solid var(--danger);color:var(--danger);font-family:inherit;font-size:0.78rem;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;">取消訂單</button></div>' : '')+
       '</div>';
   }
 
@@ -460,9 +460,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   /* 案家取消自己的訂單:軟取消,status 改 cancelled(不是真刪除,後台仍查得到)。
      條件帶 client_id=本人 且 status 在 媒合中/待服務,服務中/已完成不給取消。
      取消成功後重整,因為已被濾掉所以不再出現。 */
-  window.cancelClientOrder = async function(orderId){
+  window.cancelClientOrder = async function(orderId, status){
     if(!_clientUserId){ alert('請重新整理頁面後再試'); return; }
-    if(!confirm('確定要取消這筆訂單嗎?\n取消後你和順咖都不會再看到這筆。')) return;
+    // 待服務(已有順咖接單)後取消會被記錄,影響取消率;媒合中取消不計次
+    var msg = (status === 'accepted')
+      ? '這筆已有順咖接單。\n取消會被記錄為一次取消,影響你的取消率。\n確定要取消嗎?'
+      : '確定要取消這筆訂單嗎?\n取消後你和順咖都不會再看到這筆。';
+    if(!confirm(msg)) return;
     var res = await sb.from('orders')
       .update({ status: 'cancelled' })
       .eq('id', orderId).eq('client_id', _clientUserId).in('status', ['matching','accepted'])

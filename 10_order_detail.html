@@ -698,9 +698,9 @@ async function init(){
   if(viewerRole === 'client' && (o.status === 'matching' || o.status === 'accepted')){
     cancelBtn.textContent = '取消訂單';
     cancelHint.textContent = (o.status === 'accepted')
-      ? '已有順咖接單,取消前建議先聯絡對方。取消後雙方都看不到這筆。'
+      ? '已有順咖接單,取消前建議先聯絡對方。這會被記錄為一次取消,影響你的取消率。'
       : '取消後這筆會關閉,你和順咖都不會再看到。';
-    cancelBtn.onclick = function(){ window.cancelMyOrder(o.id, user.id); };
+    cancelBtn.onclick = function(){ window.cancelMyOrder(o.id, user.id, o.status); };
     cancelBar.style.display = '';
   } else if(viewerRole === 'suncar' && o.status === 'accepted'){
     cancelBtn.textContent = '取消接單';
@@ -743,8 +743,12 @@ window.takeThisOrder = async function(){
 /* 案家取消自己的訂單:軟取消,status 改 cancelled(不是真刪除,後台仍查得到)。
    條件帶 client_id=本人 且 status 在 媒合中/待服務,服務中/已完成不給取消。
    取消後回案家首頁,因為已被濾掉所以不再出現。 */
-window.cancelMyOrder = async function(orderId, clientId){
-  if(!confirm('確定要取消這筆訂單嗎?\n取消後你和順咖都不會再看到這筆。')) return;
+window.cancelMyOrder = async function(orderId, clientId, status){
+  // 待服務(已有順咖接單)後取消會被記錄,影響取消率;媒合中取消不計次
+  var msg = (status === 'accepted')
+    ? '這筆已有順咖接單。\n取消會被記錄為一次取消,影響你的取消率。\n確定要取消嗎?'
+    : '確定要取消這筆訂單嗎?\n取消後你和順咖都不會再看到這筆。';
+  if(!confirm(msg)) return;
   var res = await sb.from('orders')
     .update({ status: 'cancelled' })
     .eq('id', orderId).eq('client_id', clientId).in('status', ['matching','accepted'])
