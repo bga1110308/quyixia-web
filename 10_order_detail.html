@@ -221,6 +221,7 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-load-guard.js"></script>
 </head>
 <body>
 
@@ -835,7 +836,8 @@ window.reportIssue = function(){
   alert('服務有問題嗎?\n這筆會先保留在「等待確認」,不會結案、也不會自動完成。\n請先聯絡順咖或客服協調,處理好後再回到這頁按「確認完成」結案。\n若情況緊急或涉及人身安全,請直接撥打客服或報警 110。');
 };
 
-init();
+/* 用共用小工具包一層載入逾時保護:8 秒沒載完或出錯就顯示重試。案家端用金色重試鈕。 */
+qyxGuard(init, { color: '#EF9F27' });
 </script>
 </body>
 </html>
