@@ -419,6 +419,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div id="active-list"></div>
   </div>
 
+  <!-- 等待案家確認(順咖已標記完成,等案家按確認完成才算 done) -->
+  <div id="await-section" style="display:none;">
+  <div class="sec-h">
+    <div class="sec-title">等待案家確認</div>
+  </div>
+  <div id="await-list"></div>
+  </div>
+
   <!-- 可接任務 -->
   <div class="sec-h">
     <div class="sec-title">可接任務<span class="badge" id="open-badge">0 筆</span></div>
@@ -516,7 +524,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
 
   function activeCard(o, clientName, clientPhone){
     var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
-    return '<div class="order-card active-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-active"><svg><use href="#i-radio"/></svg>服務中</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-green" onclick="event.stopPropagation(); alert(\'標記完成功能稍後接上\')">標記完成</button></div>'+price(o)+'</div></div>';
+    return '<div class="order-card active-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-active"><svg><use href="#i-radio"/></svg>服務中</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-green" onclick="event.stopPropagation(); window.markComplete(\''+esc(o.id)+'\', this)">標記完成</button></div>'+price(o)+'</div></div>';
   }
   function pendingCard(o, clientName, clientPhone){
     var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
@@ -527,6 +535,10 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   }
   function openCard(o){
     return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">可接單</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button></div>'+price(o)+'</div></div>';
+  }
+  /* 等待案家確認的卡:順咖已標記完成,球在案家那邊,順咖只能等,故不放操作按鈕 */
+  function awaitCard(o){
+    return '<div class="order-card active-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-active">等待案家確認</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div></div>';
   }
 
   /* 接單:把這張媒合中的單指派給自己,狀態改成 accepted(待服務)。
@@ -560,6 +572,23 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(res.error){ alert('操作失敗:' + res.error.message); btnEl.disabled = false; btnEl.textContent = '開始服務'; return; }
     if(!res.data || !res.data.length){ alert('這筆單狀態已改變,請重新整理'); location.reload(); return; }
     alert('已開始服務!');
+    location.reload();
+  };
+
+  /* 標記完成:把自己的服務中單(active)改成 await_confirm(等待案家確認)。
+     不直接變 done,要案家在訂單詳情按「確認完成」才算真正完成(雙方確認)。
+     條件帶 suncar_id=本人 且 status=active,確保只改得動自己手上、正在服務中的單。 */
+  window.markComplete = async function(orderId, btnEl){
+    if(!currentUserId){ alert('請重新整理頁面後再試'); return; }
+    if(!confirm('確定服務已完成嗎?\n標記後會通知案家確認,案家確認後這筆才算完成。')) return;
+    btnEl.disabled = true; btnEl.textContent = '處理中…';
+    var res = await sb.from('orders')
+      .update({ status: 'await_confirm' })
+      .eq('id', orderId).eq('suncar_id', currentUserId).eq('status', 'active')
+      .select('id');
+    if(res.error){ alert('操作失敗:' + res.error.message); btnEl.disabled = false; btnEl.textContent = '標記完成'; return; }
+    if(!res.data || !res.data.length){ alert('這筆單狀態已改變,請重新整理'); location.reload(); return; }
+    alert('已標記完成!等待案家確認。');
     location.reload();
   };
 
@@ -642,6 +671,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     var myOrders = ores.data || [];
     var pendingOrders = myOrders.filter(function(o){ return o.status==='accepted'; });
     var activeOrders = myOrders.filter(function(o){ return o.status==='active'; });
+    var awaitOrders = myOrders.filter(function(o){ return o.status==='await_confirm'; });
     var doneOrders = myOrders.filter(function(o){ return o.status==='done'; });
 
     /* 待服務與服務中都要案家聯絡資訊,一起撈 */
@@ -660,6 +690,11 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(activeOrders.length){
       $('active-list').innerHTML = activeOrders.map(function(o){ var c=clientById[o.client_id]||{}; return activeCard(o, c.display_name, c.phone); }).join('');
       $('active-section').style.display = '';
+    }
+
+    if(awaitOrders.length){
+      $('await-list').innerHTML = awaitOrders.map(awaitCard).join('');
+      $('await-section').style.display = '';
     }
 
     /* 接案歷史 */
