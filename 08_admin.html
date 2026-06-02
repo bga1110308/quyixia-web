@@ -598,6 +598,23 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
 
         <div class="setting-group">
+          <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>資訊會員(測試用,手動開通)</div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">手動設定資訊會員到期日</div>
+              <div class="sr-desc">輸入會員編號(例 U-20260529-0002),按鈕直接幫他開通。給 7 天=往後加 7 天;給 30 天=往後加 30 天(沒過期會在原到期日疊加);取消=清空,立刻變回未付費。這是綠界金流上線前的測試開關,正式金流要由伺服器端驗證後才寫入。</div>
+              <input class="text-input" id="im-member-no" type="text" placeholder="會員編號" style="margin-top:8px;max-width:260px;">
+              <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" onclick="setInfoMember(7)" style="padding:8px 14px;border:1.5px solid var(--amber);background:var(--amber);color:#fff;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;">給 7 天</button>
+                <button type="button" onclick="setInfoMember(30)" style="padding:8px 14px;border:1.5px solid var(--amber);background:var(--amber);color:#fff;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;">給 30 天</button>
+                <button type="button" onclick="setInfoMember(0)" style="padding:8px 14px;border:1.5px solid #d9534f;background:#fff;color:#d9534f;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;">取消會員資格</button>
+              </div>
+              <div id="im-result" style="margin-top:10px;font-size:13px;color:var(--ink-soft);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
           <div class="sg-title"><svg class="icon"><use href="#i-bell"/></svg>加購通知費用設定</div>
           <div class="setting-row">
             <div class="sr-left">
@@ -1021,6 +1038,35 @@ function confirmEnableFeature(cb,chipId,featureName,onText,offText,warning){
     }
   }
   updateChip(cb,chipId,onText,offText);
+}
+
+/* 測試用:用會員編號手動設資訊會員到期日
+   days>0:往後加天數(沒過期就在原到期日上疊加,使用者不吃虧)
+   days=0:清空,立刻變回未付費
+   為什麼這樣做:綠界金流上線前先用這個測「鎖頭/解鎖」兩種畫面,不用等金流。
+   正式金流上線後改由伺服器端驗證付款後寫入,這個開關只給內部測試用。
+   注意:管理員改別人那筆 users,要後台有 admin_update_all_users 政策才會成功(SQL 已附)。 */
+async function setInfoMember(days){
+  var resultEl=document.getElementById('im-result');
+  var no=(document.getElementById('im-member-no').value||'').trim();
+  if(!no){ resultEl.textContent='請先輸入會員編號'; return; }
+  resultEl.textContent='處理中...';
+  var ur=await sb.from('users').select('id,info_member_until').eq('member_no',no).maybeSingle();
+  if(ur.error){ resultEl.textContent='查詢失敗:'+ur.error.message; return; }
+  if(!ur.data){ resultEl.textContent='找不到這個會員編號:'+no; return; }
+  var newUntil=null;
+  if(days>0){
+    var base=Date.now();
+    if(ur.data.info_member_until){
+      var cur=new Date(ur.data.info_member_until).getTime();
+      if(cur>base){ base=cur; } // 沒過期就從原到期日往後疊加
+    }
+    newUntil=new Date(base + days*24*60*60*1000).toISOString();
+  }
+  var up=await sb.from('users').update({info_member_until:newUntil}).eq('id',ur.data.id);
+  if(up.error){ resultEl.textContent='設定失敗(可能是後台缺 admin_update_all_users 政策):'+up.error.message; return; }
+  if(days>0){ resultEl.textContent='已開通到 '+fmtDate(newUntil); }
+  else{ resultEl.textContent='已取消會員資格(立刻變回未付費)'; }
 }
 
 const DAYS=['16','17','18','19','20','21','22'];
