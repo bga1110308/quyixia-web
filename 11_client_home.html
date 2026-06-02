@@ -422,6 +422,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     matching:  { label:'媒合中', cls:'s-matching', icon:'#i-clock', group:'matching' },
     accepted:  { label:'待服務', cls:'s-matching', icon:'#i-clock', group:'active' },
     active:    { label:'服務中', cls:'s-active',   icon:'#i-radio', group:'active' },
+    await_confirm: { label:'等待你確認', cls:'s-active', icon:'#i-clock', group:'active' },
     done:      { label:'已完成', cls:'s-done',     icon:'#i-check', group:'done' },
     cancelled: { label:'已取消', cls:'s-done',     icon:'#i-check', group:'done' }
   };
@@ -557,7 +558,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     // 取消率:分子=待服務後自己取消的次數(取消紀錄表),分母=分子+目前已被接走的單(待服務/服務中/已完成)
     var cancRes = await sb.from('order_cancellations').select('id').eq('client_id', user.id).eq('canceller_role', 'client');
     var cancCnt = (cancRes.data || []).length;
-    var committedCnt = orders.filter(function(o){ return o.status==='accepted'||o.status==='active'||o.status==='done'; }).length;
+    var committedCnt = orders.filter(function(o){ return o.status==='accepted'||o.status==='active'||o.status==='await_confirm'||o.status==='done'; }).length;
     var cancDenom = cancCnt + committedCnt;
     var cancRate = cancDenom > 0 ? Math.round(cancCnt / cancDenom * 100) : 0;
     $('cancel-rate').textContent = cancRate + '%';
