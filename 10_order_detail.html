@@ -284,7 +284,7 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
   <!-- 完成確認區 -->
   <div class="confirm-action" id="confirm-action">
     <div class="confirm-icon"><svg><use href="#i-check-circle"/></svg></div>
-    <div class="confirm-title">小芳已標記服務完成</div>
+    <div class="confirm-title">順咖已標記服務完成</div>
     <div class="confirm-desc">
       請確認服務是否如預期完成<br>
       確認後款項會撥給順咖
@@ -506,6 +506,7 @@ var STATUS_UI = {
   matching: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>媒合中',   title:'正在幫你找順咖', desc:'附近的順咖看到任務後會主動聯繫你' },
   accepted: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>待服務',   title:'順咖已接單',     desc:'順咖已接下這筆,將於約定時間開始服務' },
   active:   { cls:'active-banner', tagCls:'sb-active',   tag:'<svg><use href="#i-radio"/></svg>服務中',    title:'順咖服務中',     desc:'服務進行中,有問題可直接聯絡順咖' },
+  await_confirm:{ cls:'',          tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>等待確認', title:'順咖已標記完成', desc:'請在下方確認服務是否如預期完成' },
   done:     { cls:'done-banner',   tagCls:'sb-done',     tag:'<svg><use href="#i-check-circle"/></svg>已完成', title:'服務完成',       desc:'感謝你使用去一下' },
   cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }
 };
@@ -520,6 +521,7 @@ var STATUS_UI_STAFF = {
   matching: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>媒合中',   title:'尚未接單',       desc:'這筆還在等待接單' },
   accepted: { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>待服務',   title:'你已接下這筆單', desc:'請於約定時間到場,並在順咖首頁按「開始服務」' },
   active:   { cls:'active-banner', tagCls:'sb-active',   tag:'<svg><use href="#i-radio"/></svg>服務中',    title:'服務進行中',     desc:'完成後請在順咖首頁按「標記完成」' },
+  await_confirm:{ cls:'',          tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>等待案家確認', title:'已標記完成',     desc:'等待案家確認,確認後即結案' },
   done:     { cls:'done-banner',   tagCls:'sb-done',     tag:'<svg><use href="#i-check-circle"/></svg>已完成', title:'服務已完成',     desc:'感謝你的服務' },
   cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }
 };
@@ -714,6 +716,15 @@ async function init(){
     staffSection.style.display = 'none';
   }
 
+  /* 等待案家確認:順咖已在 12 按「標記完成」把單轉成 await_confirm。
+     只有本人案家看到「確認完成/有問題」區塊;按確認完成會把 await_confirm 轉成 done(見檔尾 confirmComplete)。 */
+  if(viewerRole === 'client' && o.status === 'await_confirm'){
+    window._orderId = o.id;
+    window._viewerId = user.id;
+    window._orderNo = o.order_no;
+    document.getElementById('confirm-action').classList.add('show');
+  }
+
   /* 取消區:案家可取消自己的單(媒合中/待服務);順咖可取消接單(待服務,退回媒合中)。
      服務中/已完成/已取消都不顯示,需走後台。文案與動作依視角設定。 */
   var cancelBar = document.getElementById('cancel-bar');
@@ -795,6 +806,33 @@ window.releaseMyOrder = async function(orderId, suncarId){
   if(!res.data || !res.data.length){ alert('這筆狀態已改變,無法取消,請重新整理。'); location.reload(); return; }
   alert('已取消接單,這筆已退回平台重新媒合。');
   window.location.href = '12_staff_home.html';
+};
+
+/* 案家確認完成:把順咖已標記完成的單(await_confirm)轉成 done 結案。
+   條件帶 client_id=本人 且 status=await_confirm,確保只有本人案家、且只能從等待確認轉完成。
+   轉 done 後會觸發既有「發金幣」trigger(推薦獎勵),順序一定是案家確認 → done → 發金幣。
+   注意:這個轉換需要後台 RLS 政策 client_confirm_done 放行,沒跑那條 SQL 會更新 0 筆。 */
+window.confirmComplete = async function(){
+  if(!confirm('確認這筆服務已完成?\n確認後這筆會結案,款項由你直接付給順咖,無法復原。')) return;
+  var res = await sb.from('orders')
+    .update({ status: 'done' })
+    .eq('id', window._orderId).eq('client_id', window._viewerId).eq('status', 'await_confirm')
+    .select('id');
+  if(res.error){ alert('確認失敗:' + res.error.message); return; }
+  if(!res.data || !res.data.length){ alert('這筆狀態已改變,無法確認,請重新整理。'); location.reload(); return; }
+  // 隱藏確認區,顯示完成提示,並把評價連結帶上這筆訂單編號
+  document.getElementById('confirm-action').classList.remove('show');
+  var box = document.getElementById('success-box');
+  var rev = document.querySelector('#success-box .suc-btn-primary');
+  if(rev){ rev.setAttribute('onclick', "window.location.href='05_review.html?role=client&orderId=" + (window._orderNo || window._orderId) + "'"); }
+  box.classList.add('show');
+  box.scrollIntoView({ behavior:'smooth', block:'center' });
+};
+
+/* 回報問題:最小可用版,先不寫資料庫(避免要你多跑 SQL),只擋住「按了出錯」並給處理指引。
+   這筆會留在 await_confirm,不會被改動、不會自動結案,協調好再回來按「確認完成」。詳細爭議流程列待辦。 */
+window.reportIssue = function(){
+  alert('服務有問題嗎?\n這筆會先保留在「等待確認」,不會結案、也不會自動完成。\n請先聯絡順咖或客服協調,處理好後再回到這頁按「確認完成」結案。\n若情況緊急或涉及人身安全,請直接撥打客服或報警 110。');
 };
 
 init();
