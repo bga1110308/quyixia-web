@@ -271,6 +271,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-load-guard.js"></script>
 </head>
 <body>
 
@@ -734,7 +735,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     }
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', function(){ qyxGuard(init, { color: '#5FB58E' }); }); /* 載入逾時保護:8 秒沒載完或載入出錯就顯示重試 */
 })();
 
 /* 上線開關 */
