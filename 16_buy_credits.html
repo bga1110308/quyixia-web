@@ -99,6 +99,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-load-guard.js"></script>
 </head>
 <body>
 
@@ -201,8 +202,10 @@ var currentPool = 'client';
 /* 從 Supabase 讀本人雙池點數 */
 async function refreshBalance() {
   if (typeof window.sb === 'undefined') return;
-  var ures = await sb.auth.getUser();
-  var user = (ures && ures.data) ? ures.data.user : null;
+  var user = null;
+  var sres = await sb.auth.getSession();
+  if (sres.data && sres.data.session && sres.data.session.user) { user = sres.data.session.user; }
+  else { var ures = await sb.auth.getUser(); user = (ures && ures.data) ? ures.data.user : null; }
   if (!user) { window.location.href = '13_login.html'; return; }
   var pr = await sb.from('users').select('client_points,suncar_points').eq('id', user.id).maybeSingle();
   var u = pr.data || {};
@@ -294,7 +297,7 @@ async function init() {
 
   checkSuccess();
 }
-init();
+qyxGuard(init, { color: '#EF9F27' });
 </script>
 </body>
 </html>

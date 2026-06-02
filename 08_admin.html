@@ -785,6 +785,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
 <!-- 連線後台:跟 11/12 同一套,sb 由 supabase-init.js 建立 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-load-guard.js"></script>
 <script>
 const CLIENTS={
   '張○美':{phone:'0912-***-456',addr:'新北市板橋區文化路',age:78,relation:'女兒代為聯絡',service:'身體照顧(含沐浴、翻身)',freq:'每週三次',prefer:'林○珠',orders:5,status:'活躍',note:'有糖尿病,需注意飲食;女兒在新加坡,需主動回報'},
@@ -1039,7 +1040,7 @@ if(bc){
 }
 
 /* 進頁就守門並載入審核清單 */
-document.addEventListener('DOMContentLoaded', initAdmin);
+document.addEventListener('DOMContentLoaded', function(){ qyxGuard(initAdmin, { color: '#EF9F27' }); }); /* 載入逾時保護 */
 </script>
 </body>
 </html>
