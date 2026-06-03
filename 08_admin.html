@@ -615,6 +615,30 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
 
         <div class="setting-group">
+          <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>同意書管理(條款/隱私/個資)</div>
+          <div class="setting-row">
+            <div class="sr-left" style="width:100%;">
+              <div class="sr-label">編輯同意書內容並發布版本</div>
+              <div class="sr-desc">改這裡＝全站該份文件同步更新,不用改程式。「存成小修正」改錯字不打擾用戶;「發布重大修改」會把版本+1,所有會員下次登入都要重新閱讀並同意。內容請用純文字。</div>
+              <select class="select-input" id="ld-select" onchange="loadLegalDoc()" style="margin-top:10px;max-width:260px;">
+                <option value="">請選擇文件…</option>
+                <option value="terms_suncar">順咖服務條款</option>
+                <option value="terms_client">案家服務條款</option>
+                <option value="privacy">隱私權政策</option>
+                <option value="data_notice">個資蒐集告知</option>
+              </select>
+              <span id="ld-version" style="margin-left:10px;font-size:12px;color:var(--ink-light);"></span>
+              <textarea id="ld-content" placeholder="選一份文件後,內容會載入這裡" style="margin-top:10px;width:100%;min-height:220px;font-family:inherit;font-size:13px;line-height:1.7;padding:12px;border:1.5px solid var(--border-soft);border-radius:10px;box-sizing:border-box;"></textarea>
+              <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button" onclick="saveLegalDoc(false)" style="padding:8px 14px;border:1.5px solid var(--amber);background:#fff;color:var(--amber-darker);border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;">存成小修正(不通知用戶)</button>
+                <button type="button" onclick="saveLegalDoc(true)" style="padding:8px 14px;border:1.5px solid var(--amber);background:var(--amber);color:#fff;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;">發布重大修改(全員重新同意)</button>
+              </div>
+              <div id="ld-result" style="margin-top:10px;font-size:13px;color:var(--ink-soft);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
           <div class="sg-title"><svg class="icon"><use href="#i-bell"/></svg>加購通知費用設定</div>
           <div class="setting-row">
             <div class="sr-left">
@@ -1067,6 +1091,45 @@ async function setInfoMember(days){
   if(up.error){ resultEl.textContent='設定失敗(可能是後台缺 admin_update_all_users 政策):'+up.error.message; return; }
   if(days>0){ resultEl.textContent='已開通到 '+fmtDate(newUntil); }
   else{ resultEl.textContent='已取消會員資格(立刻變回未付費)'; }
+}
+
+/* 同意書管理:讀取選中的文件內容到編輯框
+   為什麼這樣做:文件集中存在 legal_documents,後台改這裡=全站同步,不用改程式或散落各檔。 */
+async function loadLegalDoc(){
+  var key=document.getElementById('ld-select').value;
+  var r=document.getElementById('ld-result'); r.textContent='';
+  var box=document.getElementById('ld-content');
+  var ver=document.getElementById('ld-version');
+  if(!key){ box.value=''; ver.textContent=''; return; }
+  var q=await sb.from('legal_documents').select('content,version').eq('doc_key',key).maybeSingle();
+  if(q.error){ r.textContent='讀取失敗:'+q.error.message; return; }
+  if(!q.data){ r.textContent='找不到這份文件'; return; }
+  box.value=q.data.content;
+  box.dataset.version=q.data.version;
+  ver.textContent='目前第 '+q.data.version+' 版';
+}
+
+/* 同意書管理:存檔
+   major=false 小修正:只更新內容,版本不變,既有同意不受影響,不打擾用戶。
+   major=true  重大修改:版本+1,觸發全員下次登入重新同意(閘門靠版本號比對)。 */
+async function saveLegalDoc(major){
+  var key=document.getElementById('ld-select').value;
+  var r=document.getElementById('ld-result');
+  if(!key){ r.textContent='請先選一份文件'; return; }
+  var box=document.getElementById('ld-content');
+  var content=box.value;
+  if(!content.trim()){ r.textContent='內容不能空白'; return; }
+  if(major && !confirm('這是「重大修改」。發布後,所有會員下次登入都會被要求重新閱讀並同意。確定發布?')) return;
+  r.textContent='處理中...';
+  var payload={ content:content, updated_at:new Date().toISOString() };
+  if(major){
+    var cur=parseInt(box.dataset.version||'1',10);
+    payload.version=cur+1; // 版本+1才會觸發全員重新同意
+  }
+  var up=await sb.from('legal_documents').update(payload).eq('doc_key',key);
+  if(up.error){ r.textContent='存檔失敗(可能缺管理員權限):'+up.error.message; return; }
+  r.textContent= major ? '已發布重大修改,全員下次登入需重新同意。' : '已存成小修正(不影響既有同意)。';
+  loadLegalDoc(); // 重讀顯示新版本號
 }
 
 const DAYS=['16','17','18','19','20','21','22'];
