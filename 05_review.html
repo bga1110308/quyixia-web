@@ -243,6 +243,32 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 @media (max-width:480px){
   .page-title{font-size:1.4rem;}
 }
+
+/* === 評價表單新元件(順咖評案家改版) === */
+.req{font-size:0.62rem;font-weight:600;color:var(--danger);background:var(--danger-pale);border-radius:99px;padding:1px 7px;margin-left:6px;vertical-align:1px;}
+.opt{font-size:0.62rem;font-weight:600;color:var(--ink-light);background:var(--champagne-soft);border-radius:99px;padding:1px 7px;margin-left:6px;vertical-align:1px;}
+.substar-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0.5rem 0;border-bottom:1px solid var(--border-soft);}
+.substar-row:last-child{border-bottom:none;}
+.substar-label{font-size:0.86rem;color:var(--ink);}
+.substar-stars{display:inline-flex;gap:3px;}
+.ss-btn{font-size:1.5rem;line-height:1;color:#E5DCC8;background:transparent;border:none;padding:0;cursor:pointer;font-family:inherit;transition:color 0.12s;}
+.ss-btn:hover{color:var(--honey);}
+.ss-btn.on{color:var(--amber);}
+.q-row{padding:0.7rem 0;border-bottom:1px solid var(--border-soft);}
+.q-row:last-child{border-bottom:none;}
+.q-label{font-size:0.86rem;color:var(--ink);margin-bottom:0.5rem;}
+.choice{display:flex;gap:8px;}
+.choice-btn{flex:1;font-size:0.85rem;padding:0.6rem;border-radius:11px;background:#fff;border:1.5px solid var(--border);color:var(--ink);cursor:pointer;font-family:inherit;font-weight:500;transition:all 0.15s;}
+.choice-btn:hover{background:var(--champagne);}
+.choice-btn.on{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(239,159,39,0.3);}
+.flag-tip{font-size:0.78rem;color:var(--ink-soft);line-height:1.7;background:var(--champagne-soft);border:1px dashed var(--border);border-radius:11px;padding:0.7rem 0.85rem;margin-bottom:0.85rem;}
+.flag-item{display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:0.6rem 0;border-bottom:1px solid var(--border-soft);cursor:pointer;}
+.flag-item:last-child{border-bottom:none;}
+.flag-cb{width:20px;height:20px;flex-shrink:0;accent-color:var(--amber);cursor:pointer;}
+.flag-item-label{flex:1;font-size:0.84rem;color:var(--ink);line-height:1.5;}
+.flag-note{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:0.5rem 0.7rem;font-size:0.82rem;font-family:inherit;color:var(--ink);background:#fff;}
+.flag-note:focus{outline:none;border-color:var(--amber);}
+.flag-warn{font-size:0.8rem;color:var(--danger);background:var(--danger-pale);border:1px solid #F0D0CE;border-radius:11px;padding:0.7rem 0.85rem;margin-top:0.85rem;line-height:1.6;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
@@ -284,35 +310,70 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
     <div class="target-card client" id="target-client"></div>
 
+    <!-- 整體評分 -->
     <div class="card">
-      <div class="sec-title">給這位案家評分</div>
+      <div class="sec-title">整體評分<span class="req">必填</span></div>
       <div class="stars-input" data-target="client">
-        <button class="star-btn" data-val="1">★</button>
-        <button class="star-btn" data-val="2">★</button>
-        <button class="star-btn" data-val="3">★</button>
-        <button class="star-btn" data-val="4">★</button>
-        <button class="star-btn" data-val="5">★</button>
+        <button type="button" class="star-btn" data-val="1">★</button>
+        <button type="button" class="star-btn" data-val="2">★</button>
+        <button type="button" class="star-btn" data-val="3">★</button>
+        <button type="button" class="star-btn" data-val="4">★</button>
+        <button type="button" class="star-btn" data-val="5">★</button>
       </div>
       <div class="star-label" id="star-label-client">請點星星評分</div>
+    </div>
 
-      <div class="tag-group-label tg-positive"><svg><use href="#i-thumb-up"/></svg>覺得不錯的地方</div>
-      <div class="quick-tags">
-        <span class="qtag" onclick="this.classList.toggle('on')">說明清楚</span>
-        <span class="qtag" onclick="this.classList.toggle('on')">環境整潔</span>
-        <span class="qtag" onclick="this.classList.toggle('on')">案主好溝通</span>
-        <span class="qtag" onclick="this.classList.toggle('on')">準時付款</span>
-        <span class="qtag" onclick="this.classList.toggle('on')">會再合作</span>
-      </div>
-      <div class="tag-group-label tg-negative"><svg><use href="#i-thumb-down"/></svg>有可以改進的地方</div>
-      <div class="quick-tags">
-        <span class="qtag qtag-neg" onclick="this.classList.toggle('on')">環境很髒亂</span>
-        <span class="qtag qtag-neg" onclick="this.classList.toggle('on')">臨時改需求</span>
-        <span class="qtag qtag-neg" onclick="this.classList.toggle('on')">溝通困難</span>
-      </div>
+    <!-- 分項評分(由 JS 依 SUB_ITEMS_STAFF 產生) -->
+    <div class="card">
+      <div class="sec-title">分項評分</div>
+      <div id="sub-stars-staff"></div>
+    </div>
 
-      <div class="sec-title" style="margin-top:1.25rem;">想說的話(選填)</div>
-      <textarea class="comment-box" id="comment-staff" placeholder="例:案家很客氣、家裡很整潔,下次有機會再合作" maxlength="200" oninput="updateCharCount(this,'cc-staff')"></textarea>
-      <div class="char-count"><span id="cc-staff">0</span> / 200</div>
+    <!-- 平台判斷三題 -->
+    <div class="card">
+      <div class="sec-title">幾個小問題</div>
+      <div class="q-row">
+        <div class="q-label">之後還願意再服務這位案家嗎?<span class="req">必填</span></div>
+        <div class="choice" data-q="would_serve_again">
+          <button type="button" class="choice-btn" data-v="yes">願意</button>
+          <button type="button" class="choice-btn" data-v="no">不願意</button>
+        </div>
+      </div>
+      <div class="q-row">
+        <div class="q-label">實際服務和當初訂單說的一樣嗎?<span class="req">必填</span></div>
+        <div class="choice" data-q="service_as_ordered">
+          <button type="button" class="choice-btn" data-v="yes">一樣</button>
+          <button type="button" class="choice-btn" data-v="no">不一樣</button>
+        </div>
+      </div>
+      <div class="q-row">
+        <div class="q-label">長輩實際上需要攙扶嗎?<span class="opt">選填</span></div>
+        <div class="choice" data-q="needs_assist_actual">
+          <button type="button" class="choice-btn" data-v="yes">需要</button>
+          <button type="button" class="choice-btn" data-v="no">不需要</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 紅旗回報:預設沒有,選有才展開 -->
+    <div class="card">
+      <div class="sec-title">這次有沒有狀況要回報?</div>
+      <div class="choice" data-q="has_issue" id="issue-switch">
+        <button type="button" class="choice-btn on" data-v="no" onclick="setIssue(false)">沒有,一切正常</button>
+        <button type="button" class="choice-btn" data-v="yes" onclick="setIssue(true)">有,要回報</button>
+      </div>
+      <div id="flag-panel" style="display:none;margin-top:0.95rem;">
+        <div class="flag-tip">勾選實際發生的狀況。描述發生的事就好,不用寫姓名或情緒字眼。這段只有平台看得到,不會公開。</div>
+        <div id="flag-checklist"></div>
+        <div class="flag-warn" id="flag-safety" style="display:none;">如涉及人身安全,請自行報警 110。平台會收到你的回報並協助處理。</div>
+      </div>
+    </div>
+
+    <!-- 想說的話 -->
+    <div class="card">
+      <div class="sec-title">想說的話(選填)</div>
+      <textarea class="comment-box" id="comment-staff" placeholder="例:案家很客氣、家裡很整潔,下次有機會再合作" maxlength="100" oninput="updateCharCount(this,'cc-staff')"></textarea>
+      <div class="char-count"><span id="cc-staff">0</span> / 100</div>
     </div>
 
     <button class="submit-btn" onclick="submitReview('staff')">送出評價</button>
@@ -524,64 +585,222 @@ function maskName(name) {
 
 function init() {
   var params = new URLSearchParams(location.search);
-  var role = params.get('role');
+  var orderId = params.get('order');   // 治本:帶訂單真實 id 進來,由訂單自動判斷角色
+  var role = params.get('role');        // 舊網址相容用
   var view = params.get('view');
 
-  if (role === 'staff') {
-    showWriteStaff();
-  } else if (role === 'client') {
-    showWriteClient();
+  if (orderId) {
+    loadOrderAndShowForm(orderId);
   } else if (view === 'me') {
     showMyReviews();          // 本人真實評價:查 reviews.reviewee_id = 登入者,本人免解鎖
   } else if (view) {
-    showView(view);           // 範例/他人:目前仍是 demo 寫死,屬 E3 待辦(之後改查指定 user)
+    showView(view);           // 範例/他人:目前仍是 demo 寫死,屬待辦(之後改查指定 user)
+  } else if (role === 'staff' || role === 'client') {
+    // 舊網址沒帶訂單 id,無法對應真實訂單,導回主頁避免寫到假資料
+    alert('請從訂單頁的「留下評價」按鈕進來評價');
+    window.location.href = role === 'staff' ? '12_staff_home.html' : '11_client_home.html';
   } else {
     document.getElementById('mode-guide').style.display = 'block';
   }
 }
 
-function showWriteStaff() {
-  document.getElementById('mode-write-staff').style.display = 'block';
-  document.getElementById('task-chip-a').innerHTML =
-    '任務單 #' + demoTask.orderId + ' · ' + demoTask.service +
-    (demoTask.pool === 'B'
+/* === 帶訂單 id 進來的真實評價流程 === */
+
+// 順咖評案家的分項題:value=中文 key(存進 ratings.items),req=必填
+var SUB_ITEMS_STAFF = [
+  { key: '尊重順咖', req: true },
+  { key: '溝通清楚', req: true },
+  { key: '付款乾脆', req: true },
+  { key: '準時',     req: false },
+  { key: '環境整潔', req: false }
+];
+
+// 順咖評案家的紅旗題:勾才存,全部選填。中文字串同時當顯示文字與 flags 的 key
+var FLAGS_STAFF = [
+  '提出訂單外的額外需求',
+  '要求超時服務',
+  '要求私下交易跳過平台',
+  '隱瞞長輩實際狀況',
+  '地址或聯絡資訊不實',
+  '長輩有不自主或踰矩的肢體、言語接觸(常見於失智或疾病)',
+  '服務中曾發生肢體衝突或人身威脅狀況',
+  '現場有安全疑慮(環境危險、寵物未約束、有其他人干擾)'
+];
+// 嚴重項(勾了提醒報警 110):取最後兩項(性騷擾、肢體衝突)
+var SEVERE_FLAG_KEYS = [FLAGS_STAFF[5], FLAGS_STAFF[6]];
+
+var subRatings = {};   // { 中文key: 1~5 }
+var choiceAns = {};    // { would_serve_again:'yes'|'no', service_as_ordered, needs_assist_actual }
+var hasIssue = false;
+
+// 取得登入者:先 getSession(LINE 內建瀏覽器較可靠),失敗再 getUser
+function getLoginUser() {
+  return sb.auth.getSession().then(function(sres){
+    if (sres.data && sres.data.session && sres.data.session.user) return sres.data.session.user;
+    return sb.auth.getUser().then(function(ures){ return (ures && ures.data) ? ures.data.user : null; });
+  });
+}
+
+// 載入訂單、判斷登入者是案家還是順咖、顯示對的表單
+async function loadOrderAndShowForm(orderId) {
+  if (typeof window.sb === 'undefined') { alert('系統載入失敗,請重新整理'); return; }
+  var user = await getLoginUser();
+  if (!user) { window.location.href = '13_login.html'; return; }
+
+  var or = await sb.from('orders')
+    .select('id,client_id,suncar_id,status,service_type,order_type,pool,need_assist,service_district,order_no')
+    .eq('id', orderId).maybeSingle();
+  var o = or.data;
+  if (!o) { showFormError('找不到這張訂單'); return; }
+  if (o.status !== 'done') { showFormError('這張單還沒完成,服務完成並確認後才能評價'); return; }
+
+  var iAmSuncar = (o.suncar_id === user.id);
+  var iAmClient = (o.client_id === user.id);
+  if (!iAmSuncar && !iAmClient) { showFormError('你不是這張訂單的當事人,無法評價'); return; }
+
+  // 防重複:查我對這張單寫過沒(靠 reviewer_id=auth.uid() 的讀取政策)
+  var ex = await sb.from('reviews').select('id').eq('order_id', o.id).eq('reviewer_id', user.id).maybeSingle();
+  if (ex && ex.data) { showFormError('你已經評價過這張單了,感謝你的回饋'); return; }
+
+  // mode = 被評價者的身分:順咖評案家→client、案家評順咖→staff
+  window._review = {
+    orderId: o.id,
+    me: user.id,
+    reviewee: iAmSuncar ? o.client_id : o.suncar_id,
+    mode: iAmSuncar ? 'client' : 'staff'
+  };
+
+  if (iAmSuncar) { showWriteStaff(o); }   // 順咖評案家:新版結構化表單
+  else { showWriteClient(o); }            // 案家評順咖:沿用原表單
+}
+
+function showFormError(msg) {
+  var g = document.getElementById('mode-guide');
+  g.style.display = 'block';
+  var t = g.querySelector('.guide-title'); if (t) t.textContent = msg;
+  var d = g.querySelector('.guide-desc'); if (d) d.innerHTML = '';
+}
+
+function chipText(o) {
+  return '任務單 #' + (o.order_no || o.id) + ' · ' + (o.service_type || o.order_type || '服務') +
+    (o.pool === 'B'
       ? '<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服員</span>'
       : '<span class="pool-chip pool-A">一般</span>');
+}
+
+// 順咖評案家:顯示案家資料 + 產生分項星等與紅旗清單
+async function showWriteStaff(o) {
+  document.getElementById('mode-write-staff').style.display = 'block';
+  document.getElementById('task-chip-a').innerHTML = chipText(o);
+
+  var name = '案家';
+  var cr = await sb.from('users').select('display_name').eq('id', o.client_id).maybeSingle();
+  if (cr && cr.data && cr.data.display_name) name = cr.data.display_name;
 
   document.getElementById('target-client').innerHTML =
-    '<div class="t-avatar">' + demoTask.client.avatar + '</div>' +
+    '<div class="t-avatar">' + (Array.from(name)[0] || '案') + '</div>' +
     '<div class="t-info">' +
       '<div class="t-role">這次的案家</div>' +
-      '<div class="t-name">' + demoTask.client.name + '</div>' +
-      '<div class="t-meta">' + demoTask.client.district + '</div>' +
+      '<div class="t-name">' + name + '</div>' +
+      (o.service_district ? '<div class="t-meta">' + o.service_district + '</div>' : '') +
     '</div>';
 
   bindStars('client');
+  renderStaffForm();
+  bindChoices();
 }
 
-function showWriteClient() {
+// 案家評順咖:沿用原星等+留言表單(接成真寫入,結構不改)
+async function showWriteClient(o) {
   document.getElementById('mode-write-client').style.display = 'block';
-  document.getElementById('task-chip-b').innerHTML =
-    '任務單 #' + demoTask.orderId + ' · ' + demoTask.service +
-    (demoTask.pool === 'B'
-      ? '<span class="pool-chip pool-B"><svg><use href="#i-steth"/></svg>照服員</span>'
-      : '<span class="pool-chip pool-A">一般</span>');
+  document.getElementById('task-chip-b').innerHTML = chipText(o);
 
-  var badges = '<span class="badge-mini b-verified"><svg><use href="#i-check"/></svg>實名</span>' +
-               '<span class="badge-mini b-safe"><svg><use href="#i-shield"/></svg>良民</span>';
-  if (demoTask.staff.cna) {
-    badges += '<span class="badge-mini b-cna"><svg><use href="#i-star-fill"/></svg>照服員</span>';
-  }
+  var name = '順咖', cna = false;
+  var sr = await sb.from('users').select('display_name,has_caregiver_cert').eq('id', o.suncar_id).maybeSingle();
+  if (sr && sr.data) { name = sr.data.display_name || '順咖'; cna = !!sr.data.has_caregiver_cert; }
+
+  var badges = '<span class="badge-mini b-verified"><svg><use href="#i-check"/></svg>實名</span>';
+  if (cna) badges += '<span class="badge-mini b-cna"><svg><use href="#i-star-fill"/></svg>照服員</span>';
 
   document.getElementById('target-staff').innerHTML =
-    '<div class="t-avatar">' + demoTask.staff.avatar + '</div>' +
+    '<div class="t-avatar">' + (Array.from(name)[0] || '順') + '</div>' +
     '<div class="t-info">' +
       '<div class="t-role">這次的順咖</div>' +
-      '<div class="t-name">' + demoTask.staff.name + '</div>' +
+      '<div class="t-name">' + name + '</div>' +
       '<div class="badge-row">' + badges + '</div>' +
     '</div>';
 
   bindStars('staff');
+}
+
+// 產生分項星等列與紅旗清單(順咖評案家)
+function renderStaffForm() {
+  document.getElementById('sub-stars-staff').innerHTML = SUB_ITEMS_STAFF.map(function(it){
+    return '<div class="substar-row">' +
+      '<span class="substar-label">' + it.key + (it.req ? '<span class="req">必填</span>' : '<span class="opt">選填</span>') + '</span>' +
+      '<span class="substar-stars" data-sub="' + it.key + '">' +
+        [1,2,3,4,5].map(function(v){ return '<button type="button" class="ss-btn" data-val="' + v + '">★</button>'; }).join('') +
+      '</span>' +
+    '</div>';
+  }).join('');
+  bindSubStars();
+
+  document.getElementById('flag-checklist').innerHTML = FLAGS_STAFF.map(function(k){
+    return '<label class="flag-item">' +
+      '<input type="checkbox" class="flag-cb" data-key="' + k + '" onchange="onFlagToggle(this)">' +
+      '<span class="flag-item-label">' + k + '</span>' +
+      '<input type="text" class="flag-note" data-key="' + k + '" placeholder="簡單描述發生的事(選填)" maxlength="100" style="display:none;">' +
+    '</label>';
+  }).join('');
+}
+
+function bindSubStars() {
+  document.querySelectorAll('.substar-stars').forEach(function(group){
+    var key = group.getAttribute('data-sub');
+    group.querySelectorAll('.ss-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var val = parseInt(btn.getAttribute('data-val'));
+        subRatings[key] = val;
+        group.querySelectorAll('.ss-btn').forEach(function(s, i){ s.classList.toggle('on', i < val); });
+      });
+    });
+  });
+}
+
+// 平台判斷三題的二選一按鈕
+function bindChoices() {
+  document.querySelectorAll('.choice[data-q]').forEach(function(group){
+    var q = group.getAttribute('data-q');
+    if (q === 'has_issue') return;   // 紅旗開關走 setIssue
+    group.querySelectorAll('.choice-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        group.querySelectorAll('.choice-btn').forEach(function(b){ b.classList.remove('on'); });
+        btn.classList.add('on');
+        choiceAns[q] = btn.getAttribute('data-v');
+      });
+    });
+  });
+}
+
+function setIssue(on) {
+  hasIssue = on;
+  var sw = document.getElementById('issue-switch');
+  sw.querySelectorAll('.choice-btn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === (on ? 'yes' : 'no')); });
+  document.getElementById('flag-panel').style.display = on ? 'block' : 'none';
+  if (!on) {
+    document.querySelectorAll('.flag-cb').forEach(function(cb){ cb.checked = false; onFlagToggle(cb); });
+  }
+}
+
+function onFlagToggle(cb) {
+  var note = cb.parentNode.querySelector('.flag-note');
+  if (note) note.style.display = cb.checked ? 'block' : 'none';
+  var anySevere = false;
+  document.querySelectorAll('.flag-cb').forEach(function(c){
+    if (c.checked && SEVERE_FLAG_KEYS.indexOf(c.getAttribute('data-key')) >= 0) anySevere = true;
+  });
+  var warn = document.getElementById('flag-safety');
+  if (warn) warn.style.display = anySevere ? 'block' : 'none';
 }
 
 function showView(key) {
@@ -711,7 +930,12 @@ function showView(key) {
 
 /* 本人真實評價:讀 reviews 裡 reviewee_id = 登入者(=我收到的評價)。本人看自己一律免解鎖,分項/行為/信用全開。
  * reviews 欄位:reviewer_id, reviewee_id, order_id, mode, ratings(jsonb), flags(jsonb), comment, is_public, created_at
- * 約定格式(E3 寫評價時請照此存):ratings = { overall:1~5, items:{ 標籤:1~5 } };flags = { 標籤:true }。
+ * 約定格式(submitReview 已照此寫入):
+ *   ratings   = { overall:1~5, items:{ 中文標籤:1~5 } }
+ *   flags     = { 中文標籤:true }            勾選的紅旗
+ *   flag_notes(獨立 jsonb 欄位) = { 中文標籤:'一句描述' }  只進後台、不公開,本頁不讀
+ *   would_serve_again / service_as_ordered / needs_assist_actual(獨立 boolean 欄位)  平台判斷用
+ *   is_public 預設 false(雙盲);翻開公開的邏輯在彙整/顯示那步(第三步)做
  * 讀取端對舊/缺格式有容錯,但寫入端務必照約定,否則分項評分會算不出來。 */
 async function showMyReviews() {
   document.getElementById('mode-view').style.display = 'block';
@@ -901,14 +1125,70 @@ function pickTip(btn, val) {
   }
 }
 
-function submitReview(role) {
-  var ratingKey = role === 'staff' ? 'client' : 'staff';
-  if (ratings[ratingKey] === 0) {
-    alert('請先給對方評分');
-    return;
+async function submitReview() {
+  var R = window._review;
+  if (!R) { alert('找不到這張訂單的資料,請從訂單頁的「留下評價」重新進來'); return; }
+
+  if (R.mode === 'client') {
+    // === 順咖評案家:結構化表單 ===
+    if (ratings.client === 0) { alert('請先給整體評分'); return; }
+    var missing = SUB_ITEMS_STAFF.filter(function(it){ return it.req && !subRatings[it.key]; });
+    if (missing.length) { alert('請完成必填的分項評分:' + missing.map(function(m){ return m.key; }).join('、')); return; }
+    if (!choiceAns.would_serve_again) { alert('請回答:之後還願意再服務這位案家嗎?'); return; }
+    if (!choiceAns.service_as_ordered) { alert('請回答:實際服務和訂單說的一樣嗎?'); return; }
+
+    var items = {};
+    SUB_ITEMS_STAFF.forEach(function(it){ if (subRatings[it.key]) items[it.key] = subRatings[it.key]; });
+
+    var flags = {}, flagNotes = {};
+    if (hasIssue) {
+      document.querySelectorAll('.flag-cb').forEach(function(cb){
+        if (cb.checked) {
+          var k = cb.getAttribute('data-key');
+          flags[k] = true;
+          var note = cb.parentNode.querySelector('.flag-note');
+          if (note && note.value.trim()) flagNotes[k] = note.value.trim();
+        }
+      });
+    }
+
+    doInsertReview({
+      order_id: R.orderId,
+      reviewer_id: R.me,
+      reviewee_id: R.reviewee,
+      mode: 'client',
+      ratings: { overall: ratings.client, items: items },
+      flags: flags,
+      flag_notes: flagNotes,
+      would_serve_again: choiceAns.would_serve_again === 'yes',
+      service_as_ordered: choiceAns.service_as_ordered === 'yes',
+      needs_assist_actual: choiceAns.needs_assist_actual ? (choiceAns.needs_assist_actual === 'yes') : null,
+      comment: (document.getElementById('comment-staff').value || '').trim(),
+      is_public: false   // 雙盲:預設不公開,翻開公開的邏輯在彙整/顯示那步(第三步)做
+    }, '12_staff_home.html');
+
+  } else {
+    // === 案家評順咖:沿用原星等+留言,接成真寫入(最小版) ===
+    if (ratings.staff === 0) { alert('請先給順咖評分'); return; }
+    doInsertReview({
+      order_id: R.orderId,
+      reviewer_id: R.me,
+      reviewee_id: R.reviewee,
+      mode: 'staff',
+      ratings: { overall: ratings.staff, items: {} },
+      flags: {},
+      flag_notes: {},
+      comment: (document.getElementById('comment-client').value || '').trim(),
+      is_public: false
+    }, '11_client_home.html');
   }
+}
+
+async function doInsertReview(payload, backUrl) {
+  var ins = await sb.from('reviews').insert(payload);
+  if (ins.error) { alert('送出失敗:' + ins.error.message + '\n如果一直失敗,請截圖給我'); return; }
   alert('評價已送出,感謝你的回饋!');
-  window.location.href = role === 'staff' ? '12_staff_home.html' : '11_client_home.html';
+  window.location.href = backUrl;
 }
 
 function reportReview(btn) {
