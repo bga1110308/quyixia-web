@@ -313,8 +313,15 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
     </div>
     <div class="success-actions">
       <button class="suc-btn suc-btn-secondary" onclick="window.location.href='11_client_home.html'">稍後再說</button>
-      <button class="suc-btn suc-btn-primary" onclick="window.location.href='05_review.html?role=client&orderId=0522'"><svg><use href="#i-star"/></svg>留下評價</button>
+      <button class="suc-btn suc-btn-primary" onclick="window.location.href='05_review.html'"><svg><use href="#i-star"/></svg>留下評價</button>
     </div>
+  </div>
+
+  <!-- 已完成訂單的評價入口(案家評順咖 / 順咖評案家,依視角;帶訂單真實 id 進 05 自動判斷) -->
+  <div class="section-card" id="review-entry" style="display:none;text-align:center;">
+    <div class="sec-title" style="justify-content:center;" id="review-entry-title">留下評價</div>
+    <div style="font-size:0.85rem;color:var(--ink-soft);line-height:1.7;margin-bottom:1rem;" id="review-entry-desc">服務完成了,留個評價幫助平台更好</div>
+    <a class="suc-btn suc-btn-primary" id="review-entry-btn" href="#" style="text-decoration:none;"><svg><use href="#i-star"/></svg>立即評價</a>
   </div>
 
   <!-- 順咖卡 -->
@@ -728,6 +735,21 @@ async function init(){
     document.getElementById('confirm-action').classList.add('show');
   }
 
+  /* 已完成訂單:顯示評價入口。案家評順咖、順咖評案家,都帶訂單真實 id 進 05,由 05 自動判斷角色 */
+  if(o.status === 'done' && (viewerRole === 'client' || viewerRole === 'suncar')){
+    var reTitle = document.getElementById('review-entry-title');
+    var reDesc = document.getElementById('review-entry-desc');
+    if(viewerRole === 'suncar'){
+      reTitle.textContent = '評價這次的案家';
+      reDesc.textContent = '服務完成了,給這位案家一個評價,也幫其他順咖了解這位案家';
+    } else {
+      reTitle.textContent = '評價這次的順咖';
+      reDesc.textContent = '服務完成了,給順咖一個評價,幫助其他人挑選好順咖';
+    }
+    document.getElementById('review-entry-btn').setAttribute('href', '05_review.html?order=' + o.id);
+    document.getElementById('review-entry').style.display = '';
+  }
+
   /* 取消區:案家可取消自己的單(媒合中/待服務);順咖可取消接單(待服務,退回媒合中)。
      服務中/已完成/已取消都不顯示,需走後台。文案與動作依視角設定。 */
   var cancelBar = document.getElementById('cancel-bar');
@@ -827,7 +849,7 @@ window.confirmComplete = async function(){
   document.getElementById('confirm-action').classList.remove('show');
   var box = document.getElementById('success-box');
   var rev = document.querySelector('#success-box .suc-btn-primary');
-  if(rev){ rev.setAttribute('onclick', "window.location.href='05_review.html?role=client&orderId=" + (window._orderNo || window._orderId) + "'"); }
+  if(rev){ rev.setAttribute('onclick', "window.location.href='05_review.html?order=" + window._orderId + "'"); }
   box.classList.add('show');
   box.scrollIntoView({ behavior:'smooth', block:'center' });
 };
