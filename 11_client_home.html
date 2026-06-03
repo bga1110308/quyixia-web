@@ -460,10 +460,23 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
           '<div><span class="oc-price-label">'+priceLabel+'</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'+
         '</div>'+
         (canCancel ? '<div style="margin-top:10px;text-align:right;"><button onclick="event.stopPropagation(); window.cancelClientOrder(\''+esc(o.id)+'\', \''+esc(o.status)+'\')" style="background:#fff;border:1.5px solid var(--danger);color:var(--danger);font-family:inherit;font-size:0.78rem;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;">取消訂單</button></div>' : '')+
+        (o.status==='done' ? reviewRow11(o) : '')+
+      '</div>';
+  }
+
+  /* 已完成卡的評價狀態列:我評過這位順咖就顯示「已評價」,沒評就給「去評價」按鈕(帶訂單 id 進 05) */
+  function reviewRow11(o){
+    if(myReviewedSuncarOrders[o.id]){
+      return '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);font-size:0.78rem;color:var(--forest);font-weight:600;">✓ 已評價這位順咖</div>';
+    }
+    return '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;">'+
+      '<span style="font-size:0.78rem;color:var(--warn);font-weight:600;">尚未評價這位順咖</span>'+
+      '<button onclick="event.stopPropagation();window.location.href=\'05_review.html?order='+esc(o.id)+'\'" style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;font-family:inherit;font-size:0.78rem;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;">去評價</button>'+
       '</div>';
   }
 
   var _clientUserId = null;
+  var myReviewedSuncarOrders = {}; // init 填:我(案家)已評價過的訂單 id,在已完成卡標「已評價/尚未評價」
 
   /* 案家取消自己的訂單:軟取消,status 改 cancelled(不是真刪除,後台仍查得到)。
      條件帶 client_id=本人 且 status 在 媒合中/待服務,服務中/已完成不給取消。
@@ -566,6 +579,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     $('cancel-rate').textContent = cancRate + '%';
     $('cancel-cnt').textContent = cancCnt;
     $('cancel-stat').style.display = '';
+
+    /* 查我(案家)已評價過哪些訂單:只認自己寫的 client_reviews_suncar(RLS 只放行讀自己寫的),用來在已完成卡標評了沒 */
+    myReviewedSuncarOrders = {};
+    if(orders.some(function(o){ return o.status==='done'; })){
+      var rv = await sb.from('reviews').select('order_id').eq('reviewer_id', user.id).eq('mode', 'client_reviews_suncar');
+      (rv.data||[]).forEach(function(r){ myReviewedSuncarOrders[r.order_id] = true; });
+    }
 
     var activeOrders = orders.filter(function(o){ var g=(STATUS[o.status]||{}).group; return g==='active'||g==='matching'; });
     if(activeOrders.length){

@@ -522,6 +522,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   function hoursText(min){ if(!min) return ''; return (Math.round(min/60*10)/10)+' 小時'; }
   function sameMonth(ts){ if(!ts) return false; var d=new Date(ts), n=new Date(); return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth(); }
   var staffIsPrivileged = false; // 由 init 算好:後台或資訊會員才解鎖卡片上的案家信任資訊
+  var myReviewedClientOrders = {}; // init 填:我(順咖)已評價過的訂單 id,在已完成卡標「已評價/尚未評價」
 
   /* 案家信任資訊槽:卡片先放佔位,清單都畫好後 fillClientTrust 再非同步填。
      非會員只放靜態鎖頭(不查資料,不留 data-client);付費/後台才留 data-client 等待填值。
@@ -579,8 +580,18 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
     return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">待服務</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-red" onclick="event.stopPropagation(); window.releaseOrder(\''+esc(o.id)+'\', this)">取消接單</button><button class="btn btn-green" onclick="event.stopPropagation(); window.startService(\''+esc(o.id)+'\', this)">開始服務</button></div>'+price(o)+'</div></div>';
   }
+  /* 已完成卡的評價狀態列:我評過這位案家就顯示「已評價」,沒評就給「去評價」按鈕(帶訂單 id 進 05) */
+  function reviewRow(o){
+    if(myReviewedClientOrders[o.id]){
+      return '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-soft);font-size:0.78rem;color:var(--forest);font-weight:600;">✓ 已評價這位案家</div>';
+    }
+    return '<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-soft);display:flex;align-items:center;justify-content:space-between;gap:8px;">'+
+      '<span style="font-size:0.78rem;color:#E89544;font-weight:600;">尚未評價這位案家</span>'+
+      '<button class="btn btn-green" onclick="event.stopPropagation();window.location.href=\'05_review.html?order='+esc(o.id)+'\'">去評價</button>'+
+      '</div>';
+  }
   function doneCard(o){
-    return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div></div>';
+    return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div>'+reviewRow(o)+'</div>';
   }
   function openCard(o){
     return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">可接單</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button></div>'+price(o)+'</div></div>';
@@ -746,6 +757,13 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(awaitOrders.length){
       $('await-list').innerHTML = awaitOrders.map(awaitCard).join('');
       $('await-section').style.display = '';
+    }
+
+    /* 查我(順咖)已評價過哪些訂單:只認自己寫的 suncar_reviews_client(RLS 只放行讀自己寫的),用來在已完成卡標評了沒 */
+    myReviewedClientOrders = {};
+    if(doneOrders.length){
+      var rv = await sb.from('reviews').select('order_id').eq('reviewer_id', user.id).eq('mode', 'suncar_reviews_client');
+      (rv.data||[]).forEach(function(r){ myReviewedClientOrders[r.order_id] = true; });
     }
 
     /* 接案歷史 */
