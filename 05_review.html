@@ -1186,8 +1186,17 @@ async function submitReview() {
 }
 
 async function doInsertReview(payload, backUrl) {
+  // 防雙擊:寫入是唯一入口,一進來就鎖住所有送出鈕,避免連按兩次寫成兩筆評價
+  var btns = document.querySelectorAll('.submit-btn');
+  btns.forEach(function(b){ if (!b.dataset.txt) b.dataset.txt = b.textContent; b.disabled = true; b.textContent = '送出中…'; });
+
   var ins = await sb.from('reviews').insert(payload);
-  if (ins.error) { alert('送出失敗:' + ins.error.message + '\n如果一直失敗,請截圖給我'); return; }
+  if (ins.error) {
+    // 只有失敗才解鎖讓她改完再送;成功會直接跳頁,不需要解鎖
+    btns.forEach(function(b){ b.disabled = false; b.textContent = b.dataset.txt || '送出評價'; });
+    alert('送出失敗:' + ins.error.message + '\n如果一直失敗,請截圖給我');
+    return;
+  }
   alert('評價已送出,感謝你的回饋!');
   window.location.href = backUrl;
 }
