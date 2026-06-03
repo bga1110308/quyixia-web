@@ -234,6 +234,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
 <script src="qyx-load-guard.js"></script>
+<script src="qyx-consent-guard.js"></script>
 </head>
 <body>
 
@@ -583,6 +584,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   }
 
   document.addEventListener('DOMContentLoaded', function(){ qyxGuard(init, { color: '#EF9F27' }); }); /* 載入逾時保護:8 秒沒載完或載入出錯就顯示重試 */
+  document.addEventListener('DOMContentLoaded', function(){ qyxConsentGate({ color: '#EF9F27' }); }); /* 條款有更新時擋下,要求重新閱讀並同意 */
 })();
 
 /* 皇冠等級 11 級制 — 與 crown_all_levels.html 對齊
