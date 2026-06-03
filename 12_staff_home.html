@@ -561,7 +561,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(!clientId) return '';
     // 能看 = 會員/後台/推廣期全開,或我已單次解鎖這位案家。否則上鎖,按鈕跳解鎖視窗
     var canSee = staffIsPrivileged || unlockedClients[clientId] === true;
-    if(!canSee){ return '<div class="oc-trust">案家信任資訊　🔒 升級可看<button type="button" class="oc-trust-buy" onclick="openUnlockModal(\''+esc(clientId)+'\')">解鎖</button></div>'; }
+    if(!canSee){ return '<div class="oc-trust">案家信任資訊　🔒 升級可看<button type="button" class="oc-trust-buy" onclick="event.stopPropagation(); openUnlockModal(\''+esc(clientId)+'\')">解鎖</button></div>'; }
     return '<div class="oc-trust" data-client="'+esc(clientId)+'">案家評價載入中…</div>';
   }
 
