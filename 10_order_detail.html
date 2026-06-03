@@ -618,11 +618,13 @@ async function init(){
     return;
   }
 
-  // 看的人是不是「可看精確值/摘要」的特權身分:後台管理員,或資訊會員還沒過期
-  // info_member_until 是資訊會員到期日;大於現在就算已付費。月費與輕量包共用這一個欄位
+  // 看的人是不是「可看精確值/摘要」的特權身分:後台管理員,或推廣期全免費,或資訊會員還沒過期
+  // info_member_until 是資訊會員到期日;大於現在就算已付費。月費與輕量包共用這一個欄位。跟 12 同一套判斷
   var meRow = await sb.from('users').select('is_admin,info_member_until').eq('id', user.id).maybeSingle();
+  var cfg = await sb.from('app_config').select('promo_free_info').eq('id', 1).maybeSingle();
+  var promoFree = !!(cfg && cfg.data && cfg.data.promo_free_info);
   var paidActive = !!(meRow && meRow.data && meRow.data.info_member_until && new Date(meRow.data.info_member_until) > new Date());
-  var isPrivileged = !!(meRow && meRow.data && (meRow.data.is_admin || paidActive));
+  var isPrivileged = !!(meRow && meRow.data && (meRow.data.is_admin || promoFree || paidActive));
 
   /* 判斷看的人跟這張單的關係,決定整頁視角:
        client  = 我下的單,看自己填的完整資訊(金色)

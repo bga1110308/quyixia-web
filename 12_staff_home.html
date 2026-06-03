@@ -183,6 +183,9 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .order-card.open-order{border-left:4px solid var(--amber);}
 .order-card.done-order{opacity:0.95;}
 .oc-trust{font-size:0.76rem;color:var(--ink-soft);margin-top:7px;padding-top:7px;border-top:1px dashed var(--border-soft);line-height:1.5;}
+/* 鎖頭旁的「去買點數」小按鈕:導到買點數頁解鎖資訊會員 */
+.oc-trust-buy{display:inline-flex;align-items:center;margin-left:6px;padding:2px 11px;border-radius:99px;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit;vertical-align:1px;}
+.oc-trust-buy:hover{filter:brightness(1.05);}
 
 .oc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;}
 .oc-id-row{font-size:0.7rem;color:var(--ink-light);margin-bottom:3px;}
@@ -396,7 +399,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <strong id="acct-credit">100 / 100</strong>
     </div>
     <div class="income-row income-pending">
-      <span>月費狀態(新人首月免費)</span>
+      <span>資訊會員狀態</span>
       <strong id="acct-trial">—</strong>
     </div>
     <div class="income-hint">
@@ -529,7 +532,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
      為什麼分兩段:清單先秒出,統計慢慢補,不讓查詢卡住整頁。 */
   function clientTrustSlot(clientId){
     if(!clientId) return '';
-    if(!staffIsPrivileged){ return '<div class="oc-trust">案家信任資訊　🔒 升級可看</div>'; }
+    if(!staffIsPrivileged){ return '<div class="oc-trust">案家信任資訊　🔒 升級可看<button type="button" class="oc-trust-buy" onclick="goBuyForUnlock()">去買點數</button></div>'; }
     return '<div class="oc-trust" data-client="'+esc(clientId)+'">案家評價載入中…</div>';
   }
 
@@ -687,8 +690,11 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     /* 本人 users */
     var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score,role_detail,is_admin,info_member_until').eq('id', user.id).maybeSingle();
     var u = prof.data || {};
-    // 可看精確/摘要的特權身分:後台管理員,或資訊會員未過期。跟 10 同一套判斷,卡片信任資訊靠這個解鎖
-    staffIsPrivileged = !!(u.is_admin || (u.info_member_until && new Date(u.info_member_until) > new Date()));
+    // 全域推廣期開關:app_config.promo_free_info 為 true 時,全部人免費看資訊(推廣期用)
+    var cfg = await sb.from('app_config').select('promo_free_info').eq('id', 1).maybeSingle();
+    var promoFree = !!(cfg && cfg.data && cfg.data.promo_free_info);
+    // 能不能看資訊只認這一條:後台 / 推廣期全免費 / 資訊會員未過期(首月免費也寫進 info_member_until)。10 詳情頁同一套
+    staffIsPrivileged = !!(u.is_admin || promoFree || (u.info_member_until && new Date(u.info_member_until) > new Date()));
     var name = u.display_name || '順咖';
     $('h-nametext').textContent = name;
     var av = $('h-avatar'); if(u.has_caregiver_cert){ av.classList.add('cna'); } var avurl = u.role_detail && u.role_detail.avatar_url; if(avurl){ av.innerHTML = '<img src="'+esc(avurl)+'" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'; } else { av.textContent = firstChar(name); }
@@ -712,9 +718,9 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(suncarRole){ $('role-status').textContent = '順咖 · '+(statusMap[suncarRole.status]||suncarRole.status); canAcceptJobs = (suncarRole.status==='active'); }
     if(clientRole){ $('role-switch-link').style.display = ''; }
 
-    /* 月費狀態:新人首月免費。起算日 = 成為順咖那天(suncar user_roles.created_at),+30 天到期。
-       目前 users 表沒有「方案到期」欄位,等之後有正式月費機制再改讀到期欄位。 */
-    renderTrial(suncarRole && suncarRole.created_at);
+    /* 資訊會員狀態:單一來源 info_member_until(首月免費與付費月票都寫這個欄位)。
+       推廣期全免費時顯示推廣中。不再用「成為順咖那天 +30」自己算,避免跟鎖頭對不起來。 */
+    renderTrial(u.info_member_until, promoFree);
 
     /* 皇冠等級:人頭數 = referred_by = 我 的帳號數(註冊就算),純裝飾 */
     var hc = await sb.from('users').select('id', { count: 'exact', head: true }).eq('referred_by', user.id);
@@ -852,15 +858,21 @@ function renderCrown(count) {
     : '已推薦 ' + count + ' 人 · 點看等級';
 }
 
-/* 首月免費倒數:傳入成為順咖的日期(ISO 字串),+30 天到期,顯示剩餘天數 */
-var TRIAL_DAYS = 30;
-function renderTrial(joinedAt) {
+/* 資訊會員狀態:單一來源 info_member_until。推廣期全免費優先顯示;否則看到期日算剩餘天數。
+   首月免費已由後台在審核通過時寫進 info_member_until,所以這裡不用再自己 +30 天。 */
+function renderTrial(memberUntil, promoFree) {
   var el = document.getElementById('acct-trial');
   if (!el) return;
-  if (!joinedAt) { el.textContent = '—'; return; }
-  var expiry = new Date(joinedAt).getTime() + TRIAL_DAYS * 86400000;
-  var daysLeft = Math.ceil((expiry - Date.now()) / 86400000);
-  el.textContent = daysLeft > 0 ? ('剩 ' + daysLeft + ' 天') : '首月免費已結束';
+  if (promoFree) { el.textContent = '推廣期免費中'; return; }
+  if (!memberUntil) { el.textContent = '未開通'; return; }
+  var daysLeft = Math.ceil((new Date(memberUntil).getTime() - Date.now()) / 86400000);
+  el.textContent = daysLeft > 0 ? ('剩 ' + daysLeft + ' 天') : '已到期';
+}
+
+/* 鎖頭旁「去買點數」:先記住要加值的是順咖池、回來要回這頁,再導到買點數頁 */
+function goBuyForUnlock() {
+  try { sessionStorage.setItem('credits_pool', 'suncar'); sessionStorage.setItem('credits_returnTo', '12_staff_home.html'); } catch (e) {}
+  window.location.href = '16_buy_credits.html';
 }
 
 /* 篩選 */
