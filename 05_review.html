@@ -662,12 +662,13 @@ async function loadOrderAndShowForm(orderId) {
   var ex = await sb.from('reviews').select('id').eq('order_id', o.id).eq('reviewer_id', user.id).maybeSingle();
   if (ex && ex.data) { showFormError('你已經評價過這張單了,感謝你的回饋'); return; }
 
-  // mode = 被評價者的身分:順咖評案家→client、案家評順咖→staff
+  // mode 用資料庫 reviews_mode_check 允許的值:
+  //   順咖評案家 → 'suncar_reviews_client'、案家評順咖 → 'client_reviews_suncar'
   window._review = {
     orderId: o.id,
     me: user.id,
     reviewee: iAmSuncar ? o.client_id : o.suncar_id,
-    mode: iAmSuncar ? 'client' : 'staff'
+    mode: iAmSuncar ? 'suncar_reviews_client' : 'client_reviews_suncar'
   };
 
   if (iAmSuncar) { showWriteStaff(o); }   // 順咖評案家:新版結構化表單
@@ -1067,7 +1068,7 @@ async function showMyReviews() {
   }
   document.getElementById('review-list').innerHTML = rows.map(function(r){
     var rawName = nameById[r.reviewer_id] || '會員';
-    var roleSuffix = (r.mode === 'client') ? '(案家)' : (r.mode === 'staff' ? '(順咖)' : '');
+    var roleSuffix = (r.mode === 'suncar_reviews_client') ? '(順咖)' : (r.mode === 'client_reviews_suncar' ? '(案家)' : '');
     var shown = IS_ADMIN ? esc(rawName + roleSuffix) : esc(maskName(rawName + roleSuffix));
     var avatarHTML = IS_ADMIN
       ? '<div class="r-avatar">' + esc(Array.from(rawName)[0] || '·') + '</div>'
@@ -1129,7 +1130,7 @@ async function submitReview() {
   var R = window._review;
   if (!R) { alert('找不到這張訂單的資料,請從訂單頁的「留下評價」重新進來'); return; }
 
-  if (R.mode === 'client') {
+  if (R.mode === 'suncar_reviews_client') {
     // === 順咖評案家:結構化表單 ===
     if (ratings.client === 0) { alert('請先給整體評分'); return; }
     var missing = SUB_ITEMS_STAFF.filter(function(it){ return it.req && !subRatings[it.key]; });
@@ -1156,7 +1157,7 @@ async function submitReview() {
       order_id: R.orderId,
       reviewer_id: R.me,
       reviewee_id: R.reviewee,
-      mode: 'client',
+      mode: 'suncar_reviews_client',
       ratings: { overall: ratings.client, items: items },
       flags: flags,
       flag_notes: flagNotes,
@@ -1174,7 +1175,7 @@ async function submitReview() {
       order_id: R.orderId,
       reviewer_id: R.me,
       reviewee_id: R.reviewee,
-      mode: 'staff',
+      mode: 'client_reviews_suncar',
       ratings: { overall: ratings.staff, items: {} },
       flags: {},
       flag_notes: {},
