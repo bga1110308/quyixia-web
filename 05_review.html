@@ -1074,7 +1074,8 @@ async function showMyReviews() {
       ? '<div class="r-avatar">' + esc(Array.from(rawName)[0] || '·') + '</div>'
       : '<div class="r-avatar masked"><svg><use href="#i-shield"/></svg></div>';
     var d = r.created_at ? new Date(r.created_at) : null;
-    var dateStr = d ? (d.getFullYear() + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + ('0'+d.getDate()).slice(-2)) : '';
+    // 只顯示到月份(不顯示日),避免被評價的人用精確日期反推是哪一張單、哪個人寫的(防報復)
+    var dateStr = d ? (d.getFullYear() + '/' + ('0'+(d.getMonth()+1)).slice(-2)) : '';
     return '<div class="review-card"><div class="reviewer-row">' + avatarHTML +
       '<div style="flex:1;"><div class="r-name">' + shown + (IS_ADMIN ? ' <span class="admin-eye">後台可見</span>' : '') + '</div><div class="r-date">' + dateStr + '</div></div>' +
       '<div class="r-stars">' + starsStr(overallOf(r)) + '</div></div>' +
