@@ -657,6 +657,16 @@ async function init(){
     return;
   }
 
+  /* 單次解鎖:就算不是會員,只要付點解鎖過「這次的對方」且未過期,也能看。
+     對方 = 順咖看案家 o.client_id、案家看順咖 o.suncar_id。跟 12 同一張 info_unlocks */
+  if(!isPrivileged){
+    var targetUserId = (viewerRole === 'client') ? o.suncar_id : o.client_id;
+    if(targetUserId){
+      var ulk = await sb.from('info_unlocks').select('expires_at').eq('viewer_id', user.id).eq('target_id', targetUserId).maybeSingle();
+      if(ulk && ulk.data && (!ulk.data.expires_at || new Date(ulk.data.expires_at) > new Date())) isPrivileged = true;
+    }
+  }
+
   /* 順咖端(已接單 suncar、預覽 preview)共用綠色識別與費用措辭 */
   var isPreview = (viewerRole === 'preview');
   if(viewerRole === 'suncar' || isPreview){

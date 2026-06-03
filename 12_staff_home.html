@@ -272,6 +272,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .cm-subtitle{font-size:0.82rem;color:var(--ink-soft);text-align:center;margin-bottom:1.35rem;line-height:1.65;}
 .cm-cancel{width:100%;background:#fff;border:1.5px solid var(--border);color:var(--ink-soft);padding:0.85rem;border-radius:12px;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:0.85rem;transition:all 0.2s;}
 .cm-cancel:hover{background:var(--champagne-soft);border-color:var(--amber);color:var(--amber-deep);}
+/* 解鎖視窗的方案按鈕 */
+.ul-opt{display:flex;align-items:center;justify-content:space-between;width:100%;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:0.95rem 1.1rem;margin-bottom:0.7rem;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.ul-opt:hover{border-color:var(--forest);background:var(--champagne-soft);}
+.ul-opt-main{font-size:0.92rem;font-weight:600;color:var(--ink);}
+.ul-opt-cost{font-size:0.92rem;color:var(--forest);font-weight:700;white-space:nowrap;}
+.ul-opt-month{border-color:rgba(95,181,142,0.5);}
+.ul-topup{display:block;text-align:center;font-size:0.8rem;color:var(--amber-deep);margin:0.4rem 0 0.2rem;cursor:pointer;text-decoration:underline;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
@@ -511,6 +518,25 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
 </div>
 
+<!-- 解鎖案家信任資訊:單次 or 月票,扣點走後台 redeem_info -->
+<div class="contact-modal-overlay" id="unlock-modal" onclick="if(event.target===this)closeUnlockModal()">
+  <div class="contact-modal">
+    <div class="cm-handle"></div>
+    <div class="cm-title">解鎖<strong>案家信任資訊</strong></div>
+    <div class="cm-subtitle">看這位案家的星等、紅旗與取消率<br>你目前順咖點數：<strong id="ul-balance">0</strong> 點</div>
+    <button class="ul-opt" onclick="doRedeem('single')">
+      <span class="ul-opt-main">單次解鎖這位案家</span>
+      <span class="ul-opt-cost"><strong id="ul-cost-single">10</strong> 點</span>
+    </button>
+    <button class="ul-opt ul-opt-month" onclick="doRedeem('month')">
+      <span class="ul-opt-main">買月票 · 30 天看全部案家</span>
+      <span class="ul-opt-cost"><strong id="ul-cost-month">80</strong> 點</span>
+    </button>
+    <a class="ul-topup" onclick="goBuyForUnlock()">點數不足？去儲值</a>
+    <button class="cm-cancel" onclick="closeUnlockModal()">取消</button>
+  </div>
+</div>
+
 <script>
 /* === 接 Supabase:順咖端讀真實資料 === */
 var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
@@ -524,7 +550,8 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   function fmtDate(ts){ if(!ts) return ''; var d=new Date(ts); return d.getFullYear()+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
   function hoursText(min){ if(!min) return ''; return (Math.round(min/60*10)/10)+' 小時'; }
   function sameMonth(ts){ if(!ts) return false; var d=new Date(ts), n=new Date(); return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth(); }
-  var staffIsPrivileged = false; // 由 init 算好:後台或資訊會員才解鎖卡片上的案家信任資訊
+  var staffIsPrivileged = false; // 由 init 算好:後台/推廣期/資訊會員未過期 → 卡片信任資訊全開
+  var unlockedClients = {};        // init 填:我已單次解鎖且未過期的案家 id（{id:true}）。會員全開時這個不影響
   var myReviewedClientOrders = {}; // init 填:我(順咖)已評價過的訂單 id,在已完成卡標「已評價/尚未評價」
 
   /* 案家信任資訊槽:卡片先放佔位,清單都畫好後 fillClientTrust 再非同步填。
@@ -532,13 +559,15 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
      為什麼分兩段:清單先秒出,統計慢慢補,不讓查詢卡住整頁。 */
   function clientTrustSlot(clientId){
     if(!clientId) return '';
-    if(!staffIsPrivileged){ return '<div class="oc-trust">案家信任資訊　🔒 升級可看<button type="button" class="oc-trust-buy" onclick="goBuyForUnlock()">去買點數</button></div>'; }
+    // 能看 = 會員/後台/推廣期全開,或我已單次解鎖這位案家。否則上鎖,按鈕跳解鎖視窗
+    var canSee = staffIsPrivileged || unlockedClients[clientId] === true;
+    if(!canSee){ return '<div class="oc-trust">案家信任資訊　🔒 升級可看<button type="button" class="oc-trust-buy" onclick="openUnlockModal(\''+esc(clientId)+'\')">解鎖</button></div>'; }
     return '<div class="oc-trust" data-client="'+esc(clientId)+'">案家評價載入中…</div>';
   }
 
   /* 填值主流程:同一個案家只查一次(去重),早期單量小夠用。只管迴圈,查與組字交給下面兩支。 */
   async function fillClientTrust(){
-    if(!staffIsPrivileged) return; // 非會員是靜態鎖頭,不用查
+    // 只填有 data-client 的槽(會員看全部、或已單次解鎖的個別案家);上鎖的靜態鎖頭沒有 data-client,自然略過
     var slots = Array.prototype.slice.call(document.querySelectorAll('.oc-trust[data-client]'));
     var ids = [];
     slots.forEach(function(el){ var id = el.getAttribute('data-client'); if(id && ids.indexOf(id) < 0) ids.push(id); });
@@ -690,11 +719,19 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     /* 本人 users */
     var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score,role_detail,is_admin,info_member_until').eq('id', user.id).maybeSingle();
     var u = prof.data || {};
-    // 全域推廣期開關:app_config.promo_free_info 為 true 時,全部人免費看資訊(推廣期用)
-    var cfg = await sb.from('app_config').select('promo_free_info').eq('id', 1).maybeSingle();
-    var promoFree = !!(cfg && cfg.data && cfg.data.promo_free_info);
+    // 全域推廣期開關＋價目:都讀 app_config 同一列(後台可改)
+    var cfg = await sb.from('app_config').select('promo_free_info,price_suncar_single,price_suncar_month').eq('id', 1).maybeSingle();
+    var cfgd = (cfg && cfg.data) ? cfg.data : {};
+    var promoFree = !!cfgd.promo_free_info;
     // 能不能看資訊只認這一條:後台 / 推廣期全免費 / 資訊會員未過期(首月免費也寫進 info_member_until)。10 詳情頁同一套
     staffIsPrivileged = !!(u.is_admin || promoFree || (u.info_member_until && new Date(u.info_member_until) > new Date()));
+    // 我已單次解鎖且未過期的案家(會員全開時這個用不到,但先撈好,讓未解鎖的單張卡可單獨解鎖)
+    if(!staffIsPrivileged){
+      var unl = await sb.from('info_unlocks').select('target_id,expires_at').eq('viewer_id', user.id);
+      (unl.data || []).forEach(function(x){ if(!x.expires_at || new Date(x.expires_at) > new Date()) unlockedClients[x.target_id] = true; });
+    }
+    // 解鎖視窗要用的價目與餘額(順咖池)。target 在點鎖頭時帶入
+    window.UNLOCK = { single: (cfgd.price_suncar_single==null?10:cfgd.price_suncar_single), month: (cfgd.price_suncar_month==null?80:cfgd.price_suncar_month), points: (u.suncar_points||0), target: null };
     var name = u.display_name || '順咖';
     $('h-nametext').textContent = name;
     var av = $('h-avatar'); if(u.has_caregiver_cert){ av.classList.add('cna'); } var avurl = u.role_detail && u.role_detail.avatar_url; if(avurl){ av.innerHTML = '<img src="'+esc(avurl)+'" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'; } else { av.textContent = firstChar(name); }
@@ -873,6 +910,37 @@ function renderTrial(memberUntil, promoFree) {
 function goBuyForUnlock() {
   try { sessionStorage.setItem('credits_pool', 'suncar'); sessionStorage.setItem('credits_returnTo', '12_staff_home.html'); } catch (e) {}
   window.location.href = '16_buy_credits.html';
+}
+
+/* 解鎖視窗:帶入要解鎖的案家 id,顯示餘額與兩種方案價格 */
+function openUnlockModal(clientId) {
+  var U = window.UNLOCK || { single: 10, month: 80, points: 0 };
+  U.target = clientId;
+  document.getElementById('ul-balance').textContent = U.points;
+  document.getElementById('ul-cost-single').textContent = U.single;
+  document.getElementById('ul-cost-month').textContent = U.month;
+  document.getElementById('unlock-modal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeUnlockModal() {
+  document.getElementById('unlock-modal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+/* 扣點解鎖:single 解這一位案家、month 開 30 天看全部。扣點與發權限全在後台 redeem_info 做,前端只呼叫 */
+async function doRedeem(kind) {
+  if (typeof window.sb === 'undefined') { alert('系統載入中,請稍候再試'); return; }
+  var target = (kind === 'single') ? (window.UNLOCK && window.UNLOCK.target) : null;
+  if (kind === 'single' && !target) { alert('找不到要解鎖的案家,請重開卡片再試'); return; }
+  var r = await sb.rpc('redeem_info', { p_kind: kind, p_as: 'suncar', p_target: target });
+  if (r.error) {
+    var msg = r.error.message || '解鎖失敗';
+    if (msg.indexOf('點數不足') >= 0) { if (confirm(msg + '\n\n要去儲值嗎?')) goBuyForUnlock(); return; }
+    alert('解鎖失敗:' + msg);
+    return;
+  }
+  alert(kind === 'month' ? '已開通月票,30 天內可看全部案家資訊' : '已解鎖這位案家的資訊');
+  location.reload(); // 重整讓鎖頭變成已解鎖的內容,單一來源不另外手動改畫面
 }
 
 /* 篩選 */
