@@ -182,6 +182,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .order-card.preferred{border-left:4px solid var(--mint);background:linear-gradient(135deg,var(--mint-pale),#fff 60%);}
 .order-card.open-order{border-left:4px solid var(--amber);}
 .order-card.done-order{opacity:0.95;}
+.oc-trust{font-size:0.76rem;color:var(--ink-soft);margin-top:7px;padding-top:7px;border-top:1px dashed var(--border-soft);line-height:1.5;}
 
 .oc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;}
 .oc-id-row{font-size:0.7rem;color:var(--ink-light);margin-bottom:3px;}
@@ -520,7 +521,53 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   function fmtDate(ts){ if(!ts) return ''; var d=new Date(ts); return d.getFullYear()+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
   function hoursText(min){ if(!min) return ''; return (Math.round(min/60*10)/10)+' 小時'; }
   function sameMonth(ts){ if(!ts) return false; var d=new Date(ts), n=new Date(); return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth(); }
-  function metaRow(o){ var loc=[o.service_district,o.service_address].filter(Boolean).join(' · '); return '<div class="oc-meta">'+(loc?'<span class="oc-meta-item"><svg><use href="#i-pin"/></svg>'+esc(loc)+'</span>':'')+(o.duration_minutes?'<span class="oc-meta-item"><svg><use href="#i-clock"/></svg>'+esc(hoursText(o.duration_minutes))+'</span>':'')+'</div>'; }
+  var staffIsPrivileged = false; // 由 init 算好:後台或資訊會員才解鎖卡片上的案家信任資訊
+
+  /* 案家信任資訊槽:卡片先放佔位,清單都畫好後 fillClientTrust 再非同步填。
+     非會員只放靜態鎖頭(不查資料,不留 data-client);付費/後台才留 data-client 等待填值。
+     為什麼分兩段:清單先秒出,統計慢慢補,不讓查詢卡住整頁。 */
+  function clientTrustSlot(clientId){
+    if(!clientId) return '';
+    if(!staffIsPrivileged){ return '<div class="oc-trust">案家信任資訊　🔒 升級可看</div>'; }
+    return '<div class="oc-trust" data-client="'+esc(clientId)+'">案家評價載入中…</div>';
+  }
+
+  /* 填值主流程:同一個案家只查一次(去重),早期單量小夠用。只管迴圈,查與組字交給下面兩支。 */
+  async function fillClientTrust(){
+    if(!staffIsPrivileged) return; // 非會員是靜態鎖頭,不用查
+    var slots = Array.prototype.slice.call(document.querySelectorAll('.oc-trust[data-client]'));
+    var ids = [];
+    slots.forEach(function(el){ var id = el.getAttribute('data-client'); if(id && ids.indexOf(id) < 0) ids.push(id); });
+    for(var i = 0; i < ids.length; i++){
+      var text = await buildClientTrustText(ids[i]);
+      fillSlotsById(slots, ids[i], text);
+    }
+  }
+
+  function fillSlotsById(slots, id, text){
+    slots.forEach(function(el){ if(el.getAttribute('data-client') === id){ el.innerHTML = text; } });
+  }
+
+  /* 組一行摘要:平均星等(get_review_stats,滿 3 則才有數字)+紅旗總次數+取消率等級(public_trust)。
+     10 訂單詳情有完整版,這裡只給一行,點卡片進 10 看細節。 */
+  async function buildClientTrustText(clientId){
+    var parts = [];
+    var r = await sb.rpc('get_review_stats', { p_reviewee: clientId, p_mode: 'suncar_reviews_client' });
+    var s = (r && r.data) ? r.data : {};
+    if(s.enough){
+      parts.push('★ ' + (s.overall_avg != null ? s.overall_avg : '-') + '（' + s.count + ' 則）');
+      var flagN = 0, flags = s.flags || {};
+      Object.keys(flags).forEach(function(k){ flagN += flags[k]; });
+      if(flagN > 0){ parts.push('🚩 ' + flagN + ' 次'); }
+    } else {
+      parts.push('★ 評價少（' + (s.count || 0) + ' 則）');
+    }
+    var ct = await sb.from('public_trust').select('cancel_band').eq('user_id', clientId).maybeSingle();
+    if(ct && ct.data && ct.data.cancel_band){ parts.push('取消率' + ct.data.cancel_band); }
+    return parts.join('　·　');
+  }
+
+  function metaRow(o){ var loc=[o.service_district,o.service_address].filter(Boolean).join(' · '); return '<div class="oc-meta">'+(loc?'<span class="oc-meta-item"><svg><use href="#i-pin"/></svg>'+esc(loc)+'</span>':'')+(o.duration_minutes?'<span class="oc-meta-item"><svg><use href="#i-clock"/></svg>'+esc(hoursText(o.duration_minutes))+'</span>':'')+'</div>'+clientTrustSlot(o.client_id); }
   function head(o, tag){ return '<div class="oc-top"><div style="flex:1;min-width:0;"><div class="oc-id-row"><span class="oc-id">'+esc(shortNo(o.order_no))+'</span> · '+esc(fmtDate(o.service_time))+'</div><div class="oc-title">'+esc(o.service_type||'服務')+poolChip(o.pool)+'</div></div>'+tag+'</div>'; }
   function price(o){ return '<div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'; }
 
@@ -627,8 +674,10 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     currentUserId = user.id;
 
     /* 本人 users */
-    var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score,role_detail').eq('id', user.id).maybeSingle();
+    var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score,role_detail,is_admin,info_member_until').eq('id', user.id).maybeSingle();
     var u = prof.data || {};
+    // 可看精確/摘要的特權身分:後台管理員,或資訊會員未過期。跟 10 同一套判斷,卡片信任資訊靠這個解鎖
+    staffIsPrivileged = !!(u.is_admin || (u.info_member_until && new Date(u.info_member_until) > new Date()));
     var name = u.display_name || '順咖';
     $('h-nametext').textContent = name;
     var av = $('h-avatar'); if(u.has_caregiver_cert){ av.classList.add('cna'); } var avurl = u.role_detail && u.role_detail.avatar_url; if(avurl){ av.innerHTML = '<img src="'+esc(avurl)+'" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'; } else { av.textContent = firstChar(name); }
@@ -719,7 +768,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     /* 可接任務(媒合中且尚無人接,審核通過才查) */
     if(canAcceptJobs){
       // neq client_id:排除自己下的單,順咖不能接到自己當案家下的單(第一層,清單就不列出)
-      var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount').eq('status','matching').is('suncar_id', null).neq('client_id', user.id).order('service_time',{ascending:true});
+      var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id').eq('status','matching').is('suncar_id', null).neq('client_id', user.id).order('service_time',{ascending:true});
       var openOrders = (open.data || []).filter(function(o){ return o.pool==='A' || (o.pool==='B' && u.has_caregiver_cert); });
       $('stat-open').textContent = openOrders.length;
       $('open-badge').textContent = openOrders.length + ' 筆';
@@ -734,6 +783,9 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       $('open-empty').textContent = '審核通過後才會看到可接任務';
       $('open-empty').style.display = '';
     }
+
+    // 清單都畫好後,背景補上每張卡的案家信任資訊(不 await:避免查詢拖久觸發載入逾時重試;付費才查,非會員是靜態鎖頭)
+    fillClientTrust();
   }
 
   document.addEventListener('DOMContentLoaded', function(){ qyxGuard(init, { color: '#5FB58E' }); }); /* 載入逾時保護:8 秒沒載完或載入出錯就顯示重試 */
