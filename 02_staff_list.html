@@ -295,6 +295,7 @@ var selectedBadges = [];
 /* 付費分層:案家要付點才看得到順咖信用分。判斷同 10/12 單一套(後台/推廣期/資訊會員未過期=全開) */
 var clientIsPrivileged = false;
 var unlockedSuncars = {}; /* 我(案家)已單次解鎖且未過期的順咖 id,{id:true} */
+var currentViewerId = null; /* 登入者自己的 id:看自己那張卡時直接顯示,不上鎖、不收費(本人=會員=後台) */
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
@@ -346,6 +347,7 @@ async function loadStaff() {
   if (sres.data && sres.data.session && sres.data.session.user) { user = sres.data.session.user; }
   else { var ures = await sb.auth.getUser(); user = (ures && ures.data) ? ures.data.user : null; }
   if (!user) { window.location.href = '13_login.html'; return; }
+  currentViewerId = user.id; /* 記住自己,看自己那張卡時直接顯示 */
 
   /* 付費分層:後台/推廣期全免費/資訊會員未過期 → 全開;否則看我(案家)單次解鎖了哪幾位順咖。
      價目與餘額讀 app_config + users(案家池 client_points),解鎖視窗要用。同 10/12 那套單一判斷,不另外發明邏輯。 */
@@ -457,8 +459,8 @@ function renderStaff() {
 
 /* 信用分等級:高 80 以上 / 中 50–79 / 低 50 以下(同 01 第七點規則) */
 function creditBand(score){ var n = (score==null?100:score); if(n>=80) return '高'; if(n>=50) return '中'; return '低'; }
-/* 案家能不能看這位順咖的信用分:全開,或已單次解鎖這一位 */
-function canSeeCredit(suncarId){ return clientIsPrivileged || unlockedSuncars[suncarId] === true; }
+/* 案家能不能看這位順咖的信用分:本人看自己、或全開、或已單次解鎖這一位 */
+function canSeeCredit(suncarId){ return suncarId === currentViewerId || clientIsPrivileged || unlockedSuncars[suncarId] === true; }
 
 /* 解鎖視窗:帶入要解鎖的順咖 id,顯示案家點數餘額與兩種方案價格 */
 function openUnlockModal(suncarId){
