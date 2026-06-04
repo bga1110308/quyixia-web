@@ -688,11 +688,31 @@ window.addEventListener('DOMContentLoaded', async function () {
     var lineName = (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) || '';
     var nick = document.getElementById('sa-nickname');
     if (lineName && nick && !nick.value) nick.value = lineName;
+
+    // 已是會員(例如原本是案家)來開順咖身分:用既有主檔資料預填基本欄位,不用重打一次。
+    // 只在欄位是空的時候帶,不覆蓋使用者已經改過的內容。
+    var meRes = await sb.from('users').select('display_name,phone,role_detail').eq('id', user.id).maybeSingle();
+    if (meRes && meRes.data) {
+      var me = meRes.data;
+      var rd = me.role_detail || {};
+      var realBox = document.getElementById('sa-realname');
+      if (realBox && !realBox.value && rd.real_name) realBox.value = rd.real_name;
+      if (nick && !nick.value && me.display_name) nick.value = me.display_name;
+      var phoneBox = document.getElementById('sa-phone');
+      if (phoneBox && !phoneBox.value && me.phone) phoneBox.value = me.phone;
+    }
   }
-  // 把存起來的推薦碼自動填進輸入框
+  // 把存起來的推薦碼自動填進輸入框;若是朋友連結帶來的,就鎖住不讓改(確保推薦人一定記得到)
   var savedRef = localStorage.getItem('signup_ref');
   var refBox = document.getElementById('sa-refcode');
-  if (savedRef && refBox && !refBox.value) refBox.value = savedRef;
+  if (savedRef && refBox && !refBox.value) {
+    refBox.value = savedRef;
+    refBox.readOnly = true;
+    refBox.style.background = '#F5EBD8';
+    refBox.style.cursor = 'not-allowed';
+    var refHint = refBox.parentNode.querySelector('.hint');
+    if (refHint) refHint.textContent = '已帶入朋友的推薦碼,系統已鎖定不需修改';
+  }
   localStorage.removeItem('signup_role');
 });
 

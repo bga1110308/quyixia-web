@@ -232,7 +232,7 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
     </div>
 
     <div class="role-grid">
-      <button class="role-card role-card-client" onclick="pickRole('client')">
+      <button class="role-card role-card-client" onclick="goFindSuncar()">
         <div class="role-icon"><svg><use href="#i-heart"/></svg></div>
         <div style="flex:1;">
           <div class="role-name">我要找順咖</div>
@@ -241,7 +241,7 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
         <span class="role-arrow">→</span>
       </button>
 
-      <a class="role-card role-card-staff" href="03_staff_apply.html">
+      <a class="role-card role-card-staff" href="03_staff_apply.html" onclick="return goBecomeSuncar(event)">
         <div class="role-icon"><svg><use href="#i-staff"/></svg></div>
         <div style="flex:1;">
           <div class="role-name">我要成為順咖</div>
@@ -451,6 +451,31 @@ function pickRole(role) {
   }
 }
 
+/* 「我要找順咖」(案家方向)依身分分流:
+   - 未登入(新用戶):走案家註冊流程(step2 選註冊方式)
+   - 已有案家身分:直接去案家首頁 11
+   - 只有順咖、沒有案家:帶去下單頁 04(04 會用既有資料預填聯絡人、把推薦碼鎖住,下單成功補案家身分)
+   推薦碼用網址帶過去,04 才知道要鎖住與綁推薦人 */
+function goFindSuncar() {
+  if (!window._isLoggedIn) { chosenRole = 'client'; goStep(2); return; }
+  if (window._hasClient) { window.location.replace('11_client_home.html'); return; }
+  var ref = (localStorage.getItem('signup_ref') || '').trim();
+  window.location.href = '04_order_form.html' + (ref ? ('?ref=' + encodeURIComponent(ref)) : '');
+}
+
+/* 「我要成為順咖」(順咖方向)依身分分流:
+   - 已有順咖身分:取消跳 03、直接去順咖首頁 12
+   - 其餘(未登入新用戶、只有案家):放行照 href 去 03 申請頁(03 會預填基本資料、鎖住推薦碼)
+   回傳 false 取消 <a> 預設跳轉,回傳 true 放行 */
+function goBecomeSuncar(ev) {
+  if (window._isLoggedIn && window._hasSuncar) {
+    if (ev) ev.preventDefault();
+    window.location.replace('12_staff_home.html');
+    return false;
+  }
+  return true;
+}
+
 /* 讀後台三份文件,產生同意連結。
    讀不到就 fail-open:不卡死註冊,先放行,進首頁由閘門強制閱讀並補簽(避免 DB 一時讀不到就沒人能註冊)。 */
 async function loadLegalDocs(){
@@ -489,25 +514,30 @@ window.addEventListener('DOMContentLoaded', async function () {
   if (refParam && refParam.trim()) {
     localStorage.setItem('signup_ref', refParam.trim().toUpperCase());
   }
+  // 讀登入狀態與身分,給兩顆按鈕分流用。一律停在 step1 顯示兩顆按鈕,不再自動跳轉主頁
+  // (改版原因:老會員點推薦連結要能選「找順咖/成為順咖」去開另一個身分,不能一進來就被彈走)
+  window._isLoggedIn = false;
+  window._hasClient = false;
+  window._hasSuncar = false;
   var res = await sb.auth.getSession();
   if (res.data && res.data.session) {
     var sUser = res.data.session.user;
-    // 已經是會員(有任何身分)就不讓重新註冊,直接帶去主頁:
-    // 有案家身分→案家主頁(同時擁有兩個身分也走這);只有順咖→順咖主頁
+    window._isLoggedIn = true;
     var rr = await sb.from('user_roles').select('role').eq('user_id', sUser.id);
     var myRoles = (rr && rr.data) ? rr.data.map(function(x){ return x.role; }) : [];
-    if (myRoles.indexOf('client') !== -1) { window.location.replace('11_client_home.html'); return; }
-    if (myRoles.indexOf('suncar') !== -1) { window.location.replace('12_staff_home.html'); return; }
+    window._hasClient = myRoles.indexOf('client') !== -1;
+    window._hasSuncar = myRoles.indexOf('suncar') !== -1;
 
-    // 還不是會員(剛用 LINE 登入要註冊)→ 進補資料步驟
+    // 只有「剛按了我要找順咖→用 LINE 登入回來、但還沒有案家身分」的新用戶,才直接進補資料步驟。
+    // 已是會員的人留在 step1,由兩顆按鈕依身分分流(見 goFindSuncar / goBecomeSuncar)。
     var pendingRole = localStorage.getItem('signup_role');
-    if (pendingRole) {
+    if (pendingRole === 'client' && !window._hasClient) {
       await backfillLineId();
       await prefillStep3();
       goStep(3);
     }
   }
-  // 沒登入、或已登入但還不是會員且沒有註冊意圖,都留在 step 1
+  // 沒登入也留在 step1
 });
 
 async function signupWith(method) {

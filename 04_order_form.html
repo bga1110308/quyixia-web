@@ -497,6 +497,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
           <div class="hint">日常溝通用</div>
         </div>
       </div>
+      <!-- 朋友推薦連結帶來的推薦碼:只有從邀請連結進來才顯示,唯讀鎖定,下單成功記為推薦人 -->
+      <div class="field" id="locked-ref-field" style="display:none;margin-top:4px;">
+        <label>朋友的推薦碼</label>
+        <input type="text" id="locked-ref-input" readonly style="background:#FBEFD6;cursor:not-allowed;">
+        <div class="hint">由朋友的邀請連結帶入,系統已鎖定。下單成功後會記為你的推薦人</div>
+      </div>
       <div class="price-suggest" id="price-suggest">
         <span class="ico"><svg><use href="#i-coin"/></svg></span>
         <span><strong>參考行情:</strong><span id="price-range">—</span><br><span style="opacity:0.8;">這是平台上類似任務的平均價,給你參考。出價高一點通常接得快。</span></span>
@@ -771,6 +777,63 @@ function applyLastForm() {
   /* 聯絡資訊 */
   if (d.name) document.getElementById('contact-name').value = d.name;
   if (d.phone) document.getElementById('contact-phone').value = d.phone;
+}
+
+/* 已登入者進頁:用主檔資料預填聯絡人/電話(空才帶,不蓋掉上次表單或使用者已改的),
+   並在帶推薦連結時顯示鎖定推薦碼。給「順咖點我要找順咖→下單」這條路用,對一般案家無害。 */
+async function initOrderPrefill() {
+  var user = null;
+  try {
+    var sres = await sb.auth.getSession();
+    if (sres.data && sres.data.session) user = sres.data.session.user;
+  } catch(e){}
+  if (!user) return;
+
+  try {
+    var meRes = await sb.from('users').select('display_name,phone,role_detail').eq('id', user.id).maybeSingle();
+    if (meRes && meRes.data) {
+      var me = meRes.data;
+      var rd = me.role_detail || {};
+      var nameBox = document.getElementById('contact-name');
+      if (nameBox && !nameBox.value) nameBox.value = rd.real_name || me.display_name || '';
+      var phoneBox = document.getElementById('contact-phone');
+      if (phoneBox && !phoneBox.value && me.phone) phoneBox.value = me.phone;
+    }
+  } catch(e){ console.error('initOrderPrefill:', e); }
+
+  if (window._linkRef) showLockedRef(window._linkRef);
+}
+
+// 顯示鎖定的推薦碼欄(唯讀)
+function showLockedRef(code) {
+  var wrap = document.getElementById('locked-ref-field');
+  var input = document.getElementById('locked-ref-input');
+  if (!wrap || !input) return;
+  input.value = code;
+  wrap.style.display = 'block';
+}
+
+/* 下單成功後:補案家身分 + 綁推薦人。
+   為什麼:讓「下單＝成為案家」站得住,順咖下單後下次登入會正確進案家首頁、訂單也找得到;
+   推薦人只在目前為空時才綁,不覆蓋既有推薦人。整段失敗只記 log,不影響已成立的訂單。 */
+async function ensureClientRoleAndRef(userId) {
+  try {
+    await sb.from('user_roles').upsert(
+      { user_id: userId, role: 'client', status: 'active' },
+      { onConflict: 'user_id,role', ignoreDuplicates: true }
+    );
+  } catch(e){ console.error('ensureClientRole:', e); }
+
+  var ref = (window._linkRef || '').trim();
+  if (!ref) return;
+  try {
+    var refRes = await sb.from('users').select('id').ilike('ref_code', ref).maybeSingle();
+    if (refRes.data && refRes.data.id && refRes.data.id !== userId) {
+      await sb.from('users').update({ referred_by: refRes.data.id }).eq('id', userId).is('referred_by', null);
+    }
+  } catch(e){ console.error('bindRef:', e); }
+  try { localStorage.removeItem('signup_ref'); } catch(e){}
+  window._linkRef = '';
 }
 
 /* 登入狀態改由 getSession 為主、getUser 備援,在送出時即時判斷 */
@@ -1049,6 +1112,9 @@ async function submitOrder(payload, rateCheck) {
     var upd = await sb.from('users').update({ client_points: remain }).eq('id', user.id);
     if (upd.error) console.error('update points:', upd.error);
 
+    /* 下單成功:補案家身分 + 綁推薦人(順咖第一次下單時最關鍵,失敗不影響訂單) */
+    await ensureClientRoleAndRef(user.id);
+
     /* 本機限流記一筆 */
     if (rateCheck) recordOrder(rateCheck);
 
@@ -1314,20 +1380,12 @@ function handleRegAgreeChange(cb) {
     /* 沒有從別頁指定服務對象時,帶入上次填寫的資料 */
     applyLastForm();
   }
-  var ref = params.get('ref');
-  if (ref) {
-    var block = document.getElementById('referral-block');
-    var icon = document.getElementById('referral-toggle-icon');
-    var text = document.getElementById('referral-toggle-text');
-    if (block) {
-      block.style.display = 'block';
-      icon.textContent = '−';
-      text.textContent = '不使用介紹碼';
-      var input = document.getElementById('reg-referral');
-      input.value = ref.toUpperCase();
-      validateReferral(input);
-    }
-  }
+  // 推薦連結帶來的推薦碼:記起來,進頁預填時顯示鎖定欄,下單成功時綁推薦人(見 ensureClientRoleAndRef)
+  var ref = params.get('ref') || localStorage.getItem('signup_ref');
+  if (ref) window._linkRef = ref.trim().toUpperCase();
+
+  // 已登入者:用主檔資料預填聯絡人/電話、顯示鎖定推薦碼。背景跑,不擋其他初始化
+  initOrderPrefill();
 
   /* 從 02 帶來的指定順咖參數 */
   var staffName = params.get('staff');
