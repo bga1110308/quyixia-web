@@ -804,8 +804,15 @@ function verifyPhone() {
 }
 
 function otpNext(el, nextId, prevId, type) {
+  // 只保留一個數字:IME 或重複事件造成的多餘字元一律清掉(防呆)
+  el.value = el.value.replace(/[^0-9]/g, '').slice(-1);
   el.classList.toggle('filled', el.value.length > 0);
-  if (el.value.length === 1 && nextId) { var n = document.getElementById(nextId); if(n) n.focus(); }
+  // 跳到下一格延後一拍:若在 input 事件裡同步 focus 下一格,瀏覽器會把剛打的字又塞進下一格
+  // (就是「自動多輸入一次」的原因)。改用 setTimeout 等這一格確定填好再跳,就不會重複。
+  if (el.value.length === 1 && nextId) {
+    var n = document.getElementById(nextId);
+    if (n) setTimeout(function(){ n.focus(); }, 0);
+  }
   var prefix = type === 'email' ? 'e' : 'p';
   var btnId = type + '-verify-btn';
   var all = [0,1,2,3,4,5].map(function(i){ return document.getElementById(prefix+i).value; });
