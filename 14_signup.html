@@ -419,7 +419,6 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
 <script>
 var chosenAuthMethod = '';
 var chosenRole = 'client'; // 這頁是找順咖入口，角色固定 client
-var existingReferrerLocked = false; // 已是會員來加第二身分時,推薦人鎖定不可改
 
 // 案家註冊要同意的後台文件(doc_key 對應 legal_documents)。
 // 內容與版本即時讀後台,使用者讀到的＝送出記錄的＝首頁閘門比對的,全站同一份。
@@ -491,14 +490,24 @@ window.addEventListener('DOMContentLoaded', async function () {
     localStorage.setItem('signup_ref', refParam.trim().toUpperCase());
   }
   var res = await sb.auth.getSession();
-  var pendingRole = localStorage.getItem('signup_role');
-  if (res.data && res.data.session && pendingRole) {
-    // 註冊途中授權回來，補 line_user_id、進補資料步驟
-    await backfillLineId();
-    await prefillStep3();
-    goStep(3);
+  if (res.data && res.data.session) {
+    var sUser = res.data.session.user;
+    // 已經是會員(有任何身分)就不讓重新註冊,直接帶去主頁:
+    // 有案家身分→案家主頁(同時擁有兩個身分也走這);只有順咖→順咖主頁
+    var rr = await sb.from('user_roles').select('role').eq('user_id', sUser.id);
+    var myRoles = (rr && rr.data) ? rr.data.map(function(x){ return x.role; }) : [];
+    if (myRoles.indexOf('client') !== -1) { window.location.replace('11_client_home.html'); return; }
+    if (myRoles.indexOf('suncar') !== -1) { window.location.replace('12_staff_home.html'); return; }
+
+    // 還不是會員(剛用 LINE 登入要註冊)→ 進補資料步驟
+    var pendingRole = localStorage.getItem('signup_role');
+    if (pendingRole) {
+      await backfillLineId();
+      await prefillStep3();
+      goStep(3);
+    }
   }
-  // 沒登入、或已登入但沒有註冊意圖，都留在 step 1
+  // 沒登入、或已登入但還不是會員且沒有註冊意圖,都留在 step 1
 });
 
 async function signupWith(method) {
@@ -545,77 +554,21 @@ function extractLineId(user) {
   return null;
 }
 
-// 補資料頁:用 LINE 暱稱預填稱呼;已是會員則自動帶入既有資料、鎖定推薦人
+// 補資料頁:用 LINE 暱稱預填稱呼(已是會員的人會在進頁時直接被導向主頁,不會走到這)
 async function prefillStep3() {
   var ures = await sb.auth.getUser();
   var user = ures.data ? ures.data.user : null;
   document.getElementById('auth-msg').textContent = '已用 LINE 完成身分驗證';
+  document.getElementById('auth-detail').textContent = '系統收到:LINE 暱稱、頭像(姓名、電話需自填)';
+  // 網址 ?ref= 存起來的推薦碼自動填進輸入框
+  var savedRef = localStorage.getItem('signup_ref');
   var refBox = document.getElementById('su-refcode');
-
-  // 讀這個帳號在資料庫已有的資料(有 member_no = 已是正式會員 = 來加第二身分)
-  var me = null;
+  if (savedRef && refBox && !refBox.value) refBox.value = savedRef;
   if (user) {
-    var meRes = await sb.from('users').select('display_name,phone,email,role_detail,referred_by,member_no').eq('id', user.id).maybeSingle();
-    me = (meRes && meRes.data) ? meRes.data : null;
+    var lineName = (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) || '';
+    var nick = document.getElementById('su-nickname');
+    if (lineName && nick && !nick.value) nick.value = lineName;
   }
-
-  if (me && me.member_no) {
-    // 已是會員:自動帶入既有資料,免重填
-    document.getElementById('auth-detail').textContent = '你已經是會員,以下資料已自動帶入,確認即可';
-    var fn = document.querySelector('.fill-note'); if (fn) fn.style.display = 'none';
-    var rd = me.role_detail || {};
-    setVal('su-realname', rd.real_name);
-    setVal('su-nickname', me.display_name);
-    setVal('su-phone', me.phone);
-    setVal('email-field', me.email);
-    // 地址:案家角色優先,沒有就用順咖申請時填的
-    if (user) {
-      var rr = await sb.from('user_roles').select('role,role_data').eq('user_id', user.id);
-      var roles = (rr && rr.data) || [];
-      var cli = roles.find(function(r){ return r.role === 'client'; });
-      var suc = roles.find(function(r){ return r.role === 'suncar'; });
-      if (cli && cli.role_data) {
-        setVal('su-city', cli.role_data.city); setVal('su-district', cli.role_data.district);
-        setVal('su-street', cli.role_data.street); setVal('su-addrdetail', cli.role_data.detail);
-      } else if (suc && suc.role_data && suc.role_data.address) {
-        var ad = suc.role_data.address;
-        setVal('su-city', ad.city); setVal('su-district', ad.district);
-        setVal('su-street', (ad.street || '') + (ad.section ? (' ' + ad.section) : ''));
-        setVal('su-addrdetail', (ad.no ? (ad.no + '號') : '') + (ad.floor ? (ad.floor + '樓') : ''));
-      }
-    }
-    // 推薦人鎖定:已是會員不可改推薦人,帶入原本的(沒有就顯示無法新增)
-    existingReferrerLocked = true;
-    if (refBox) {
-      refBox.readOnly = true;
-      var refHint = refBox.parentNode.querySelector('.hint');
-      if (me.referred_by) {
-        var rRes = await sb.from('users').select('ref_code').eq('id', me.referred_by).maybeSingle();
-        refBox.value = (rRes && rRes.data && rRes.data.ref_code) ? rRes.data.ref_code : '(已綁定)';
-        if (refHint) refHint.textContent = '你已綁定推薦人,不可更改';
-      } else {
-        refBox.value = '';
-        refBox.placeholder = '推薦人僅能在第一次註冊時填寫';
-        if (refHint) refHint.textContent = '推薦人僅能在第一次註冊時填寫,現在無法新增';
-      }
-    }
-  } else {
-    // 新用戶:用 LINE 暱稱預填稱呼、帶入網址 ?ref=
-    document.getElementById('auth-detail').textContent = '系統收到:LINE 暱稱、頭像(姓名、電話需自填)';
-    var savedRef = localStorage.getItem('signup_ref');
-    if (savedRef && refBox && !refBox.value) refBox.value = savedRef;
-    if (user) {
-      var lineName = (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) || '';
-      var nick = document.getElementById('su-nickname');
-      if (lineName && nick && !nick.value) nick.value = lineName;
-    }
-  }
-}
-
-// 小工具:有值才填,避免把欄位清空
-function setVal(id, v) {
-  var el = document.getElementById(id);
-  if (el && v != null && v !== '') el.value = v;
 }
 
 /* 驗證失敗統一處理:提醒 + 捲到該欄位置中 + 紅框閃一下 + 聚焦。全站共用做法 */
@@ -710,21 +663,18 @@ async function completeSignup() {
 
   // 推薦碼 ref_code 由後台 trg_set_ref_code 在建立帳號時自動產生,此處不再處理
 
-  // 1c. 解析推薦碼 → referred_by（空才寫、不能是自己）。
-  // 已是會員(加第二身分)一律跳過:推薦人只在第一次註冊綁定,不可改、填別人也無效。
-  if (!existingReferrerLocked) {
-    // 優先用畫面上手動填的,沒填再用網址 ?ref= 存起來的
-    var manualRef = (document.getElementById('su-refcode').value || '').trim().toUpperCase();
-    var refCode = manualRef || (localStorage.getItem('signup_ref') || '').trim();
-    if (refCode) {
-      var refRes = await sb.from('users').select('id').ilike('ref_code', refCode).maybeSingle();
-      if (refRes.data && refRes.data.id && refRes.data.id !== user.id) {
-        await sb.from('users').update({ referred_by: refRes.data.id }).eq('id', user.id).is('referred_by', null);
-      } else {
-        alert('找不到推薦碼「' + refCode + '」對應的帳號,已略過(其餘資料仍會儲存)。');
-      }
-      localStorage.removeItem('signup_ref');
+  // 1c. 解析推薦碼 → referred_by（空才寫、不能是自己;referred_by 的 is null 確保不會被覆蓋）
+  // 優先用畫面上手動填的,沒填再用網址 ?ref= 存起來的
+  var manualRef = (document.getElementById('su-refcode').value || '').trim().toUpperCase();
+  var refCode = manualRef || (localStorage.getItem('signup_ref') || '').trim();
+  if (refCode) {
+    var refRes = await sb.from('users').select('id').ilike('ref_code', refCode).maybeSingle();
+    if (refRes.data && refRes.data.id && refRes.data.id !== user.id) {
+      await sb.from('users').update({ referred_by: refRes.data.id }).eq('id', user.id).is('referred_by', null);
+    } else {
+      alert('找不到推薦碼「' + refCode + '」對應的帳號,已略過(其餘資料仍會儲存)。');
     }
+    localStorage.removeItem('signup_ref');
   }
 
   // 2. 建立 client 角色：案家直接 active
