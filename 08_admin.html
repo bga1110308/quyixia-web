@@ -124,6 +124,9 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',system-ui,-apple-system,san
 .tab{padding:9px 17px;border-radius:10px 10px 0 0;font-size:13px;cursor:pointer;border:1.5px solid transparent;border-bottom:none;color:var(--ink-soft);margin-bottom:-1.5px;background:transparent;font-family:inherit;font-weight:500;transition:all 0.2s;}
 .tab:hover{background:var(--champagne-soft);}
 .tab.on{background:var(--surface);border-color:var(--border-soft);color:var(--amber-darker);font-weight:700;}
+/* 系統設定分頁:同一時間只顯示一塊,純前端 show/hide */
+.settings-pane{display:none;}
+.settings-pane.on{display:block;}
 
 /* Stats Cards */
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
@@ -480,6 +483,15 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <div class="page" id="page-settings">
         <div class="sec-header"><span class="sec-title">系統設定</span></div>
 
+        <!-- 系統設定頁籤:把原本一長條切成四塊,點上面切換,內容與資料完全沒動 -->
+        <div class="tab-row" id="settings-tabs">
+          <div class="tab on" onclick="switchSettingsTab('sp-fee',this)">資訊收費</div>
+          <div class="tab" onclick="switchSettingsTab('sp-switch',this)">功能開關</div>
+          <div class="tab" onclick="switchSettingsTab('sp-members',this)">會員 · 同意書</div>
+          <div class="tab" onclick="switchSettingsTab('sp-other',this)">下單 · 通知 · 基本</div>
+        </div>
+
+        <div class="settings-pane on" id="sp-fee">
         <!-- ★ 資訊收費總控:真開關,連後台 app_config(單列 id=1)。改完按儲存立刻全站生效,不用再手動跑 SQL -->
         <div class="setting-group" style="border:2px solid var(--forest);background:linear-gradient(135deg,#fff 0%,var(--mint-pale) 100%);">
           <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>資訊收費總控<span style="font-size:11px;color:var(--ink-soft);margin-left:8px;font-weight:500;">真開關 · 連後台 · 改完按儲存立刻全站生效</span></div>
@@ -552,7 +564,9 @@ textarea.form-input{min-height:80px;resize:vertical;}
             </div>
           </div>
         </div>
+        </div><!-- /sp-fee -->
 
+        <div class="settings-pane" id="sp-switch">
         <!-- 功能開關面板 -->
         <div class="setting-group" style="border:2px solid var(--amber);background:linear-gradient(135deg,#fff 0%,var(--champagne) 100%);">
           <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>功能開關面板<span style="font-size:11px;color:var(--ink-soft);margin-left:8px;font-weight:500;">未來功能按鈕一鍵開啟</span></div>
@@ -670,6 +684,9 @@ textarea.form-input{min-height:80px;resize:vertical;}
           </div>
         </div>
 
+        </div><!-- /sp-switch -->
+
+        <div class="settings-pane" id="sp-members">
         <div class="setting-group">
           <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>資訊會員(測試用,手動開通)</div>
           <div class="setting-row">
@@ -711,6 +728,9 @@ textarea.form-input{min-height:80px;resize:vertical;}
           </div>
         </div>
 
+        </div><!-- /sp-members -->
+
+        <div class="settings-pane" id="sp-other">
         <div class="setting-group">
           <div class="sg-title"><svg class="icon"><use href="#i-bell"/></svg>加購通知費用設定</div>
           <div class="setting-row">
@@ -793,6 +813,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
 
         <button class="btn-gold-sm" style="padding:11px 28px;font-size:14px;">儲存設定</button>
+        </div><!-- /sp-other -->
       </div>
 
       <!-- 數據報表 -->
@@ -1105,6 +1126,14 @@ async function initAdmin(){
   if(!me.data || !me.data.is_admin){ alert('此頁僅限管理員使用'); window.location.href='11_client_home.html'; return; }
   loadReviewList();
   loadPricing(); // 進頁就把收費總控的現值讀進表單
+}
+
+/* 系統設定頁籤:點上面切換顯示哪一塊,其餘隱藏。純前端 show/hide,不影響任何資料或設定 */
+function switchSettingsTab(paneId, el){
+  document.querySelectorAll('#settings-tabs .tab').forEach(function(t){ t.classList.remove('on'); });
+  el.classList.add('on');
+  document.querySelectorAll('#page-settings .settings-pane').forEach(function(p){ p.classList.remove('on'); });
+  var pane=document.getElementById(paneId); if(pane) pane.classList.add('on');
 }
 
 function switchTab(status,el){
