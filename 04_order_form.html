@@ -1227,11 +1227,12 @@ function openRegDoc(key){
   regCurrentDoc = key;
   document.getElementById('inner-doc-title').textContent = d.title;
   var body = document.getElementById('inner-doc-body');
+  document.getElementById('inner-modal-doc').classList.add('show'); // 先顯示,body 才有版面,scrollTop 才設得進去
   body.textContent = d.content || '';
   body.scrollTop = 0;
-  document.getElementById('inner-modal-doc').classList.add('show');
   resetRegDocConfirm();
-  setTimeout(function(){ trackRegDocScroll(body); }, 50); // 內容太短不需捲動的,直接算讀完
+  // textContent 換新內容後版面要重排,等一個影格再強制回到最頂並重算進度,否則沿用上一份捲到底位置被算成 100%。
+  setTimeout(function(){ body.scrollTop = 0; trackRegDocScroll(body); }, 30); // 內容太短不需捲動的,直接算讀完
 }
 
 function closeRegDoc(){

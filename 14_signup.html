@@ -701,12 +701,14 @@ function openDocModal(key){
   currentDocKey = key;
   document.getElementById('modal-doc-title').textContent = d.title;
   var body = document.getElementById('modal-doc-body');
+  document.getElementById('modal-doc').classList.add('show'); // 先顯示,body 才有版面,scrollTop 才設得進去
+  document.body.style.overflow = 'hidden';
   body.textContent = d.content || '';
   body.scrollTop = 0;
-  document.getElementById('modal-doc').classList.add('show');
-  document.body.style.overflow = 'hidden';
   resetDocConfirm();
-  setTimeout(function(){ trackDocScroll(body); }, 50); // 內容太短不需捲動的,直接算讀完
+  // textContent 換新內容後版面要重排,等一個影格再強制回到最頂並重算進度,
+  // 否則會沿用上一份捲到底的位置,一進來就被當成已讀 100%。
+  setTimeout(function(){ body.scrollTop = 0; trackDocScroll(body); }, 30); // 內容太短不需捲動的,直接算讀完
 }
 
 function closeDocModal(){
