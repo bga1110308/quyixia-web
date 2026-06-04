@@ -1088,6 +1088,7 @@ function regWith(provider) {
 }
 
 function showEmailReg() {
+  loadRegLegalDocs(); // 開信箱註冊時才去讀後台三份條款(只讀一次)
   document.getElementById('reg-social-row').style.display = 'none';
   document.getElementById('reg-email-section').style.display = 'block';
   document.getElementById('reg-submit-btn').style.display = 'block';
@@ -1117,11 +1118,18 @@ function completeReg() {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return fail(document.getElementById('reg-email'), '請輸入正確的 Email 格式');
   }
-  if (!regReadStatus.terms || !regReadStatus.privacy) {
-    return fail(document.getElementById('link-reg-terms'), '請先閱讀服務條款與隱私政策');
+  var allRead = REG_LEGAL_KEYS.every(function(k){ return regReadStatus[k]; });
+  if (!allRead) {
+    return fail(document.getElementById('reg-legal-links'), '請先閱讀完所有文件');
   }
   if (!agreed) { return fail(document.getElementById('reg-agree'), '請勾選同意條款'); }
 
+  // TODO(信箱註冊接通時):目前信箱註冊尚未接通,這裡只把人導去登入、不建帳號。
+  // 等信箱註冊做成能建帳號(拿到 user.id)後,在建好帳號那一步比照 14/03 寫入同意:
+  //   var now = new Date().toISOString();
+  //   var rows = REG_LEGAL_KEYS.map(function(k){ var d=regLegalDocs[k];
+  //     return d ? { user_id:user.id, doc_key:k, agreed_version:d.version, agreed_at:now } : null; }).filter(Boolean);
+  //   if(rows.length) await sb.from('user_consents').upsert(rows, { onConflict: 'user_id,doc_key' });
   closeRegModal();
   window.location.href = '13_login.html';
 }
@@ -1175,29 +1183,79 @@ function validateReferral(input) {
   }
 }
 
-/* === 內層條款 Modal === */
-var regReadStatus = { terms: false, privacy: false };
+/* === 同意書:三份文件即時讀後台,所有顯示條款的地方都指向同一份;以後合約一改這裡自動同步。
+   註:目前信箱註冊尚未接通(completeReg 只導去登入、不建帳號)。等做成能建帳號時,
+   在 completeReg 建好帳號那步比照 14/03 寫 user_consents(該處已留 TODO 與寫法)。 === */
+var REG_LEGAL_KEYS = ['terms_client', 'privacy', 'data_notice']; // 案家(信箱註冊)要簽的後台文件 doc_key
+var regLegalDocs = {};   // doc_key -> { doc_key, title, content, version }
+var regReadStatus = {};  // doc_key -> true 表示已讀完
+var regCurrentDoc = null;
+var regLegalLoaded = false;
 
-function openInnerModal(id) {
-  document.getElementById(id).classList.add('show');
-  var key = id === 'inner-modal-terms' ? 'terms' : 'privacy';
-  var body = document.getElementById('inner-' + key + '-body');
-  setTimeout(function(){ trackInnerScroll(body, key); }, 50);
+/* 讀後台三份文件,產生同意連結。讀不到 fail-open:連結退回顯示三份名稱、放行,進首頁由閘門補簽。 */
+async function loadRegLegalDocs(){
+  if(regLegalLoaded) return; // 只讀一次
+  regLegalLoaded = true;
+  try{
+    var res = await sb.from('legal_documents').select('doc_key,title,content,version').in('doc_key', REG_LEGAL_KEYS);
+    if(res.error || !res.data || !res.data.length) throw (res.error || new Error('no docs'));
+    res.data.forEach(function(d){ regLegalDocs[d.doc_key] = d; });
+    renderRegLegalLinks();
+  }catch(e){
+    if(window.console) console.error('[order/reg] 條款讀取失敗,改走首頁閘門補簽', e);
+    var box = document.getElementById('reg-legal-links');
+    if(box) box.textContent = '服務條款、隱私權政策、個資告知';
+    REG_LEGAL_KEYS.forEach(function(k){ regReadStatus[k] = true; });
+    var cb = document.getElementById('reg-agree'); if(cb) cb.disabled = false;
+    var uh = document.getElementById('reg-unread-hint'); if(uh) uh.classList.add('hide');
+  }
 }
 
-function closeInnerModal(id) {
-  document.getElementById(id).classList.remove('show');
+// 依 REG_LEGAL_KEYS 順序把連結畫出來,點了開閱讀視窗
+function renderRegLegalLinks(){
+  var box = document.getElementById('reg-legal-links');
+  if(!box) return;
+  box.innerHTML = REG_LEGAL_KEYS.map(function(k){
+    var d = regLegalDocs[k];
+    return d ? '<a id="reg-legal-link-'+k+'" onclick="openRegDoc(\''+k+'\')">'+esc(d.title)+'</a>' : '';
+  }).filter(Boolean).join('、');
 }
 
-function trackInnerScroll(el, key) {
-  var scrolled = el.scrollTop + el.clientHeight;
-  var total = el.scrollHeight;
-  var pct = total > el.clientHeight ? Math.min(100, Math.round(scrolled / total * 100)) : 100;
-  document.getElementById('inner-' + key + '-progress').style.width = pct + '%';
-  document.getElementById('inner-' + key + '-progress-text').textContent = pct + '%';
+/* === 內層條款閱讀視窗(單一通用,內容讀後台) === */
+function openRegDoc(key){
+  var d = regLegalDocs[key]; if(!d) return;
+  regCurrentDoc = key;
+  document.getElementById('inner-doc-title').textContent = d.title;
+  var body = document.getElementById('inner-doc-body');
+  body.textContent = d.content || '';
+  body.scrollTop = 0;
+  document.getElementById('inner-modal-doc').classList.add('show');
+  resetRegDocConfirm();
+  setTimeout(function(){ trackRegDocScroll(body); }, 50); // 內容太短不需捲動的,直接算讀完
+}
 
+function closeRegDoc(){
+  document.getElementById('inner-modal-doc').classList.remove('show');
+}
+
+// 依現在這份是否讀過,重設確認鈕與進度條
+function resetRegDocConfirm(){
+  var done = !!(regCurrentDoc && regReadStatus[regCurrentDoc]);
+  var btn = document.getElementById('inner-doc-confirm');
+  btn.classList.toggle('ready', done);
+  btn.textContent = done ? '我已讀完,確認同意' : '請將內容拉至最底才能確認';
+  document.getElementById('inner-doc-progress').style.width = done ? '100%' : '0%';
+  document.getElementById('inner-doc-progress-text').textContent = done ? '100%' : '0%';
+}
+
+function trackRegDocScroll(el){
+  var pct = el.scrollHeight > el.clientHeight
+    ? Math.min(100, Math.round((el.scrollTop + el.clientHeight) / el.scrollHeight * 100))
+    : 100;
+  document.getElementById('inner-doc-progress').style.width = pct + '%';
+  document.getElementById('inner-doc-progress-text').textContent = pct + '%';
   if (pct >= 95) {
-    var btn = document.getElementById('inner-' + key + '-confirm');
+    var btn = document.getElementById('inner-doc-confirm');
     if (!btn.classList.contains('ready')) {
       btn.classList.add('ready');
       btn.textContent = '我已讀完,確認同意';
@@ -1205,29 +1263,28 @@ function trackInnerScroll(el, key) {
   }
 }
 
-function confirmInnerRead(key) {
-  var btn = document.getElementById('inner-' + key + '-confirm');
-  if (!btn.classList.contains('ready')) return;
-
-  regReadStatus[key] = true;
-
-  var linkId = key === 'terms' ? 'link-reg-terms' : 'link-reg-privacy';
-  var link = document.getElementById(linkId);
-  if (link) link.classList.add('read');
-
-  closeInnerModal('inner-modal-' + key);
-
-  if (regReadStatus.terms && regReadStatus.privacy) {
-    var cb = document.getElementById('reg-agree');
-    cb.disabled = false;
+function confirmRegDoc(){
+  var btn = document.getElementById('inner-doc-confirm');
+  if(!btn.classList.contains('ready')) return;
+  if(regCurrentDoc){
+    regReadStatus[regCurrentDoc] = true;
+    var link = document.getElementById('reg-legal-link-' + regCurrentDoc);
+    if(link) link.classList.add('read');
+  }
+  closeRegDoc();
+  // 三份都讀完才開放勾選同意
+  var allRead = REG_LEGAL_KEYS.every(function(k){ return regReadStatus[k]; });
+  if(allRead){
+    document.getElementById('reg-agree').disabled = false;
     document.getElementById('reg-unread-hint').classList.add('hide');
   }
 }
 
 function handleRegAgreeChange(cb) {
-  if (cb.checked && (!regReadStatus.terms || !regReadStatus.privacy)) {
+  var allRead = REG_LEGAL_KEYS.every(function(k){ return regReadStatus[k]; });
+  if (cb.checked && !allRead) {
     cb.checked = false;
-    alert('請先點開並閱讀完兩份文件');
+    alert('請先點開並閱讀完所有文件');
   }
 }
 
@@ -1355,11 +1412,12 @@ function handleRegAgreeChange(cb) {
           </div>
         </div>
 
+        <!-- 同意書:三份文件即時讀後台,連結由 renderRegLegalLinks() 動態產生,全站同一份來源 -->
         <div class="modal-terms">
           <input type="checkbox" id="reg-agree" disabled onchange="handleRegAgreeChange(this)">
           <label for="reg-agree">
-            我同意 <a id="link-reg-terms" onclick="openInnerModal('inner-modal-terms')">服務條款</a> 與 <a id="link-reg-privacy" onclick="openInnerModal('inner-modal-privacy')">隱私政策</a>,了解平台僅為媒合資訊。
-            <span class="unread-hint" id="reg-unread-hint">請先點開並閱讀完兩份文件,才能勾選同意</span>
+            我同意 <span id="reg-legal-links">載入中…</span>,了解平台僅為媒合資訊。
+            <span class="unread-hint" id="reg-unread-hint">請先點開並閱讀完所有文件,才能勾選同意</span>
           </label>
         </div>
 
@@ -1375,166 +1433,21 @@ function handleRegAgreeChange(cb) {
   </div>
 </div>
 
-<!-- 內層 modal:服務條款 -->
-<div class="inner-modal-overlay" id="inner-modal-terms" onclick="if(event.target===this)closeInnerModal('inner-modal-terms')">
+<!-- 內層條款閱讀視窗:單一通用,內容由 openRegDoc() 從 legal_documents 注入(純文字、保留換行) -->
+<div class="inner-modal-overlay" id="inner-modal-doc" onclick="if(event.target===this)closeRegDoc()">
   <div class="inner-modal">
     <div class="inner-modal-header">
-      <div class="inner-modal-title">服務條款</div>
-      <button class="inner-modal-close" onclick="closeInnerModal('inner-modal-terms')">×</button>
+      <div class="inner-modal-title" id="inner-doc-title">文件</div>
+      <button class="inner-modal-close" onclick="closeRegDoc()">×</button>
     </div>
-    <div class="inner-modal-body" id="inner-terms-body" onscroll="trackInnerScroll(this,'terms')">
-      <p style="color:var(--ink-light);font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
-
-      <h3>1. 平台性質</h3>
-      <p>「去一下」(以下稱本平台)為<strong>資訊媒合服務平台</strong>,提供順咖與案家自由聯繫之資訊管道。本平台不參與、不介入順咖實際提供之服務內容,亦非順咖之雇主。</p>
-      <p>順咖與案家係雙方獨立之契約關係,由雙方自行協商服務內容、時間、地點與報酬,本平台不負服務品質之擔保責任。</p>
-
-      <h3>2. 服務分類</h3>
-      <p>本平台服務分為兩類:</p>
-      <ul>
-        <li><strong>一般跑腿類</strong>:代排、遛狗、陪伴、打掃等</li>
-        <li><strong>身體照顧類</strong>:協助洗澡、翻身擦澡、服藥提醒等,依《長期照顧服務法》規定,必須由領有照顧服務員技術士證之順咖提供</li>
-      </ul>
-
-      <h3>3. 案家義務</h3>
-      <ul>
-        <li>據實提供任務需求、地址、聯絡資訊</li>
-        <li>準時付款、不引導順咖私下交易</li>
-        <li>不對順咖為任何騷擾、暴力、不當對待</li>
-        <li>確保服務場所安全</li>
-      </ul>
-
-      <h3>4. 平台收費與金流</h3>
-      <p><strong>本平台不抽成、不經手案家與順咖之間的服務報酬</strong>。本平台僅向使用者收取功能性服務費(點數加值),用於下單、媒合、置頂、額外證件審核等平台功能。</p>
-      <ul>
-        <li>下單將扣除 50 點平台服務費,含建立訂單、媒合順咖、自動建立 LINE 聯絡群</li>
-        <li>服務報酬(案家給付順咖之費用)由雙方自行於 LINE 群內協議,並由案家直接支付給順咖</li>
-        <li>本平台不對服務報酬之金額、付款方式、撥款時間負擔任何責任</li>
-        <li>不得引導他人繞過平台、未透過下單流程私下接案</li>
-      </ul>
-
-      <h3>5. 取消訂單規則</h3>
-      <p>取消訂單之退點規則依「責任歸屬」判斷:</p>
-      <ul>
-        <li><strong>媒合中(順咖尚未接單)案家自行取消</strong>:全額退還 50 點</li>
-        <li><strong>24 小時內無順咖接單</strong>:訂單自動關閉,全額退還 50 點</li>
-        <li><strong>順咖已接單後案家取消</strong>:全額退還 50 點,並記一次取消次數,30 天內累計達 2 次將暫停下單功能</li>
-        <li><strong>順咖已接單後順咖無故取消</strong>:案家全額退還 50 點,順咖扣信用分</li>
-        <li><strong>服務進行中</strong>:不可取消,僅得透過客服回報處理</li>
-        <li><strong>案家經客服判定為惡意取消、白嫖客行為</strong>:直接列入黑名單,終止帳號</li>
-      </ul>
-
-      <h3>6. 保險責任</h3>
-      <p>本平台<strong>不為案家或順咖投保任何保險</strong>。建議雙方自行評估風險。服務過程中發生意外、損失、糾紛,由雙方自行協調或循司法途徑解決。</p>
-
-      <h3>7. 違規處置</h3>
-      <p>案家如有下列情形,本平台得逕行停權、終止帳號:</p>
-      <ul>
-        <li>提供不實資料</li>
-        <li>順咖已接單後取消,30 天內累計達 2 次以上</li>
-        <li>對順咖騷擾、暴力、不當對待</li>
-        <li>引導順咖私下交易、繞過平台下單流程</li>
-        <li>惡意惡作劇下單、白嫖客行為(取得聯絡方式後私下成交、避免支付平台服務費)</li>
-      </ul>
-
-      <h3>8. 資料使用</h3>
-      <p>案家提供之姓名、聯絡資訊僅供本平台運作使用。詳見隱私政策。</p>
-
-      <h3>9. 條款修改</h3>
-      <p>本平台保留隨時修改本條款之權利。修改後將以站內通知或 Email 告知,繼續使用即視為同意。</p>
-
-      <h3>10. 準據法與管轄</h3>
-      <p>本條款以中華民國法律為準據法,並以<strong>台灣新北地方法院</strong>為第一審管轄法院。</p>
-
-      <p style="margin-top:1.3rem;padding-top:0.9rem;border-top:1px dashed var(--border);color:var(--ink-light);font-size:0.76rem;">
-        以上條款由大天使長照有限公司附設新北市私立大天使居家長照機構(「去一下」平台營運者)擬定。
-      </p>
-    </div>
+    <div class="inner-modal-body" id="inner-doc-body" onscroll="trackRegDocScroll(this)" style="white-space:pre-wrap;"></div>
     <div class="inner-modal-footer">
       <div class="inner-scroll-hint">
         <span>閱讀進度</span>
-        <div class="progress"><div class="progress-fill" id="inner-terms-progress" style="width:0%;"></div></div>
-        <span id="inner-terms-progress-text">0%</span>
+        <div class="progress"><div class="progress-fill" id="inner-doc-progress" style="width:0%;"></div></div>
+        <span id="inner-doc-progress-text">0%</span>
       </div>
-      <button class="inner-confirm-btn" id="inner-terms-confirm" onclick="confirmInnerRead('terms')">請將內容拉至最底才能確認</button>
-    </div>
-  </div>
-</div>
-
-<!-- 內層 modal:隱私政策 -->
-<div class="inner-modal-overlay" id="inner-modal-privacy" onclick="if(event.target===this)closeInnerModal('inner-modal-privacy')">
-  <div class="inner-modal">
-    <div class="inner-modal-header">
-      <div class="inner-modal-title">隱私權政策</div>
-      <button class="inner-modal-close" onclick="closeInnerModal('inner-modal-privacy')">×</button>
-    </div>
-    <div class="inner-modal-body" id="inner-privacy-body" onscroll="trackInnerScroll(this,'privacy')">
-      <p style="color:var(--ink-light);font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
-
-      <h3>1. 資料蒐集範圍</h3>
-      <p>為提供媒合服務,本平台將蒐集以下資料:</p>
-      <ul>
-        <li><strong>基本身分</strong>:暱稱、聯絡電話</li>
-        <li><strong>訂單資料</strong>:服務需求、地址、金額、評價</li>
-        <li><strong>使用紀錄</strong>:登入紀錄、IP 位址、瀏覽行為</li>
-      </ul>
-
-      <h3>2. 資料使用目的</h3>
-      <ul>
-        <li>身分驗證、確保平台安全</li>
-        <li>媒合順咖與案家</li>
-        <li>提供客戶服務、處理爭議</li>
-        <li>付款結算</li>
-        <li>平台優化與改善</li>
-        <li>法令遵循</li>
-      </ul>
-
-      <h3>3. 資料公開原則</h3>
-      <p>真實姓名、電話、地址<strong>絕對不會公開給其他使用者</strong>。順咖只會看到案家的暱稱與訂單必要資訊。</p>
-
-      <h3>4. 資料保存期限</h3>
-      <ul>
-        <li>帳號使用中:持續保存</li>
-        <li>停止使用後:基本資料保存 5 年</li>
-        <li>點數加值與發票紀錄:依稅法規定保存 7 年</li>
-      </ul>
-
-      <h3>5. 資料當事人權利</h3>
-      <p>依個人資料保護法,您有權查詢、複製、補充、更正、停止使用、刪除個人資料。請以電子郵件至客服信箱辦理。</p>
-
-      <h3>6. 第三方資料分享</h3>
-      <p>本平台不會將個資販售、出租、交換給第三方,除非:</p>
-      <ul>
-        <li>取得您事前同意</li>
-        <li>司法機關依法律程序要求</li>
-        <li>點數加值之金流服務商(限刷卡與發票必要資訊)</li>
-        <li>簡訊服務商(限發送驗證碼必要資訊)</li>
-      </ul>
-
-      <h3>7. Cookie 使用</h3>
-      <p>本平台使用 Cookie 追蹤登入狀態與使用偏好。您可於瀏覽器停用,但部分功能將無法使用。</p>
-
-      <h3>8. 資料安全</h3>
-      <ul>
-        <li>所有個人資料以加密方式儲存</li>
-        <li>點數加值之金流資訊使用 SSL 加密傳輸</li>
-        <li>採用權限管理</li>
-        <li>本平台已採取合理之資安措施,但不保證百分之百無外洩風險</li>
-      </ul>
-
-      <h3>9. 政策修改</h3>
-      <p>本政策得隨時修改。重大修改將以簡訊或站內通知告知。</p>
-
-      <h3>10. 聯絡方式</h3>
-      <p>大天使長照有限公司附設新北市私立大天使居家長照機構<br>客服信箱:service@quyixia.tw</p>
-    </div>
-    <div class="inner-modal-footer">
-      <div class="inner-scroll-hint">
-        <span>閱讀進度</span>
-        <div class="progress"><div class="progress-fill" id="inner-privacy-progress" style="width:0%;"></div></div>
-        <span id="inner-privacy-progress-text">0%</span>
-      </div>
-      <button class="inner-confirm-btn" id="inner-privacy-confirm" onclick="confirmInnerRead('privacy')">請將內容拉至最底才能確認</button>
+      <button class="inner-confirm-btn" id="inner-doc-confirm" onclick="confirmRegDoc()">請將內容拉至最底才能確認</button>
     </div>
   </div>
 </div>
