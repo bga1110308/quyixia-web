@@ -480,6 +480,79 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <div class="page" id="page-settings">
         <div class="sec-header"><span class="sec-title">系統設定</span></div>
 
+        <!-- ★ 資訊收費總控:真開關,連後台 app_config(單列 id=1)。改完按儲存立刻全站生效,不用再手動跑 SQL -->
+        <div class="setting-group" style="border:2px solid var(--forest);background:linear-gradient(135deg,#fff 0%,var(--mint-pale) 100%);">
+          <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>資訊收費總控<span style="font-size:11px;color:var(--ink-soft);margin-left:8px;font-weight:500;">真開關 · 連後台 · 改完按儲存立刻全站生效</span></div>
+
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">推廣期免費(全站資訊一律免費看)</div>
+              <div class="sr-desc">開=不分會員,案家順咖都免費看對方的信用分、評價、取消率。關=要付費(資訊會員或單次解鎖)才看得到。這顆取代以前要手動跑的 SQL。<strong style="color:var(--danger);">測試期請維持「關」,綠督導才看得到鎖頭畫面。</strong></div>
+              <span class="status-chip chip-off" id="chip-promo">讀取中…</span>
+            </div>
+            <label class="toggle"><input type="checkbox" id="cfg-promo" onchange="updateChip(this,'chip-promo','推廣期免費中','要付費才看')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">順咖看案家 · 單次解鎖</div>
+              <div class="sr-desc">順咖付幾點看「一位」案家的信任資訊</div>
+              <div class="price-input-row"><input class="price-input" id="cfg-ss" type="number" min="0"><span class="price-unit">點 / 位</span></div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">順咖看案家 · 月票</div>
+              <div class="sr-desc">順咖付幾點開 30 天看「全部」案家</div>
+              <div class="price-input-row"><input class="price-input" id="cfg-sm" type="number" min="0"><span class="price-unit">點 / 月</span></div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">案家看順咖 · 單次解鎖</div>
+              <div class="sr-desc">案家付幾點看「一位」順咖的信用分與評價</div>
+              <div class="price-input-row"><input class="price-input" id="cfg-cs" type="number" min="0"><span class="price-unit">點 / 位</span></div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">案家看順咖 · 月票</div>
+              <div class="sr-desc">案家付幾點開 30 天看「全部」順咖</div>
+              <div class="price-input-row"><input class="price-input" id="cfg-cm" type="number" min="0"><span class="price-unit">點 / 月</span></div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">月票天數</div>
+              <div class="sr-desc">月票開通後可看幾天(預設 30)</div>
+              <div class="price-input-row"><input class="price-input" id="cfg-md" type="number" min="1"><span class="price-unit">天</span></div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">單次解鎖有效天數</div>
+              <div class="sr-desc">單次解鎖後可看幾天。<strong>留空 = 永久</strong>;填數字 = 幾天後失效</div>
+              <div class="price-input-row"><input class="price-input" id="cfg-sd" type="number" min="0" placeholder="永久"><span class="price-unit">天(空=永久)</span></div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">加照服員證收費</div>
+              <div class="sr-desc">順咖上傳照服員證、升級可接 B 池(身體照顧)時要不要收費。<strong>開</strong>=收下面的點數;<strong>關</strong>=免費。目前 07 證件頁仍是免費審核,這顆先存著,07 接上金流後生效。</div>
+              <span class="status-chip chip-off" id="chip-cert">讀取中…</span>
+              <div class="price-input-row"><input class="price-input" id="cfg-certprice" type="number" min="0"><span class="price-unit">點 / 次</span></div>
+            </div>
+            <label class="toggle"><input type="checkbox" id="cfg-cert" onchange="updateChip(this,'chip-cert','收費','免費')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+
+          <div class="setting-row" style="border:none;">
+            <div class="sr-left" style="width:100%;">
+              <button type="button" onclick="savePricing()" style="padding:10px 20px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;border-radius:10px;font-family:inherit;font-weight:700;cursor:pointer;">儲存收費設定</button>
+              <span id="cfg-result" style="margin-left:12px;font-size:13px;color:var(--ink-soft);"></span>
+            </div>
+          </div>
+        </div>
+
         <!-- 功能開關面板 -->
         <div class="setting-group" style="border:2px solid var(--amber);background:linear-gradient(135deg,#fff 0%,var(--champagne) 100%);">
           <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>功能開關面板<span style="font-size:11px;color:var(--ink-soft);margin-left:8px;font-weight:500;">未來功能按鈕一鍵開啟</span></div>
@@ -1031,6 +1104,7 @@ async function initAdmin(){
   var me=await sb.from('users').select('is_admin').eq('id',user.id).maybeSingle();
   if(!me.data || !me.data.is_admin){ alert('此頁僅限管理員使用'); window.location.href='11_client_home.html'; return; }
   loadReviewList();
+  loadPricing(); // 進頁就把收費總控的現值讀進表單
 }
 
 function switchTab(status,el){
@@ -1130,6 +1204,46 @@ async function saveLegalDoc(major){
   if(up.error){ r.textContent='存檔失敗(可能缺管理員權限):'+up.error.message; return; }
   r.textContent= major ? '已發布重大修改,全員下次登入需重新同意。' : '已存成小修正(不影響既有同意)。';
   loadLegalDoc(); // 重讀顯示新版本號
+}
+
+/* === 資訊收費總控:讀寫 app_config(單列 id=1) === */
+/* 讀:進頁把現值填進表單。全平台「能不能看資訊」「各方案幾點」都讀這一列,改一處全站同步。 */
+async function loadPricing(){
+  var q=await sb.from('app_config').select('*').eq('id',1).maybeSingle();
+  if(q.error || !q.data){ var r0=document.getElementById('cfg-result'); if(r0) r0.textContent='讀取收費設定失敗,請確認 app_config 已建立'; return; }
+  var c=q.data;
+  var promo=document.getElementById('cfg-promo'); promo.checked=!!c.promo_free_info; updateChip(promo,'chip-promo','推廣期免費中','要付費才看');
+  document.getElementById('cfg-ss').value=(c.price_suncar_single==null?'':c.price_suncar_single);
+  document.getElementById('cfg-sm').value=(c.price_suncar_month==null?'':c.price_suncar_month);
+  document.getElementById('cfg-cs').value=(c.price_client_single==null?'':c.price_client_single);
+  document.getElementById('cfg-cm').value=(c.price_client_month==null?'':c.price_client_month);
+  document.getElementById('cfg-md').value=(c.month_days==null?'':c.month_days);
+  document.getElementById('cfg-sd').value=(c.single_unlock_days==null?'':c.single_unlock_days);
+  var cert=document.getElementById('cfg-cert'); cert.checked=!!c.cert_charge_on; updateChip(cert,'chip-cert','收費','免費');
+  document.getElementById('cfg-certprice').value=(c.price_cert==null?'':c.price_cert);
+}
+
+/* 數字欄轉存:空字串→null(讓「單次永久」可存),其餘轉整數 */
+function numOrNull(id){ var v=(document.getElementById(id).value||'').trim(); if(v==='') return null; var n=parseInt(v,10); return isNaN(n)?null:n; }
+
+/* 存:一次寫回 app_config id=1。前端只改設定值,真正扣點仍在後台 redeem_info 驗(守伺服器端紅線)。
+   寫得進去要後台有 app_config_admin_write 政策(SQL 已附),否則 RLS 會擋。 */
+async function savePricing(){
+  var r=document.getElementById('cfg-result'); r.textContent='儲存中…';
+  var payload={
+    promo_free_info: document.getElementById('cfg-promo').checked,
+    price_suncar_single: numOrNull('cfg-ss'),
+    price_suncar_month: numOrNull('cfg-sm'),
+    price_client_single: numOrNull('cfg-cs'),
+    price_client_month: numOrNull('cfg-cm'),
+    month_days: numOrNull('cfg-md'),
+    single_unlock_days: numOrNull('cfg-sd'),
+    cert_charge_on: document.getElementById('cfg-cert').checked,
+    price_cert: numOrNull('cfg-certprice')
+  };
+  var up=await sb.from('app_config').update(payload).eq('id',1);
+  if(up.error){ r.textContent='儲存失敗(可能缺 app_config_admin_write 政策,要先跑 SQL):'+up.error.message; return; }
+  r.textContent='已儲存,全站立刻生效。';
 }
 
 const DAYS=['16','17','18','19','20','21','22'];

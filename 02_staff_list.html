@@ -144,6 +144,27 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .no-result strong{display:block;color:var(--ink);font-size:1.05rem;margin-bottom:6px;font-weight:600;}
 
 .footer{text-align:center;font-size:0.78rem;color:var(--ink-light);padding:1.75rem 2rem;background:#fff;border-top:1px solid var(--border);}
+
+/* === 解鎖視窗(案家付點看順咖信任資訊),樣式沿用 12 順咖端那套 === */
+.trust-unlock{display:inline-flex;align-items:center;margin-left:5px;padding:2px 11px;border-radius:99px;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;font-size:0.7rem;font-weight:600;cursor:pointer;font-family:inherit;vertical-align:1px;}
+.trust-unlock:hover{filter:brightness(1.05);}
+.contact-modal-overlay{position:fixed;inset:0;background:rgba(61,41,20,0.55);display:none;align-items:flex-end;justify-content:center;z-index:1000;backdrop-filter:blur(4px);}
+.contact-modal-overlay.show{display:flex;animation:fade-in 0.2s;}
+.contact-modal{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:1.65rem 1.5rem 2rem;box-shadow:0 -10px 40px rgba(0,0,0,0.25);animation:slide-up 0.3s cubic-bezier(0.2,0.9,0.3,1.2);}
+.cm-handle{width:46px;height:5px;background:var(--border);border-radius:99px;margin:0 auto 1.1rem;}
+.cm-title{font-size:1.1rem;font-weight:600;color:var(--ink);text-align:center;margin-bottom:5px;}
+.cm-title strong{color:var(--forest);}
+.cm-subtitle{font-size:0.82rem;color:var(--ink-soft);text-align:center;margin-bottom:1.35rem;line-height:1.65;}
+.cm-cancel{width:100%;background:#fff;border:1.5px solid var(--border);color:var(--ink-soft);padding:0.85rem;border-radius:12px;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:0.85rem;transition:all 0.2s;}
+.cm-cancel:hover{background:var(--champagne-soft);border-color:var(--amber);color:var(--amber-deep);}
+.ul-opt{display:flex;align-items:center;justify-content:space-between;width:100%;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:0.95rem 1.1rem;margin-bottom:0.7rem;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.ul-opt:hover{border-color:var(--forest);background:var(--champagne-soft);}
+.ul-opt-main{font-size:0.92rem;font-weight:600;color:var(--ink);}
+.ul-opt-cost{font-size:0.92rem;color:var(--forest);font-weight:700;white-space:nowrap;}
+.ul-opt-month{border-color:rgba(95,181,142,0.5);}
+.ul-topup{display:block;text-align:center;font-size:0.8rem;color:var(--amber-deep);margin:0.4rem 0 0.2rem;cursor:pointer;text-decoration:underline;}
+@keyframes fade-in{from{opacity:0;}to{opacity:1;}}
+@keyframes slide-up{from{transform:translateY(100%);}to{transform:translateY(0);}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
@@ -246,12 +267,34 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   順咖資料為平台認證資訊 · 點擊卡片查看完整介紹與接單時段
 </div>
 
+<!-- 解鎖順咖信任資訊:單次 or 月票,扣點走後台 redeem_info(p_as='client'),前端只呼叫不能繞 -->
+<div class="contact-modal-overlay" id="unlock-modal" onclick="if(event.target===this)closeUnlockModal()">
+  <div class="contact-modal">
+    <div class="cm-handle"></div>
+    <div class="cm-title">解鎖<strong>順咖信任資訊</strong></div>
+    <div class="cm-subtitle">看這位順咖的信用分與等級<br>你目前案家點數:<strong id="ul-balance">0</strong> 點</div>
+    <button class="ul-opt" onclick="doRedeem('single')">
+      <span class="ul-opt-main">單次解鎖這位順咖</span>
+      <span class="ul-opt-cost"><strong id="ul-cost-single">5</strong> 點</span>
+    </button>
+    <button class="ul-opt ul-opt-month" onclick="doRedeem('month')">
+      <span class="ul-opt-main">買月票 · 30 天看全部順咖</span>
+      <span class="ul-opt-cost"><strong id="ul-cost-month">50</strong> 點</span>
+    </button>
+    <a class="ul-topup" onclick="goBuyForUnlock()">點數不足?去儲值</a>
+    <button class="cm-cancel" onclick="closeUnlockModal()">取消</button>
+  </div>
+</div>
+
 <script>
 /* 順咖名單改讀 Supabase 公開視圖 public_suncars */
 var staffList = [];
 var currentPool = 'all';
 var currentCat = 'all';
 var selectedBadges = [];
+/* 付費分層:案家要付點才看得到順咖信用分。判斷同 10/12 單一套(後台/推廣期/資訊會員未過期=全開) */
+var clientIsPrivileged = false;
+var unlockedSuncars = {}; /* 我(案家)已單次解鎖且未過期的順咖 id,{id:true} */
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
@@ -303,6 +346,20 @@ async function loadStaff() {
   if (sres.data && sres.data.session && sres.data.session.user) { user = sres.data.session.user; }
   else { var ures = await sb.auth.getUser(); user = (ures && ures.data) ? ures.data.user : null; }
   if (!user) { window.location.href = '13_login.html'; return; }
+
+  /* 付費分層:後台/推廣期全免費/資訊會員未過期 → 全開;否則看我(案家)單次解鎖了哪幾位順咖。
+     價目與餘額讀 app_config + users(案家池 client_points),解鎖視窗要用。同 10/12 那套單一判斷,不另外發明邏輯。 */
+  var prof = await sb.from('users').select('is_admin,info_member_until,client_points').eq('id', user.id).maybeSingle();
+  var u = (prof && prof.data) ? prof.data : {};
+  var cfg = await sb.from('app_config').select('promo_free_info,price_client_single,price_client_month').eq('id', 1).maybeSingle();
+  var cfgd = (cfg && cfg.data) ? cfg.data : {};
+  var promoFree = !!cfgd.promo_free_info;
+  clientIsPrivileged = !!(u.is_admin || promoFree || (u.info_member_until && new Date(u.info_member_until) > new Date()));
+  if (!clientIsPrivileged) {
+    var unl = await sb.from('info_unlocks').select('target_id,expires_at').eq('viewer_id', user.id);
+    (unl.data || []).forEach(function(x){ if(!x.expires_at || new Date(x.expires_at) > new Date()) unlockedSuncars[x.target_id] = true; });
+  }
+  window.UNLOCK = { single: (cfgd.price_client_single==null?5:cfgd.price_client_single), month: (cfgd.price_client_month==null?50:cfgd.price_client_month), points: (u.client_points||0), target: null };
 
   var res = await sb.from('public_suncars').select('*');
   if (res.error) { console.error(res.error); grid.innerHTML = '<p style="grid-column:1/-1;color:var(--ink-soft);padding:1rem;">讀取失敗:' + esc(res.error.message) + '</p>'; return; }
@@ -381,17 +438,61 @@ function renderStaff() {
     var rateHtml = s.hourlyRate
       ? '<span class="rate-label">期望時薪</span><span class="rate-num">$'+s.hourlyRate+'</span><span class="rate-unit">/時</span>'
       : '<span class="rate-label">期望時薪</span><span class="rate-num" style="font-size:0.95rem;">面議</span>';
+    /* 信用分:會員/解鎖看「分數＋等級」,非會員只看鎖頭＋解鎖鈕(堵住免費外洩)。解鎖鈕 stopPropagation 不觸發卡片跳轉 */
+    var creditHtml = canSeeCredit(s.id)
+      ? '<div class="staff-done">信用分 '+s.credit+'（'+creditBand(s.credit)+'）</div>'
+      : '<div class="staff-done">信用分 🔒 <button type="button" class="trust-unlock" onclick="event.stopPropagation(); openUnlockModal(\''+esc(s.id)+'\')">解鎖可看</button></div>';
     return '<div class="staff-card" onclick="window.location.href=\'04_order_form.html?staff='+encodeURIComponent(s.id)+'\'">' +
       onlineMark +
       '<div class="avatar">'+avatarInner+'</div>' +
       '<div class="staff-name">'+esc(s.name)+'</div>' +
-      '<div class="staff-done">信用分 '+s.credit+'</div>' +
+      creditHtml +
       '<div class="staff-rate" title="順咖填的期望時薪,實際金額由案家出價">'+rateHtml+'</div>' +
       '<div class="badge-row">'+badges+'</div>' +
       '<div class="mini-tags">'+tags+'</div>' +
       '<button class="card-cta">指定他下單</button>' +
     '</div>';
   }).join('');
+}
+
+/* 信用分等級:高 80 以上 / 中 50–79 / 低 50 以下(同 01 第七點規則) */
+function creditBand(score){ var n = (score==null?100:score); if(n>=80) return '高'; if(n>=50) return '中'; return '低'; }
+/* 案家能不能看這位順咖的信用分:全開,或已單次解鎖這一位 */
+function canSeeCredit(suncarId){ return clientIsPrivileged || unlockedSuncars[suncarId] === true; }
+
+/* 解鎖視窗:帶入要解鎖的順咖 id,顯示案家點數餘額與兩種方案價格 */
+function openUnlockModal(suncarId){
+  var U = window.UNLOCK || { single:5, month:50, points:0 };
+  U.target = suncarId;
+  document.getElementById('ul-balance').textContent = U.points;
+  document.getElementById('ul-cost-single').textContent = U.single;
+  document.getElementById('ul-cost-month').textContent = U.month;
+  document.getElementById('unlock-modal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeUnlockModal(){
+  document.getElementById('unlock-modal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+/* 鎖頭旁「去儲值」:記住要加值的是案家池、回來回這頁,再導到買點數頁 */
+function goBuyForUnlock(){
+  try { sessionStorage.setItem('credits_pool','client'); sessionStorage.setItem('credits_returnTo','02_staff_list.html'); } catch(e){}
+  window.location.href = '16_buy_credits.html';
+}
+/* 扣點解鎖:single 解這一位順咖、month 開 30 天看全部。扣點與發權限全在後台 redeem_info 做,前端只呼叫,守伺服器端驗紅線 */
+async function doRedeem(kind){
+  if (typeof window.sb === 'undefined') { alert('系統載入中,請稍候再試'); return; }
+  var target = (kind === 'single') ? (window.UNLOCK && window.UNLOCK.target) : null;
+  if (kind === 'single' && !target) { alert('找不到要解鎖的順咖,請重開卡片再試'); return; }
+  var r = await sb.rpc('redeem_info', { p_kind: kind, p_as: 'client', p_target: target });
+  if (r.error) {
+    var msg = r.error.message || '解鎖失敗';
+    if (msg.indexOf('點數不足') >= 0) { if (confirm(msg + '\n\n要去儲值嗎?')) goBuyForUnlock(); return; }
+    alert('解鎖失敗:' + msg);
+    return;
+  }
+  alert(kind === 'month' ? '已開通月票,30 天內可看全部順咖資訊' : '已解鎖這位順咖的資訊');
+  location.reload(); /* 重整讓鎖頭變成已解鎖內容,單一來源不另外手動改畫面 */
 }
 
 document.addEventListener('DOMContentLoaded', function(){ qyxGuard(loadStaff, { color: '#EF9F27' }); }); /* 載入逾時保護 */
