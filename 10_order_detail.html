@@ -1,3 +1,7 @@
+https://raw.githubusercontent.com/bga1110308/quyixia-web/main/10_order_detail.html?nocache=20260604
+→ https://raw.githubusercontent.com/bga1110308/quyixia-web/main/10_order_detail.html?nocache=20260604
+Content-Type: text/plain; charset=utf-8
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -590,6 +594,52 @@ async function renderReviewStats(revieweeId, mode, isPrivileged, label){
   body.innerHTML = h;
 }
 
+/* 進度時間軸:依訂單真實狀態畫五階梯。
+   為什麼這樣做:orders 只有 created_at 一個可靠時間,中間各階段沒有逐步時間戳,
+   所以只在「下單」放真實時間、「服務開始」放約定時間(service_time),
+   其餘階段只標記 完成/進行中/未開始,不捏造時間(原本是寫死的假資料)。
+   TL_CURRENT[狀態]=目前進行中的階段索引;小於它=已完成、等於它=進行中、大於它=未開始。 */
+var TL_STEPS = ['下單成立','順咖接單','服務開始','服務完成','確認結案'];
+var TL_CURRENT = { matching:1, accepted:2, active:3, await_confirm:4, done:5 };
+var TL_DESC = {
+  matching:'正在等待順咖接單',
+  accepted:'順咖已接單,將於約定時間到府',
+  active:'服務進行中',
+  await_confirm:'順咖已標記完成,等待案家確認結案'
+};
+function renderTimeline(o){
+  var sec = document.getElementById('timeline-section');
+  var box = document.getElementById('timeline');
+  if(!sec || !box) return;
+  /* 已取消:只顯示下單 + 已取消,不畫完整階梯(避免畫出根本沒走到的步驟) */
+  if(o.status === 'cancelled'){
+    box.innerHTML =
+      '<div class="tl-item done"><div class="tl-dot"><svg><use href="#i-check"/></svg></div>'+
+      '<div class="tl-content">下單成立</div><div class="tl-time">'+fmtDT(o.created_at)+'</div></div>'+
+      '<div class="tl-item current"><div class="tl-dot"><svg><use href="#i-x"/></svg></div>'+
+      '<div class="tl-content">訂單已取消</div></div>';
+    sec.style.display = '';
+    return;
+  }
+  var cur = TL_CURRENT[o.status];
+  if(cur == null) return; // 未知狀態不畫,寧可不顯示也不要誤導
+  var html = '';
+  for(var i = 0; i < TL_STEPS.length; i++){
+    var cls = (i < cur) ? 'done' : (i === cur ? 'current' : '');
+    var dot = (i < cur) ? '<svg><use href="#i-check"/></svg>'
+            : (i === cur ? '<svg><use href="#i-radio"/></svg>' : '');
+    html += '<div class="tl-item '+cls+'">';
+    html += '<div class="tl-dot">'+dot+'</div>';
+    html += '<div class="tl-content">'+TL_STEPS[i]+'</div>';
+    if(i === 0){ html += '<div class="tl-time">'+fmtDT(o.created_at)+'</div>'; }
+    else if(i === 2 && o.service_time){ html += '<div class="tl-time">約定 '+fmtDT(o.service_time)+'</div>'; }
+    if(i === cur && TL_DESC[o.status]){ html += '<div class="tl-detail">'+TL_DESC[o.status]+'</div>'; }
+    html += '</div>';
+  }
+  box.innerHTML = html;
+  sec.style.display = '';
+}
+
 async function init(){
   if(typeof window.sb === 'undefined'){ alert('系統未就緒,請重新整理頁面'); return; }
 
@@ -693,6 +743,9 @@ async function init(){
   document.getElementById('status-desc').textContent = ui.desc;
   document.getElementById('sb-id').textContent = (o.order_no ? ('#'+o.order_no) : '#—') + ' · ' + fmtDT(o.created_at);
   document.getElementById('topbar-sub').textContent = (o.order_no ? ('#'+o.order_no) : '#—') + (o.service_type ? (' · ' + o.service_type) : '');
+
+  /* 進度時間軸:案家與順咖看實際進度;順咖預覽未接單的單沒有進度可言,不畫 */
+  if(viewerRole === 'client' || viewerRole === 'suncar'){ renderTimeline(o); }
 
   /* 訂單資訊 */
   var poolChip = (o.pool === 'B')
