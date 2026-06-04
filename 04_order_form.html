@@ -545,6 +545,14 @@ function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=
 async function showSpecifiedStaff(staffId) {
   if (!staffId) return;
   if (typeof window.sb === 'undefined') { console.error('supabase-init.js 未載入'); return; }
+  /* 不能指定自己接單:從 02 點到自己卡片、或直接打 ?staff=自己 進來,都在這擋掉、改成不指定 */
+  var meRes = await sb.auth.getSession();
+  var me = (meRes.data && meRes.data.session) ? meRes.data.session.user : null;
+  if (me && me.id === staffId) {
+    alert('不能指定自己接單,已改成不指定。');
+    clearSpecifiedStaff();
+    return;
+  }
   var res = await sb.from('public_suncars').select('id,display_name,expected_rate,avatar_url').eq('id', staffId).maybeSingle();
   var s = (res && res.data) ? res.data : null;
   if (!s) { return; }
@@ -1074,6 +1082,13 @@ async function submitOrder(payload, rateCheck) {
     if (sres.data && sres.data.session && sres.data.session.user) { user = sres.data.session.user; }
     else { var ures = await sb.auth.getUser(); user = (ures && ures.data) ? ures.data.user : null; }
     if (!user) { window.location.href = '13_login.html'; return; }
+
+    /* 安全網:不能指定自己接單(案家與順咖同一人＝自接自單)。萬一前面沒擋到,送出這關一定擋。 */
+    if (window._specifiedStaffId && window._specifiedStaffId === user.id) {
+      alert('不能指定自己接單,請改成不指定或指定其他順咖。');
+      if (btn) { btn.disabled = false; btn.textContent = '送出訂單'; }
+      return;
+    }
 
     /* 檢查點數是否足夠扣 50 */
     var pr = await sb.from('users').select('client_points').eq('id', user.id).maybeSingle();

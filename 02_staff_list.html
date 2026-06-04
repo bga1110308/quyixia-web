@@ -295,6 +295,7 @@ var selectedBadges = [];
 /* 精確信用分改由後台授權函式 get_suncar_credits 決定誰能看(管理員/推廣期/會員/已解鎖/本人)。
    creditMap = {順咖id: 精確信用分},只有授權看得到的才會在這個對照表裡;不在表裡就上鎖。 */
 var creditMap = {};
+var myId = null; /* 登入者自己的 id:用來擋「點自己卡片變成指定自己下單」 */
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
@@ -346,6 +347,7 @@ async function loadStaff() {
   if (sres.data && sres.data.session && sres.data.session.user) { user = sres.data.session.user; }
   else { var ures = await sb.auth.getUser(); user = (ures && ures.data) ? ures.data.user : null; }
   if (!user) { window.location.href = '13_login.html'; return; }
+  myId = user.id; /* 記住自己,渲染卡片時擋「指定自己」 */
 
   /* 解鎖視窗要用的價目與案家點數餘額。
      「誰能看信用分」已改由後台函式 get_suncar_credits 決定,前端不再自己算 privilege/解鎖清單。 */
@@ -446,7 +448,13 @@ function renderStaff() {
     var creditHtml = (cscore != null)
       ? '<div class="staff-done">信用分 '+cscore+'（'+creditBand(cscore)+'）</div>'
       : '<div class="staff-done">信用分 🔒 <button type="button" class="trust-unlock" onclick="event.stopPropagation(); openUnlockModal(\''+esc(s.id)+'\')">解鎖可看</button></div>';
-    return '<div class="staff-card" onclick="window.location.href=\'04_order_form.html?staff='+encodeURIComponent(s.id)+'\'">' +
+    /* 自己的卡片:不能指定自己下單。點了只提醒,不跳轉(送出端 04 也有第二道防線) */
+    var isMe = (s.id === myId);
+    var cardClick = isMe
+      ? "alert('這是你自己的順咖名片，不能指定自己下單')"
+      : "window.location.href='04_order_form.html?staff=" + encodeURIComponent(s.id) + "'";
+    var ctaLabel = isMe ? '這是你的名片' : '指定他下單';
+    return '<div class="staff-card" onclick="'+cardClick+'">' +
       onlineMark +
       '<div class="avatar">'+avatarInner+'</div>' +
       '<div class="staff-name">'+esc(s.name)+'</div>' +
@@ -454,7 +462,7 @@ function renderStaff() {
       '<div class="staff-rate" title="順咖填的期望時薪,實際金額由案家出價">'+rateHtml+'</div>' +
       '<div class="badge-row">'+badges+'</div>' +
       '<div class="mini-tags">'+tags+'</div>' +
-      '<button class="card-cta">指定他下單</button>' +
+      '<button class="card-cta">'+ctaLabel+'</button>' +
     '</div>';
   }).join('');
 }
