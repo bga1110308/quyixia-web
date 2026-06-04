@@ -607,11 +607,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </div>
   </div>
 
+  <!-- 同意書:三份文件內容即時讀後台 legal_documents(順咖簽 terms_suncar＋隱私權＋個資告知),使用者讀到的＝送出記錄的＝首頁閘門比對的,全站同一份。連結由 renderLegalLinks() 動態產生 -->
   <div class="terms-row">
     <input type="checkbox" id="agree" disabled onchange="handleAgreeChange(this)">
     <label for="agree">
-      我已閱讀並同意 <a id="link-terms" onclick="openModal('modal-terms')">順咖條款</a> 與 <a id="link-privacy" onclick="openModal('modal-privacy')">隱私權政策</a>,了解平台不介入服務內容、由我與案家自行約定。
-      <span class="unread-hint" id="unread-hint">請先點開並閱讀完兩份文件,才能勾選同意</span>
+      我已閱讀並同意 <span id="legal-links">載入中…</span>,了解平台不介入服務內容、由我與案家自行約定。
+      <span class="unread-hint" id="unread-hint">請先點開並閱讀完所有文件,才能勾選同意</span>
     </label>
   </div>
 
@@ -620,200 +621,21 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 </div>
 
-<!-- 順咖條款 Modal -->
-<div class="modal-overlay" id="modal-terms" onclick="if(event.target===this)closeModal('modal-terms')">
+<!-- 條款閱讀視窗:單一通用 modal,內容由 openDocModal() 從 legal_documents 注入(純文字、保留換行) -->
+<div class="modal-overlay" id="modal-doc" onclick="if(event.target===this)closeDocModal()">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">順咖服務條款</div>
-      <button class="modal-close" onclick="closeModal('modal-terms')">×</button>
+      <div class="modal-title" id="modal-doc-title">文件</div>
+      <button class="modal-close" onclick="closeDocModal()">×</button>
     </div>
-    <div class="modal-body" id="modal-terms-body" onscroll="trackScroll(this,'terms')">
-      <p style="color:var(--ink-light);font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
-
-      <h3><span class="num">1</span>平台性質</h3>
-      <p>「去一下」(以下稱本平台)為<strong>資訊媒合服務平台</strong>,提供順咖與案家自由聯繫之資訊管道。本平台不參與、不介入順咖實際提供之服務內容,亦非順咖之雇主。</p>
-      <div class="highlight">
-        順咖與案家係雙方獨立之契約關係,由雙方自行協商服務內容、時間、地點與報酬,本平台不負服務品質之擔保責任。
-      </div>
-
-      <h3><span class="num">2</span>順咖身分認定</h3>
-      <p>順咖加入本平台即同意:</p>
-      <ul>
-        <li>與本平台<strong>無僱傭、僱用或代理關係</strong></li>
-        <li>係以獨立承攬人身分提供服務</li>
-        <li>自負所得稅、勞健保等相關費用</li>
-        <li>因服務所生之一切法律責任由順咖自負,與本平台無涉</li>
-      </ul>
-
-      <h3><span class="num">3</span>服務分類與資格</h3>
-      <p>本平台服務分為兩類:</p>
-      <ul>
-        <li><strong>一般跑腿類</strong>:代排、遛狗、陪伴、打掃等,凡通過實名認證之順咖均可接單</li>
-        <li><strong>身體照顧類</strong>:協助洗澡、翻身擦澡、服藥提醒等,依《長期照顧服務法》規定,<strong>必須由領有照顧服務員技術士證之順咖提供</strong></li>
-      </ul>
-      <p>順咖不得越級接單,違者本平台得立即停權並追究法律責任。</p>
-
-      <h3><span class="num">4</span>保險責任</h3>
-      <div class="highlight">
-        本平台<strong>不為順咖或案家投保任何保險</strong>。建議雙方自行評估風險並投保意外險。服務過程中發生意外、損失、糾紛,由雙方自行協調或循司法途徑解決,本平台不負連帶賠償責任。
-      </div>
-
-      <h3><span class="num">5</span>平台收費與金流</h3>
-      <div class="highlight">
-        <strong>本平台不抽成、不經手案家與順咖之間的服務報酬</strong>。本平台僅向使用者收取功能性服務費(以點數扣抵),不向順咖抽取任何服務費比例。
-      </div>
-      <ul>
-        <li>服務報酬由案家於 LINE 群內與順咖協議,並直接支付給順咖,本平台不介入</li>
-        <li>順咖之發票開立、稅務申報、勞健保等,由順咖自行依法處理</li>
-        <li>順咖須付平台月費 100 點(新人首月免費),用於上架曝光與接單資格維持</li>
-        <li>第 2 張(含)以上之額外證件審核每張 50 點</li>
-        <li>順咖不得引導案家私下交易、繞過平台下單流程,違者停權</li>
-      </ul>
-
-      <h3><span class="num">6</span>順咖義務</h3>
-      <ul>
-        <li>據實提供個人資料與證件</li>
-        <li>準時到達服務地點,無法準時須提前告知案家</li>
-        <li>不得對案家為任何騷擾、欺騙、暴力、性侵害行為</li>
-        <li>不得攜帶非經案家同意之第三人進入服務場所</li>
-        <li>不得竊取、損毀案家財物</li>
-        <li>不得對案家隱私、財務狀況進行任何形式之刺探或傳播</li>
-      </ul>
-
-      <h3><span class="num">7</span>違規處置與信用分</h3>
-      <p>順咖如有下列情形,本平台得逕行停權、終止合作關係,並保留法律追訴權:</p>
-      <ul>
-        <li>提供不實資料、偽造證件</li>
-        <li>未經授權接超出資格之服務(如無照服員證接身體照顧)</li>
-        <li>30 天滾動視窗內取消已接訂單累計 3 次以上(暫停接單 7 天)</li>
-        <li>30 天滾動視窗內取消已接訂單累計 5 次以上(強制下架)</li>
-        <li>累積評價低於 3.5 星</li>
-        <li>遭多次投訴或檢舉</li>
-        <li>違反第 6 條任一項義務</li>
-        <li>引導案家私下交易、繞過平台下單流程</li>
-      </ul>
-      <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--ink-light);">⓵ 順咖接單後取消會扣信用分,可於「我的帳戶」查詢狀態。客服判定為「順咖無故違約」者,案家全額退還 50 點,順咖加重扣分。</p>
-
-      <h3><span class="num">8</span>智慧財產與資料使用</h3>
-      <ul>
-        <li>順咖上傳之大頭照、自介、評價內容,授權本平台於平台內公開展示</li>
-        <li>本平台得使用順咖之服務紀錄統計數據(去識別化後)作為平台優化、研究、行銷用途</li>
-        <li>順咖證件影本僅供本平台審核使用,不對外公開</li>
-      </ul>
-
-      <h3><span class="num">9</span>條款修改</h3>
-      <p>本平台保留隨時修改本條款之權利。修改後將以簡訊或站內通知告知,<strong>順咖繼續使用平台即視為同意修改後條款</strong>。如不同意,得停止使用。</p>
-
-      <h3><span class="num">10</span>準據法與管轄</h3>
-      <p>本條款之解釋、效力、履行及與本條款有關之爭議,均以中華民國法律為準據法,並以<strong>台灣新北地方法院</strong>為第一審管轄法院。</p>
-
-      <p style="margin-top:1.5rem;padding-top:1rem;border-top:1px dashed var(--border);color:var(--ink-light);font-size:0.78rem;">
-        以上條款由大天使長照有限公司附設新北市私立大天使居家長照機構(「去一下」平台營運者)擬定。
-      </p>
-    </div>
+    <div class="modal-body" id="modal-doc-body" onscroll="trackDocScroll(this)" style="white-space:pre-wrap;"></div>
     <div class="modal-footer">
       <div class="read-prog">
         <span class="read-prog-label"><svg><use href="#i-book"/></svg>閱讀進度</span>
-        <div class="read-prog-track"><div class="read-prog-fill" id="terms-progress" style="width:0%;"></div></div>
-        <span class="read-prog-text" id="terms-progress-text"><span class="done-mark"><svg><use href="#i-check"/></svg></span><span id="terms-progress-num">0%</span></span>
+        <div class="read-prog-track"><div class="read-prog-fill" id="doc-progress" style="width:0%;"></div></div>
+        <span class="read-prog-text" id="doc-progress-text"><span class="done-mark"><svg><use href="#i-check"/></svg></span><span id="doc-progress-num">0%</span></span>
       </div>
-      <button class="modal-confirm" id="terms-confirm" onclick="confirmRead('terms')">請將內容拉至最底才能確認</button>
-    </div>
-  </div>
-</div>
-
-<!-- 隱私權政策 Modal -->
-<div class="modal-overlay" id="modal-privacy" onclick="if(event.target===this)closeModal('modal-privacy')">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">隱私權政策</div>
-      <button class="modal-close" onclick="closeModal('modal-privacy')">×</button>
-    </div>
-    <div class="modal-body" id="modal-privacy-body" onscroll="trackScroll(this,'privacy')">
-      <p style="color:var(--ink-light);font-size:0.75rem;">最後更新:2025 年 5 月 22 日</p>
-
-      <h3><span class="num">1</span>資料蒐集範圍</h3>
-      <p>本平台為提供媒合服務,將蒐集以下資料:</p>
-      <ul>
-        <li><strong>基本身分</strong>:真實姓名、暱稱、性別、年齡、聯絡電話</li>
-        <li><strong>身分驗證</strong>:身分證影本、良民證、照服員證、CPR 證書</li>
-        <li><strong>服務資料</strong>:可服務區域、可接單時段、接案紀錄、評價</li>
-        <li><strong>使用紀錄</strong>:登入紀錄、IP 位址、瀏覽行為</li>
-      </ul>
-      <p style="font-size:0.78rem;color:var(--ink-light);margin-top:0.5rem;">⓵ 本平台不蒐集順咖之銀行帳戶,服務報酬由案家直接支付給順咖,平台不經手金流。</p>
-
-      <h3><span class="num">2</span>資料使用目的</h3>
-      <ul>
-        <li>身分審核、確保平台安全</li>
-        <li>媒合順咖與案家</li>
-        <li>提供客戶服務、處理爭議</li>
-        <li>平台優化與功能改善</li>
-        <li>法令遵循(如配合司法調查)</li>
-      </ul>
-
-      <h3><span class="num">3</span>資料公開原則</h3>
-      <div class="highlight">
-        證件、身分證、真實姓名、電話<strong>絕對不會公開給其他使用者</strong>。案家僅能看到順咖的暱稱、徽章、評分與服務紀錄。聯絡方式(電話、LINE ID)僅在訂單成功媒合後,於自動建立之 LINE 群內顯示。
-      </div>
-
-      <h3><span class="num">4</span>資料保存期限</h3>
-      <ul>
-        <li>帳號使用中:持續保存</li>
-        <li>停止使用後:基本資料保存 5 年(符合稅法、長照法規)</li>
-        <li>證件影本:審核完成後 90 天加密刪除</li>
-        <li>點數加值與發票紀錄:依稅法規定保存 7 年</li>
-      </ul>
-
-      <h3><span class="num">5</span>資料當事人權利</h3>
-      <p>依個人資料保護法,您有權:</p>
-      <ul>
-        <li>查詢或請求閱覽個人資料</li>
-        <li>請求複製本</li>
-        <li>請求補充或更正</li>
-        <li>請求停止蒐集、處理、利用</li>
-        <li>請求刪除(除法令要求保存者外)</li>
-      </ul>
-      <p>請以電子郵件至客服信箱辦理。本平台將於 30 日內處理。</p>
-
-      <h3><span class="num">6</span>第三方資料分享</h3>
-      <p>本平台不會將您的個人資料販售、出租、交換給第三方,除非:</p>
-      <ul>
-        <li>取得您事前同意</li>
-        <li>司法機關依法律程序要求</li>
-        <li>為保護平台、其他使用者之合法權益</li>
-        <li>點數加值之金流服務商(限刷卡與發票必要資訊)</li>
-        <li>簡訊服務商(限發送驗證碼必要資訊)</li>
-      </ul>
-
-      <h3><span class="num">7</span>Cookie 使用</h3>
-      <p>本平台使用 Cookie 追蹤登入狀態與使用偏好。您可於瀏覽器停用 Cookie,但部分功能將無法使用。</p>
-
-      <h3><span class="num">8</span>資料安全</h3>
-      <ul>
-        <li>所有個人資料以加密方式儲存</li>
-        <li>點數加值之金流資訊使用 SSL 加密傳輸</li>
-        <li>採用權限管理,僅授權人員可存取</li>
-        <li>本平台已採取合理之資安措施,但不保證百分之百無資料外洩風險</li>
-      </ul>
-
-      <h3><span class="num">9</span>政策修改</h3>
-      <p>本政策得隨時修改。重大修改將以簡訊或站內通知告知。繼續使用平台視為同意修改後政策。</p>
-
-      <h3><span class="num">10</span>聯絡方式</h3>
-      <p>如對本政策有任何疑問,請聯繫:</p>
-      <p>大天使長照有限公司附設新北市私立大天使居家長照機構<br>客服信箱:service@quyixia.tw</p>
-
-      <p style="margin-top:1.5rem;padding-top:1rem;border-top:1px dashed var(--border);color:var(--ink-light);font-size:0.78rem;">
-        本政策依《個人資料保護法》、《長期照顧服務法》相關規定擬定。
-      </p>
-    </div>
-    <div class="modal-footer">
-      <div class="read-prog">
-        <span class="read-prog-label"><svg><use href="#i-book"/></svg>閱讀進度</span>
-        <div class="read-prog-track"><div class="read-prog-fill" id="privacy-progress" style="width:0%;"></div></div>
-        <span class="read-prog-text" id="privacy-progress-text"><span class="done-mark"><svg><use href="#i-check"/></svg></span><span id="privacy-progress-num">0%</span></span>
-      </div>
-      <button class="modal-confirm" id="privacy-confirm" onclick="confirmRead('privacy')">請將內容拉至最底才能確認</button>
+      <button class="modal-confirm" id="doc-confirm" onclick="confirmDocRead()">請將內容拉至最底才能確認</button>
     </div>
   </div>
 </div>
@@ -828,6 +650,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 // 申請當順咖頁。需先用 LINE 登入才能申請。
 // 進頁先確認登入狀態：沒登入就先去 LINE 授權再回來填表，避免填完才被要求登入。
 window.addEventListener('DOMContentLoaded', async function () {
+  loadLegalDocs(); // 背景把三份文件與同意連結準備好,不擋下面的流程
   // 先抓網址 ?ref= 推薦碼存起來(LINE 跳轉會掉網址參數,跟 14 用同一個 key)
   var refParam = new URLSearchParams(window.location.search).get('ref');
   if (refParam && refParam.trim()) {
@@ -1081,33 +904,82 @@ function uploadCert(el, isCna) {
   }
 }
 
-/* === 條款 Modal === */
-var readStatus = { terms: false, privacy: false };
+/* === 同意書:三份文件即時讀後台,使用者讀到的＝送出記錄的＝首頁閘門比對的,全站同一份 === */
+var LEGAL_KEYS = ['terms_suncar', 'privacy', 'data_notice']; // 順咖要簽的後台文件 doc_key
+var legalDocs = {};      // doc_key -> { doc_key, title, content, version }
+var readStatus = {};     // doc_key -> true 表示已讀完
+var currentDocKey = null;
+var legalLoadFailed = false;
 
-function openModal(id) {
-  document.getElementById(id).classList.add('show');
-  document.body.style.overflow = 'hidden';
-  var key = id === 'modal-terms' ? 'terms' : 'privacy';
-  var body = document.getElementById('modal-' + key + '-body');
-  setTimeout(function(){ trackScroll(body, key); }, 50);
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+/* 讀後台三份文件,產生同意連結。讀不到就 fail-open:不卡死申請,進首頁由閘門強制閱讀並補簽。 */
+async function loadLegalDocs(){
+  try{
+    var res = await sb.from('legal_documents').select('doc_key,title,content,version').in('doc_key', LEGAL_KEYS);
+    if(res.error || !res.data || !res.data.length) throw (res.error || new Error('no docs'));
+    res.data.forEach(function(d){ legalDocs[d.doc_key] = d; });
+    renderLegalLinks();
+  }catch(e){
+    if(window.console) console.error('[apply] 條款讀取失敗,改走首頁閘門補簽', e);
+    legalLoadFailed = true;
+    var box = document.getElementById('legal-links');
+    if(box) box.textContent = '順咖條款、隱私權政策、個資告知';
+    LEGAL_KEYS.forEach(function(k){ readStatus[k] = true; });
+    var cb = document.getElementById('agree'); if(cb) cb.disabled = false;
+    var uh = document.getElementById('unread-hint'); if(uh) uh.classList.add('hide');
+  }
 }
 
-function closeModal(id) {
-  document.getElementById(id).classList.remove('show');
+// 依 LEGAL_KEYS 順序把連結畫出來,點了開閱讀視窗
+function renderLegalLinks(){
+  var box = document.getElementById('legal-links');
+  if(!box) return;
+  box.innerHTML = LEGAL_KEYS.map(function(k){
+    var d = legalDocs[k];
+    return d ? '<a id="legal-link-'+k+'" onclick="openDocModal(\''+k+'\')">'+esc(d.title)+'</a>' : '';
+  }).filter(Boolean).join('、');
+}
+
+/* === 條款閱讀視窗(單一通用 modal,內容讀後台) === */
+function openDocModal(key){
+  var d = legalDocs[key]; if(!d) return;
+  currentDocKey = key;
+  document.getElementById('modal-doc-title').textContent = d.title;
+  var body = document.getElementById('modal-doc-body');
+  body.textContent = d.content || '';
+  body.scrollTop = 0;
+  document.getElementById('modal-doc').classList.add('show');
+  document.body.style.overflow = 'hidden';
+  resetDocConfirm();
+  setTimeout(function(){ trackDocScroll(body); }, 50); // 內容太短不需捲動的,直接算讀完
+}
+
+function closeDocModal(){
+  document.getElementById('modal-doc').classList.remove('show');
   document.body.style.overflow = '';
 }
 
-function trackScroll(el, key) {
-  var scrolled = el.scrollTop + el.clientHeight;
-  var total = el.scrollHeight;
-  var pct = total > el.clientHeight ? Math.min(100, Math.round(scrolled / total * 100)) : 100;
-  document.getElementById(key + '-progress').style.width = pct + '%';
-  document.getElementById(key + '-progress-num').textContent = pct + '%';
+// 依現在這份是否讀過,重設確認鈕與進度條(再次打開已讀過的不用重拉)
+function resetDocConfirm(){
+  var done = !!(currentDocKey && readStatus[currentDocKey]);
+  var btn = document.getElementById('doc-confirm');
+  btn.classList.toggle('ready', done);
+  btn.innerHTML = done ? '<svg><use href="#i-check"/></svg>我已讀完,確認同意' : '請將內容拉至最底才能確認';
+  document.getElementById('doc-progress').style.width = done ? '100%' : '0%';
+  document.getElementById('doc-progress-num').textContent = done ? '100%' : '0%';
+  document.getElementById('doc-progress-text').classList.toggle('done', done);
+}
 
+function trackDocScroll(el){
+  var pct = el.scrollHeight > el.clientHeight
+    ? Math.min(100, Math.round((el.scrollTop + el.clientHeight) / el.scrollHeight * 100))
+    : 100;
+  document.getElementById('doc-progress').style.width = pct + '%';
+  document.getElementById('doc-progress-num').textContent = pct + '%';
   if (pct >= 95) {
-    var textWrap = document.getElementById(key + '-progress-text');
-    textWrap.classList.add('done');
-    var btn = document.getElementById(key + '-confirm');
+    document.getElementById('doc-progress-text').classList.add('done');
+    var btn = document.getElementById('doc-confirm');
     if (!btn.classList.contains('ready')) {
       btn.classList.add('ready');
       btn.innerHTML = '<svg><use href="#i-check"/></svg>我已讀完,確認同意';
@@ -1115,33 +987,49 @@ function trackScroll(el, key) {
   }
 }
 
-function confirmRead(key) {
-  var btn = document.getElementById(key + '-confirm');
-  if (!btn.classList.contains('ready')) return;
-
-  readStatus[key] = true;
-  var link = document.getElementById('link-' + key);
-  if (link) link.classList.add('read');
-
-  closeModal('modal-' + key);
-
-  if (readStatus.terms && readStatus.privacy) {
-    var cb = document.getElementById('agree');
-    cb.disabled = false;
+function confirmDocRead(){
+  var btn = document.getElementById('doc-confirm');
+  if(!btn.classList.contains('ready')) return;
+  if(currentDocKey){
+    readStatus[currentDocKey] = true;
+    var link = document.getElementById('legal-link-' + currentDocKey);
+    if(link) link.classList.add('read');
+  }
+  closeDocModal();
+  // 三份都讀完才開放勾選同意
+  var allRead = LEGAL_KEYS.every(function(k){ return readStatus[k]; });
+  if(allRead){
+    document.getElementById('agree').disabled = false;
     document.getElementById('unread-hint').classList.add('hide');
   }
 }
 
+/* 驗證失敗:捲到該欄位置中 + 紅框閃一下 + 聚焦 + 提醒。
+   原本 03 漏了這個函式,handleSubmit 一呼叫就 ReferenceError 中斷,造成「按送出沒反應」。補上治本。 */
+function gotoField(id, msg){
+  var el = document.getElementById(id);
+  if(el){
+    try{ el.scrollIntoView({ behavior:'smooth', block:'center' }); }catch(e){}
+    el.style.outline = '2px solid var(--danger)';
+    el.style.outlineOffset = '2px';
+    setTimeout(function(){ el.style.outline=''; el.style.outlineOffset=''; }, 2200);
+    try{ el.focus({ preventScroll:true }); }catch(e){}
+  }
+  if(msg) alert(msg);
+}
+
 function handleAgreeChange(cb) {
-  if (cb.checked && (!readStatus.terms || !readStatus.privacy)) {
+  var allRead = LEGAL_KEYS.every(function(k){ return readStatus[k]; });
+  if (cb.checked && !allRead) {
     cb.checked = false;
-    alert('請先點開並閱讀完兩份文件');
+    alert('請先點開並閱讀完所有文件');
   }
 }
 
 async function handleSubmit() {
-  if (!readStatus.terms || !readStatus.privacy) {
-    alert('請先閱讀順咖條款與隱私權政策');
+  var allRead = LEGAL_KEYS.every(function(k){ return readStatus[k]; });
+  if (!allRead) {
+    alert('請先閱讀完所有文件');
     return;
   }
   if (!document.getElementById('agree').checked) {
@@ -1258,6 +1146,21 @@ async function handleSubmit() {
     alert('順咖申請建立失敗:' + roleRes.error.message);
     if (btn) btn.disabled = false;
     return;
+  }
+
+  // 3. 寫入同意紀錄 user_consents:剛讀完並同意的就是後台這幾份的現行版本,一次寫進去,
+  //    日後成為 active 順咖進首頁閘門比對到「已簽最新版」就直接放行,不會再問第二次。
+  //    寫失敗 fail-open 不擋申請(首頁閘門會再補),只記 log 方便排查。
+  if (!legalLoadFailed) {
+    var consentNow = new Date().toISOString();
+    var consentRows = LEGAL_KEYS.map(function(k){
+      var d = legalDocs[k];
+      return d ? { user_id: user.id, doc_key: k, agreed_version: d.version, agreed_at: consentNow } : null;
+    }).filter(Boolean);
+    if (consentRows.length) {
+      var cs = await sb.from('user_consents').upsert(consentRows, { onConflict: 'user_id,doc_key' });
+      if (cs.error && window.console) console.error('[apply] 同意紀錄寫入失敗,改由首頁閘門補簽', cs.error);
+    }
   }
 
   // 身份類型留給 07 上傳證件用
