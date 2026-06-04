@@ -367,6 +367,24 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 <div class="wrap">
 
+  <style>@keyframes qyxBlink{0%,100%{opacity:1}50%{opacity:0.4}}.qyx-blink{animation:qyxBlink 1.2s ease-in-out infinite}</style>
+
+  <!-- 審核中:閃動等待提示(只有 pending 顯示,由 init 設 display:flex) -->
+  <div id="suncar-pending-banner" style="display:none;align-items:center;gap:12px;background:linear-gradient(135deg,var(--warn-pale),#fff);border:1.5px solid rgba(232,149,68,0.45);border-radius:18px;padding:1.1rem 1.25rem;margin-bottom:1rem;">
+    <span class="qyx-blink" style="width:14px;height:14px;border-radius:50%;background:var(--warn);flex-shrink:0;box-shadow:0 0 0 4px rgba(232,149,68,0.2);"></span>
+    <div>
+      <div style="font-size:1rem;font-weight:600;color:var(--warn);">順咖申請審核中</div>
+      <div style="font-size:0.85rem;color:var(--ink-soft);line-height:1.6;margin-top:3px;">你已提出申請,正在等待審核通過。通過後就能開始接單。</div>
+    </div>
+  </div>
+
+  <!-- 還沒完成申請(沒申請過/資料不完整/被退)才顯示;按鈕動作由 init 依狀態接 applySuncar -->
+  <div id="suncar-apply-cta" style="display:none;background:linear-gradient(135deg,var(--mint-pale),#fff);border:1.5px solid rgba(95,181,142,0.3);border-radius:18px;padding:1.25rem;margin-bottom:1rem;">
+    <div style="font-size:1rem;font-weight:600;color:var(--forest);margin-bottom:6px;">先完成順咖申請才能接單</div>
+    <div style="font-size:0.85rem;color:var(--ink-soft);line-height:1.6;margin-bottom:1rem;">你目前還不是順咖,或申請資料還沒填完。完成申請、通過審核後,就能在這裡接案賺錢。</div>
+    <a id="suncar-apply-btn" href="03_staff_apply.html" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;text-decoration:none;padding:0.95rem;border-radius:14px;font-size:1rem;font-weight:600;box-shadow:0 4px 12px rgba(47,96,72,0.3);">申請成為順咖</a>
+  </div>
+
   <!-- 數據概覽 -->
   <div class="sec-h">
     <div class="sec-title">本月概況</div>
@@ -701,6 +719,25 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     location.reload();
   };
 
+  /* 順咖申請狀態:'none'無角色 | 'incomplete'有角色但沒填服務類別(03沒填完) | 'pending'審核中 | 'active'已通過 | 'suspended'停用 | 'rejected'被退 */
+  function suncarState(r){
+    if(!r) return 'none';
+    if(r.status === 'rejected') return 'rejected';
+    if(r.status === 'suspended') return 'suspended';
+    var d = r.role_data || {};
+    if(!d.categories || !d.categories.length) return 'incomplete';
+    if(r.status === 'active') return 'active';
+    return 'pending';
+  }
+  /* 按下申請鍵時依狀態處理:已送審(pending)只提醒不重複申請;資料不完整/被退帶去 03 補或重填;沒申請過直接去 03 */
+  function applySuncar(state){
+    if(state === 'pending'){ alert('你已提出順咖申請,正在等待審核通過。\n通過後就能開始接單,請耐心等候。'); return; }
+    if(state === 'incomplete'){ alert('你的順咖申請資料還沒填完,先把資料補齊才能送審。'); window.location.href='03_staff_apply.html'; return; }
+    if(state === 'rejected'){ alert('你之前的順咖申請未通過,可以重新提出申請。'); window.location.href='03_staff_apply.html'; return; }
+    if(state === 'suspended'){ alert('你的順咖資格目前已停用,如有疑問請聯絡客服。'); return; }
+    window.location.href='03_staff_apply.html';
+  }
+
   async function init(){
     if(typeof window.sb === 'undefined'){ console.error('supabase-init.js 未載入'); return; }
     // 守門:先讀本機 session(LINE 內建瀏覽器較可靠),getUser 只當備援。
@@ -747,13 +784,22 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     $('h-badges').innerHTML = badges;
 
     /* 角色狀態 */
-    var roles = await sb.from('user_roles').select('role,status,created_at').eq('user_id', user.id);
+    var roles = await sb.from('user_roles').select('role,status,created_at,role_data').eq('user_id', user.id);
     var rlist = roles.data || [];
     var suncarRole = rlist.find(function(r){ return r.role==='suncar'; });
     var clientRole = rlist.find(function(r){ return r.role==='client'; });
     var statusMap = { active:'已通過', pending:'審核中', suspended:'已停用', rejected:'未通過' };
     if(suncarRole){ $('role-status').textContent = '順咖 · '+(statusMap[suncarRole.status]||suncarRole.status); canAcceptJobs = (suncarRole.status==='active'); }
     if(clientRole){ $('role-switch-link').style.display = ''; }
+
+    /* 依順咖申請狀態:審核中→閃動等待提示;沒申請/資料不完整/被退→申請入口(按鈕依狀態接 applySuncar) */
+    var sState = suncarState(suncarRole);
+    if(sState === 'pending'){
+      var pb = $('suncar-pending-banner'); if(pb){ pb.style.display = 'flex'; }
+    } else if(sState === 'none' || sState === 'incomplete' || sState === 'rejected'){
+      var ac = $('suncar-apply-cta'); if(ac){ ac.style.display = ''; }
+      var ab = $('suncar-apply-btn'); if(ab){ ab.onclick = function(e){ e.preventDefault(); applySuncar(sState); }; }
+    }
 
     /* 資訊會員狀態:單一來源 info_member_until(首月免費與付費月票都寫這個欄位)。
        推廣期全免費時顯示推廣中。不再用「成為順咖那天 +30」自己算,避免跟鎖頭對不起來。 */

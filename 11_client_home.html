@@ -403,10 +403,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div class="recruit-cta" id="recruit-cta">
     <div class="rc-ico"><svg><use href="#i-flame"/></svg></div>
     <div class="rc-text">
-      <div class="rc-title">下班順便賺一點?</div>
-      <div class="rc-desc">你也可以成為順咖,附近的人下單時優先看到你</div>
+      <div class="rc-title" id="rc-title">下班順便賺一點?</div>
+      <div class="rc-desc" id="rc-desc">你也可以成為順咖,附近的人下單時優先看到你</div>
     </div>
-    <a class="rc-btn" href="03_staff_apply.html">了解</a>
+    <a class="rc-btn" id="recruit-btn" href="03_staff_apply.html">申請成為順咖</a>
   </div>
 
 </div>
@@ -498,6 +498,25 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     location.reload();
   };
 
+  /* 順咖申請狀態:'none'無角色 | 'incomplete'有角色但沒填服務類別(03沒填完) | 'pending'審核中 | 'active'已通過 | 'suspended'停用 | 'rejected'被退 */
+  function suncarState(r){
+    if(!r) return 'none';
+    if(r.status === 'rejected') return 'rejected';
+    if(r.status === 'suspended') return 'suspended';
+    var d = r.role_data || {};
+    if(!d.categories || !d.categories.length) return 'incomplete';
+    if(r.status === 'active') return 'active';
+    return 'pending';
+  }
+  /* 按下申請鍵時依狀態處理:已送審(pending)只提醒不重複申請;資料不完整/被退帶去 03 補或重填;沒申請過直接去 03 */
+  function applySuncar(state){
+    if(state === 'pending'){ alert('你已提出順咖申請,正在等待審核通過。\n通過後就能開始接單,請耐心等候。'); return; }
+    if(state === 'incomplete'){ alert('你的順咖申請資料還沒填完,先把資料補齊才能送審。'); window.location.href='03_staff_apply.html'; return; }
+    if(state === 'rejected'){ alert('你之前的順咖申請未通過,可以重新提出申請。'); window.location.href='03_staff_apply.html'; return; }
+    if(state === 'suspended'){ alert('你的順咖資格目前已停用,如有疑問請聯絡客服。'); return; }
+    window.location.href='03_staff_apply.html';
+  }
+
   async function init(){
     if(typeof window.sb === 'undefined'){ console.error('supabase-init.js 未載入'); return; }
     // 守門:先讀本機 session(LINE 內建瀏覽器較可靠),getUser 只當備援。
@@ -537,15 +556,29 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     $('h-badges').innerHTML = badges;
 
     /* 角色狀態 */
-    var roles = await sb.from('user_roles').select('role,status').eq('user_id', user.id);
+    var roles = await sb.from('user_roles').select('role,status,role_data').eq('user_id', user.id);
     var rlist = roles.data || [];
     var clientRole = rlist.find(function(r){ return r.role==='client'; });
     var suncarRole = rlist.find(function(r){ return r.role==='suncar'; });
     var statusMap = { active:'已啟用', pending:'審核中', suspended:'已停用', rejected:'未通過' };
     if(clientRole){ $('role-status').textContent = '案家 · '+(statusMap[clientRole.status]||clientRole.status); }
-    if(suncarRole){
+    /* 依順咖申請狀態決定首頁顯示。active=已是順咖→給「切到順咖端」並收掉招募卡;
+       其餘(沒申請/資料不完整/審核中/被退)→招募卡文字與按鈕動作隨狀態換,按鈕一律呼叫 applySuncar */
+    var sState = suncarState(suncarRole);
+    if(sState === 'active'){
       $('role-switch-link').style.display = '';
       var rc = $('recruit-cta'); if(rc){ rc.style.display = 'none'; }
+    } else if(sState === 'suspended'){
+      var rcS = $('recruit-cta'); if(rcS){ rcS.style.display = 'none'; }
+    } else {
+      var T = {
+        none:       { t:'下班順便賺一點?',   d:'你也可以成為順咖,附近的人下單時優先看到你',     b:'申請成為順咖' },
+        incomplete: { t:'順咖申請還沒完成',   d:'你的申請資料還沒填完,點按鈕補齊就能送審',       b:'繼續補資料' },
+        pending:    { t:'順咖申請審核中',     d:'你已提出申請,正在等待審核通過,通過後就能接單', b:'查看申請狀態' },
+        rejected:   { t:'順咖申請未通過',     d:'你之前的申請沒有通過,可以重新提出申請',         b:'重新申請' }
+      }[sState];
+      if(T){ $('rc-title').textContent = T.t; $('rc-desc').textContent = T.d; $('recruit-btn').textContent = T.b; }
+      var rb = $('recruit-btn'); if(rb){ rb.onclick = function(e){ e.preventDefault(); applySuncar(sState); }; }
     }
 
     /* 本人訂單 */
