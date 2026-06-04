@@ -292,10 +292,9 @@ var staffList = [];
 var currentPool = 'all';
 var currentCat = 'all';
 var selectedBadges = [];
-/* 付費分層:案家要付點才看得到順咖信用分。判斷同 10/12 單一套(後台/推廣期/資訊會員未過期=全開) */
-var clientIsPrivileged = false;
-var unlockedSuncars = {}; /* 我(案家)已單次解鎖且未過期的順咖 id,{id:true} */
-var currentViewerId = null; /* 登入者自己的 id:看自己那張卡時直接顯示,不上鎖、不收費(本人=會員=後台) */
+/* 精確信用分改由後台授權函式 get_suncar_credits 決定誰能看(管理員/推廣期/會員/已解鎖/本人)。
+   creditMap = {順咖id: 精確信用分},只有授權看得到的才會在這個對照表裡;不在表裡就上鎖。 */
+var creditMap = {};
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
@@ -347,20 +346,13 @@ async function loadStaff() {
   if (sres.data && sres.data.session && sres.data.session.user) { user = sres.data.session.user; }
   else { var ures = await sb.auth.getUser(); user = (ures && ures.data) ? ures.data.user : null; }
   if (!user) { window.location.href = '13_login.html'; return; }
-  currentViewerId = user.id; /* 記住自己,看自己那張卡時直接顯示 */
 
-  /* 付費分層:後台/推廣期全免費/資訊會員未過期 → 全開;否則看我(案家)單次解鎖了哪幾位順咖。
-     價目與餘額讀 app_config + users(案家池 client_points),解鎖視窗要用。同 10/12 那套單一判斷,不另外發明邏輯。 */
-  var prof = await sb.from('users').select('is_admin,info_member_until,client_points').eq('id', user.id).maybeSingle();
+  /* 解鎖視窗要用的價目與案家點數餘額。
+     「誰能看信用分」已改由後台函式 get_suncar_credits 決定,前端不再自己算 privilege/解鎖清單。 */
+  var prof = await sb.from('users').select('client_points').eq('id', user.id).maybeSingle();
   var u = (prof && prof.data) ? prof.data : {};
-  var cfg = await sb.from('app_config').select('promo_free_info,price_client_single,price_client_month').eq('id', 1).maybeSingle();
+  var cfg = await sb.from('app_config').select('price_client_single,price_client_month').eq('id', 1).maybeSingle();
   var cfgd = (cfg && cfg.data) ? cfg.data : {};
-  var promoFree = !!cfgd.promo_free_info;
-  clientIsPrivileged = !!(u.is_admin || promoFree || (u.info_member_until && new Date(u.info_member_until) > new Date()));
-  if (!clientIsPrivileged) {
-    var unl = await sb.from('info_unlocks').select('target_id,expires_at').eq('viewer_id', user.id);
-    (unl.data || []).forEach(function(x){ if(!x.expires_at || new Date(x.expires_at) > new Date()) unlockedSuncars[x.target_id] = true; });
-  }
   window.UNLOCK = { single: (cfgd.price_client_single==null?5:cfgd.price_client_single), month: (cfgd.price_client_month==null?50:cfgd.price_client_month), points: (u.client_points||0), target: null };
 
   var res = await sb.from('public_suncars').select('*');
@@ -384,10 +376,18 @@ async function loadStaff() {
       online: p.acceptingOrders !== false,
       cats: cats,
       tags: areas.slice(0, 3),
-      badges: badges,
-      credit: (r.credit_score == null ? 100 : r.credit_score)
+      badges: badges
     };
   });
+
+  /* 精確信用分:改向後台授權函式拿。非授權者連數字都拿不到(後台根本不送,不是前端藏),堵住免費外洩。
+     回傳只含「可看」的順咖,建成 creditMap 給卡片用;不在表裡的就上鎖。 */
+  creditMap = {};
+  var ids = staffList.map(function(s){ return s.id; });
+  if (ids.length) {
+    var cr = await sb.rpc('get_suncar_credits', { p_targets: ids });
+    if (cr && cr.data) cr.data.forEach(function(row){ creditMap[row.id] = row.credit_score; });
+  }
   renderStaff();
 }
 
@@ -440,9 +440,11 @@ function renderStaff() {
     var rateHtml = s.hourlyRate
       ? '<span class="rate-label">期望時薪</span><span class="rate-num">$'+s.hourlyRate+'</span><span class="rate-unit">/時</span>'
       : '<span class="rate-label">期望時薪</span><span class="rate-num" style="font-size:0.95rem;">面議</span>';
-    /* 信用分:會員/解鎖看「分數＋等級」,非會員只看鎖頭＋解鎖鈕(堵住免費外洩)。解鎖鈕 stopPropagation 不觸發卡片跳轉 */
-    var creditHtml = canSeeCredit(s.id)
-      ? '<div class="staff-done">信用分 '+s.credit+'（'+creditBand(s.credit)+'）</div>'
+    /* 信用分:creditMap 有這位(＝後台授權看得到)就顯示「分數＋等級」,否則只給鎖頭＋解鎖鈕。
+       解鎖鈕 stopPropagation 不觸發卡片跳轉 */
+    var cscore = creditMap[s.id];
+    var creditHtml = (cscore != null)
+      ? '<div class="staff-done">信用分 '+cscore+'（'+creditBand(cscore)+'）</div>'
       : '<div class="staff-done">信用分 🔒 <button type="button" class="trust-unlock" onclick="event.stopPropagation(); openUnlockModal(\''+esc(s.id)+'\')">解鎖可看</button></div>';
     return '<div class="staff-card" onclick="window.location.href=\'04_order_form.html?staff='+encodeURIComponent(s.id)+'\'">' +
       onlineMark +
@@ -459,8 +461,6 @@ function renderStaff() {
 
 /* 信用分等級:高 80 以上 / 中 50–79 / 低 50 以下(同 01 第七點規則) */
 function creditBand(score){ var n = (score==null?100:score); if(n>=80) return '高'; if(n>=50) return '中'; return '低'; }
-/* 案家能不能看這位順咖的信用分:本人看自己、或全開、或已單次解鎖這一位 */
-function canSeeCredit(suncarId){ return suncarId === currentViewerId || clientIsPrivileged || unlockedSuncars[suncarId] === true; }
 
 /* 解鎖視窗:帶入要解鎖的順咖 id,顯示案家點數餘額與兩種方案價格 */
 function openUnlockModal(suncarId){

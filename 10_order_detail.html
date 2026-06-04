@@ -802,7 +802,7 @@ async function init(){
     await renderReviewStats(o.client_id, 'suncar_reviews_client', isPrivileged, '案家評價');
   } else if(o.suncar_id){
     var sres = await sb.from('public_suncars')
-      .select('id,display_name,avatar_url,credit_score,is_realname,has_caregiver_cert')
+      .select('id,display_name,avatar_url,is_realname,has_caregiver_cert')
       .eq('id', o.suncar_id).maybeSingle();
     var st = (sres && sres.data) ? sres.data : null;
     if(st){
@@ -814,9 +814,12 @@ async function init(){
         av.textContent = firstChar(sname);
       }
       document.getElementById('staff-name').textContent = sname;
-      // 特權身分(後台/之後付費)看精確值+等級;其餘只看標題+鎖頭。本人在 12 看自己精確值
-      if(isPrivileged){
-        var csv = (st.credit_score != null ? st.credit_score : 100);
+      // 精確信用分改由後台授權函式取得:有回傳值＝可看(本人/管理員/會員/已解鎖),顯示分數+等級;沒有就上鎖。
+      // 數字不再隨 public_suncars 整包送到前端,非授權者連封包都拿不到(治本,堵免費外洩)。
+      var credRes = await sb.rpc('get_suncar_credits', { p_targets: [o.suncar_id] });
+      var credRow = (credRes && credRes.data && credRes.data[0]) ? credRes.data[0] : null;
+      if(credRow && credRow.credit_score != null){
+        var csv = credRow.credit_score;
         document.getElementById('staff-rating').innerHTML = '<svg><use href="#i-star"/></svg>信用分 ' + csv + '(' + creditBand(csv) + ')';
       } else {
         document.getElementById('staff-rating').innerHTML = '<svg><use href="#i-star"/></svg>信用分 <span style="color:var(--ink-light);font-weight:400;">🔒 升級後可查看</span>';
