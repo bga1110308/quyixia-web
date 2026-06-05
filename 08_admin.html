@@ -1125,7 +1125,7 @@ async function reviewAct(userId, decision, btnEl){
 }
 
 /* ===== 證件審核(身分證 id、照服員證 cna) ===== */
-var CERT_TYPE_TEXT={ id:'身分證', cna:'照服員證' };
+var CERT_TYPE_TEXT={ id:'身分證', cna:'照服員證', safe:'良民證', cpr:'CPR/AED 急救證' };
 
 function setCertCount(n){
   var c=document.getElementById('cert-count'); if(c) c.textContent=n;

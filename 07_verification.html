@@ -698,7 +698,7 @@ function updateProgress() {
 
 function uploadCert(card, key, isRequired) {
   // 身分證、照服員證走真上傳到後台(第一階段);其餘證件維持原展示流程(第二階段再接)
-  if (key === 'id' || key === 'cna') { realUploadCert(key); return; }
+  if (key === 'id' || key === 'cna' || key === 'safe' || key === 'cpr') { realUploadCert(key); return; }
   var statusTag = card.querySelector('.cert-status-tag');
   if (certStatus[key] === 'empty') {
     certStatus[key] = 'pending';
@@ -1187,7 +1187,7 @@ async function loadCertStatus(){
   if(!user){ window.location.href = '13_login.html'; return; }
   window._suncarId = user.id;
 
-  var res = await sb.from('cert_submissions').select('cert_type,status').eq('user_id', user.id).in('cert_type', ['id','cna']);
+  var res = await sb.from('cert_submissions').select('cert_type,status').eq('user_id', user.id).in('cert_type', ['id','cna','safe','cpr']);
   (res.data || []).forEach(function(r){ applyCertCardStatus(r.cert_type, r.status); });
   updateProgress();
   updateDoneSummary();
