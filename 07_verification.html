@@ -244,6 +244,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   .otp-input{width:38px;height:48px;font-size:1.2rem;}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 
@@ -695,6 +697,8 @@ function updateProgress() {
 }
 
 function uploadCert(card, key, isRequired) {
+  // 身分證、照服員證走真上傳到後台(第一階段);其餘證件維持原展示流程(第二階段再接)
+  if (key === 'id' || key === 'cna') { realUploadCert(key); return; }
   var statusTag = card.querySelector('.cert-status-tag');
   if (certStatus[key] === 'empty') {
     certStatus[key] = 'pending';
@@ -1167,6 +1171,111 @@ document.addEventListener('visibilitychange', function(){
   if (!document.hidden) syncPointsFromStorage();
 });
 window.addEventListener('pageshow', syncPointsFromStorage);
+
+/* ===== 證件真上傳(第一階段:身分證 id、照服員證 cna) =====
+   為什麼只接這兩張:身分證對應實名、照服員證對應能不能接 B 池(身體照顧),是法律相關的核心。
+   良民/CPR/自訂維持原展示流程,第二階段再接。 */
+window._suncarId = null;
+
+// 進頁:確認登入、拿登入者 id、讀回 id/cna 的審核狀態回填卡片
+async function loadCertStatus(){
+  if(typeof window.sb === 'undefined'){ return; }
+  var user = null;
+  var sres = await sb.auth.getSession();
+  if(sres.data && sres.data.session && sres.data.session.user){ user = sres.data.session.user; }
+  else { var ures = await sb.auth.getUser(); user = (ures && ures.data) ? ures.data.user : null; }
+  if(!user){ window.location.href = '13_login.html'; return; }
+  window._suncarId = user.id;
+
+  var res = await sb.from('cert_submissions').select('cert_type,status').eq('user_id', user.id).in('cert_type', ['id','cna']);
+  (res.data || []).forEach(function(r){ applyCertCardStatus(r.cert_type, r.status); });
+  updateProgress();
+  updateDoneSummary();
+}
+
+// 把某張卡(id/cna)畫成對應審核狀態
+function applyCertCardStatus(key, status){
+  var card = document.getElementById('cert-' + key);
+  if(!card) return;
+  var tag = card.querySelector('.cert-status-tag');
+  card.classList.remove('uploaded','pending');
+  if(status === 'approved'){
+    certStatus[key] = 'uploaded';
+    card.classList.add('uploaded');
+    tag.className = 'cert-status-tag cs-uploaded';
+    tag.innerHTML = '<svg><use href="#i-check"/></svg>已通過';
+  } else if(status === 'pending'){
+    certStatus[key] = 'pending';
+    card.classList.add('pending');
+    tag.className = 'cert-status-tag cs-pending';
+    tag.innerHTML = '<svg><use href="#i-clock"/></svg>審核中';
+  } else { // rejected 或尚未上傳:回到可上傳
+    certStatus[key] = 'empty';
+    tag.className = 'cert-status-tag cs-empty';
+    tag.innerHTML = (status === 'rejected')
+      ? '<svg><use href="#i-warn"/></svg>未通過,請重傳'
+      : '<svg><use href="#i-upload"/></svg>上傳';
+  }
+}
+
+// 真上傳:開檔案選擇器→上傳到私密 certs 桶→寫一筆待審到 cert_submissions
+async function realUploadCert(key){
+  if(typeof window.sb === 'undefined'){ alert('系統載入中,請稍候再試'); return; }
+  if(!window._suncarId){ alert('請先登入再上傳證件'); window.location.href = '13_login.html'; return; }
+  if(certStatus[key] === 'uploaded' && !confirm('這張證件已通過審核,重新上傳會回到「審核中」,確定嗎?')) return;
+
+  var isId = (key === 'id'); // 身分證要正反兩面
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  if(isId) input.multiple = true;
+  input.onchange = async function(){
+    var files = Array.prototype.slice.call(input.files || []);
+    if(!files.length) return;
+    if(isId && files.length < 2 && !confirm('身分證建議正反兩面都上傳,目前只選了一張,要繼續嗎?')) return;
+
+    var card = document.getElementById('cert-' + key);
+    var tag = card.querySelector('.cert-status-tag');
+    tag.className = 'cert-status-tag cs-pending';
+    tag.innerHTML = '<svg><use href="#i-clock"/></svg>上傳中…';
+
+    // 逐張上傳到 certs/{我的id}/{證件種類}_{序號}.{副檔名},upsert 讓重傳覆蓋舊檔
+    var paths = [];
+    for(var i = 0; i < files.length; i++){
+      var f = files[i];
+      var ext = ((f.name.split('.').pop()) || 'jpg').toLowerCase();
+      var path = window._suncarId + '/' + key + '_' + (i + 1) + '.' + ext;
+      var up = await sb.storage.from('certs').upload(path, f, { upsert: true });
+      if(up.error){
+        alert('上傳失敗:' + up.error.message);
+        applyCertCardStatus(key, certStatus[key] === 'uploaded' ? 'approved' : 'none');
+        return;
+      }
+      paths.push(path);
+    }
+
+    // 寫一筆「待審」(同一人同一種證件只留一筆,重傳覆蓋)
+    var rec = await sb.from('cert_submissions').upsert({
+      user_id: window._suncarId,
+      cert_type: key,
+      file_paths: paths,
+      status: 'pending',
+      submitted_at: new Date().toISOString(),
+      reviewed_at: null,
+      reviewed_by: null,
+      note: null
+    }, { onConflict: 'user_id,cert_type' });
+    if(rec.error){ alert('送審失敗:' + rec.error.message); return; }
+
+    applyCertCardStatus(key, 'pending');
+    updateProgress();
+    updateDoneSummary();
+    alert('證件已上傳,進入審核。通過後會自動顯示對應徽章。你的證件只有平台審核看得到,案家看不到。');
+  };
+  input.click();
+}
+
+loadCertStatus();
 </script>
 </body>
 </html>
