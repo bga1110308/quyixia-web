@@ -211,6 +211,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
 <script src="qyx-load-guard.js"></script>
+<script src="qyx-schedule.js"></script>
 </head>
 <body id="body-root">
 
@@ -414,15 +415,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       </div>
       <div class="section-desc">勾選你方便接案的時段,案家下單時可以看到</div>
 
-      <div class="schedule-grid" id="schedule-grid">
-        <!-- JS 渲染 -->
-      </div>
-      <div class="sch-apply-row">
-        <button type="button" class="sch-apply-btn" onclick="applySchedule('all-day')">全天可接</button>
-        <button type="button" class="sch-apply-btn" onclick="applySchedule('weekday-night')">平日晚上</button>
-        <button type="button" class="sch-apply-btn" onclick="applySchedule('weekend-day')">週末白天</button>
-        <button type="button" class="sch-apply-btn" onclick="applySchedule('clear')">全部清除</button>
-      </div>
+      <!-- 班表由共用檔 qyx-schedule.js 生成(表格＋一鍵按鈕),03/15 同一份 -->
+      <div id="schedule-grid"></div>
     </div>
 
     <!-- 服務區域 -->
@@ -556,7 +550,7 @@ function applyRoleUI() {
     document.getElementById('vs-client').classList.remove('on');
     document.getElementById('vs-staff').classList.add('on');
     /* 渲染順咖區內容 */
-    renderSchedule();
+    QYXSchedule.mount('schedule-grid', null);
     renderAreas();
     renderServices();
     renderCerts();
@@ -704,74 +698,10 @@ function onRateSelectChange() {
   }
 }
 
-/* ============ 服務班表(時段為列 × 星期為欄) ============ */
-/* 4 個時段的名稱跟起止時間都寫死,不可調 */
-var slotConfig = [
-  { name: '上午', range: '6-12' },
-  { name: '下午', range: '12-18' },
-  { name: '晚上', range: '18-22' },
-  { name: '深夜', range: '22-6' }
-];
-/* scheduleData[時段index][星期index] = bool */
-/* 星期 0=一 ... 6=日 */
-var scheduleData = [
-  [true,  true,  false, true,  true,  false, false], /* 上午 */
-  [true,  true,  false, true,  true,  true,  false], /* 下午 */
-  [false, false, true,  true,  false, true,  true ], /* 晚上 */
-  [false, false, true,  false, false, true,  false]  /* 深夜 */
-];
-var DAYS = ['週一','週二','週三','週四','週五','週六','週日'];
+/* 服務班表已抽成共用檔 qyx-schedule.js(03/15 共用同一份)。
+   原本的 slotConfig / scheduleData / DAYS / renderSchedule / toggleSlot / applySchedule 都搬到那支了。 */
 
-function renderSchedule() {
-  var grid = document.getElementById('schedule-grid');
-  /* 表頭:空格 + 7 個星期(橫排) */
-  var html = '<div class="sch-head"></div>';
-  DAYS.forEach(function(d) {
-    html += '<div class="sch-head">' + d + '</div>';
-  });
-  /* 4 列時段 */
-  slotConfig.forEach(function(s, slotIdx) {
-    html += '<div class="sch-day">' + s.name + ' <span style="color:var(--ink-soft);font-size:0.66rem;font-weight:400;">'+s.range+'</span></div>';
-    DAYS.forEach(function(d, dayIdx) {
-      var on = scheduleData[slotIdx][dayIdx];
-      html += '<div class="sch-cell'+(on?' on':'')+'" data-slot="'+slotIdx+'" data-day="'+dayIdx+'" onclick="toggleSlot(this)">' + (on?'✓':'') + '</div>';
-    });
-  });
-  grid.innerHTML = html;
-}
 
-function toggleSlot(el) {
-  var slotIdx = parseInt(el.dataset.slot);
-  var dayIdx = parseInt(el.dataset.day);
-  scheduleData[slotIdx][dayIdx] = !scheduleData[slotIdx][dayIdx];
-  el.classList.toggle('on');
-  el.textContent = scheduleData[slotIdx][dayIdx] ? '✓' : '';
-}
-
-function applySchedule(preset) {
-  if (preset === 'all-day') {
-    scheduleData = [[true,true,true,true,true,true,true],
-                    [true,true,true,true,true,true,true],
-                    [true,true,true,true,true,true,true],
-                    [true,true,true,true,true,true,true]];
-  } else if (preset === 'weekday-night') {
-    scheduleData = [[false,false,false,false,false,false,false],
-                    [false,false,false,false,false,false,false],
-                    [true,true,true,true,true,false,false],
-                    [false,false,false,false,false,false,false]];
-  } else if (preset === 'weekend-day') {
-    scheduleData = [[false,false,false,false,false,true,true],
-                    [false,false,false,false,false,true,true],
-                    [false,false,false,false,false,false,false],
-                    [false,false,false,false,false,false,false]];
-  } else if (preset === 'clear') {
-    scheduleData = [[false,false,false,false,false,false,false],
-                    [false,false,false,false,false,false,false],
-                    [false,false,false,false,false,false,false],
-                    [false,false,false,false,false,false,false]];
-  }
-  renderSchedule();
-}
 
 /* ============ 服務區域 ============ */
 var allAreas = ['板橋','中和','永和','三重','新莊','蘆洲','土城','樹林','新店','汐止','深坑','五股','泰山','林口','八里','淡水','三峽','鶯歌','大同','中正','萬華','大安','中山','信義','松山','文山','南港','內湖','士林','北投'];
@@ -1079,7 +1009,7 @@ async function saveProfile() {
       var staffData = Object.assign({}, prev, {
         bio: document.getElementById('bio').value.trim(),
         photos: galleryPhotos,
-        schedule: scheduleData,
+        schedule: QYXSchedule.get(),
         areas: selectedAreas,
         services: selectedSvcs,
         transport: transport,
@@ -1171,7 +1101,7 @@ function loadStaffProfile() {
   galleryPhotos = Array.isArray(d.photos) ? d.photos.slice() : [];
   pendingDelete = [];
   renderGallery();
-  if (Array.isArray(d.schedule) && d.schedule.length === 4) scheduleData = d.schedule;
+  // 班表交給共用檔,mount 時帶入 d.schedule(見下方 QYXSchedule.mount)
   if (Array.isArray(d.areas)) selectedAreas = d.areas;
   /* 服務項目相容兩種鍵名:services 或 service_categories */
   if (Array.isArray(d.services)) selectedSvcs = d.services;
@@ -1189,7 +1119,7 @@ function loadStaffProfile() {
     }
   }
 
-  renderSchedule();
+  QYXSchedule.mount('schedule-grid', d.schedule);
   renderAreas();
   renderServices();
   renderCerts();

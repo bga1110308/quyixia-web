@@ -292,7 +292,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="pr-step on"><span class="num">1</span><div class="lbl">身份</div></div>
     <div class="pr-step on"><span class="num">2</span><div class="lbl">基本資料</div></div>
     <div class="pr-step on"><span class="num">3</span><div class="lbl">能接什麼</div></div>
-    <div class="pr-step on"><span class="num">4</span><div class="lbl">不可上班時段</div></div>
+    <div class="pr-step on"><span class="num">4</span><div class="lbl">可上班時段</div></div>
     <div class="pr-step on"><span class="num">5</span><div class="lbl">證照上傳</div></div>
   </div>
 
@@ -521,26 +521,19 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </div>
   </div>
 
-  <!-- Step 4: 不可上班時段 -->
+  <!-- Step 4: 可上班時段(與 15 編輯頁共用 qyx-schedule.js,兩頁一定一致) -->
   <div class="section-card">
-    <div class="sec-title">不可上班時段</div>
-    <div class="sec-hint">預設早上 6 點到晚上 8 點都可接案。如果某些時段不能接(例:正職班表、家庭時間),在下面填入「不可上班」的開始與結束時間。每天可不同。</div>
+    <div class="sec-title">可上班時段</div>
+    <div class="sec-hint">勾選你方便接案的時段,案家下單時看得到。預設除深夜外都可接,可自行調整。</div>
 
-    <div class="unavail-banner">
-      <span class="ico"><svg><use href="#i-info"/></svg></span>
-      <div>
-        <strong>怎麼填?</strong>
-        每天最多可加 4 個不可上班時段。例如週一 8:00-17:00 是正職、19:00-21:00 是家庭時間,就加兩段。沒填代表整天都能接。
-      </div>
-    </div>
-
-    <div id="days-area"></div>
+    <!-- 班表由共用檔 qyx-schedule.js 生成(表格＋一鍵按鈕),跟 15 編輯頁同一份 -->
+    <div id="schedule-grid"></div>
 
     <div class="reassure-box" style="margin-top:1.1rem;">
       <span class="ico"><svg><use href="#i-shield"/></svg></span>
       <div>
-        <strong>後台會自動統計</strong>
-        每週你接案的時數會在後台「我的接案紀錄」自動呈現,不用自己估算。
+        <strong>之後可隨時調整</strong>
+        通過審核後,在「編輯資料」頁可以隨時改你的可上班時段。
       </div>
     </div>
   </div>
@@ -646,6 +639,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-schedule.js"></script>
 <script>
 // 申請當順咖頁。需先用 LINE 登入才能申請。
 // 進頁先確認登入狀態：沒登入就先去 LINE 授權再回來填表，避免填完才被要求登入。
@@ -1105,7 +1099,7 @@ async function handleSubmit() {
   var identityEl = document.querySelector('.id-card.on');
   var identity = identityEl ? identityEl.getAttribute('data-id') : 'general';
   var categories = collectCategories();
-  var unavail = collectUnavail();
+  var schedule = QYXSchedule.get(); // 可上班時段(與 15 共用),存進 role_data.schedule
 
   var btn = document.querySelector('.submit-btn');
   if (btn) btn.disabled = true;
@@ -1175,7 +1169,7 @@ async function handleSubmit() {
       max_distance: distance,
       bio: bio,
       categories: categories,
-      unavailable: unavail,
+      schedule: schedule,
       cert_verified: false
     }
   }, { onConflict: 'user_id,role' });
@@ -1208,7 +1202,7 @@ async function handleSubmit() {
 }
 
 /* === 初始化 === */
-buildDays();
+QYXSchedule.mount('schedule-grid', null); // 進頁畫共用班表(預設除深夜可接)
 </script>
 </body>
 </html>
