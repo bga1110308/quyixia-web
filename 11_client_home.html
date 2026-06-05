@@ -331,7 +331,16 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     我的取消率:<b id="cancel-rate" style="color:var(--ink);">0%</b> <span style="color:var(--ink-light);">(待服務後取消 <span id="cancel-cnt">0</span> 次)</span>
   </div>
 
-  <!-- ============ 進行中的任務 ============ -->
+  <!-- ============ 媒合中:還沒被順咖接的單,等待接單 ============ -->
+  <div id="matching-section" style="display:none;">
+  <div class="sec-h">
+    <div class="sec-title">媒合中</div>
+    <a class="sec-action" onclick="document.querySelector('.filter-bar').scrollIntoView({behavior:'smooth'})">看全部<svg><use href="#i-arrow-right"/></svg></a>
+  </div>
+  <div id="matching-list"></div>
+  </div>
+
+  <!-- ============ 進行中:順咖已接單(待服務/服務中/等待確認) ============ -->
   <div id="active-section" style="display:none;">
   <div class="sec-h">
     <div class="sec-title">進行中</div>
@@ -620,7 +629,15 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       (rv.data||[]).forEach(function(r){ myReviewedSuncarOrders[r.order_id] = true; });
     }
 
-    var activeOrders = orders.filter(function(o){ var g=(STATUS[o.status]||{}).group; return g==='active'||g==='matching'; });
+    // 媒合中:還沒被順咖接的單(等順咖接單),單獨一區,不跟進行中混在一起
+    var matchingOrders = orders.filter(function(o){ return (STATUS[o.status]||{}).group === 'matching'; });
+    if(matchingOrders.length){
+      $('matching-list').innerHTML = matchingOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id]); }).join('');
+      $('matching-section').style.display = '';
+    }
+
+    // 進行中:順咖已接單之後的單(待服務/服務中/等待確認),媒合成功才會進這區
+    var activeOrders = orders.filter(function(o){ return (STATUS[o.status]||{}).group === 'active'; });
     if(activeOrders.length){
       $('active-list').innerHTML = activeOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id]); }).join('');
       $('active-section').style.display = '';
