@@ -242,10 +242,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
         <span class="lbl">排序</span>
         <select class="sort-sel" id="sort-sel" onchange="renderStaff()">
           <option value="rating">評分高到低</option>
-          <option value="done">完成件數多到少</option>
           <option value="rate-asc">期望時薪低到高</option>
           <option value="rate-desc">期望時薪高到低</option>
-          <option value="new">最近新加入</option>
           <option value="online">在線狀態</option>
         </select>
       </div>
@@ -295,6 +293,10 @@ var selectedBadges = [];
 /* 精確信用分改由後台授權函式 get_suncar_credits 決定誰能看(管理員/推廣期/會員/已解鎖/本人)。
    creditMap = {順咖id: 精確信用分},只有授權看得到的才會在這個對照表裡;不在表裡就上鎖。 */
 var creditMap = {};
+/* 評價統計:reviewMap = {順咖id: {avg 平均星等, cnt 則數, enough 是否達3則門檻}}。
+   一律走後台 get_review_stats_batch,只回彙總(平均+則數),不吐個別留言或誰寫的;不足3則 enough=false。
+   評價是公開資訊(挑順咖看得到),不像信用分要付費解鎖。 */
+var reviewMap = {};
 var myId = null; /* 登入者自己的 id:用來擋「點自己卡片變成指定自己下單」 */
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -382,14 +384,24 @@ async function loadStaff() {
     };
   });
 
+  var ids = staffList.map(function(s){ return s.id; });
+
   /* 精確信用分:改向後台授權函式拿。非授權者連數字都拿不到(後台根本不送,不是前端藏),堵住免費外洩。
      回傳只含「可看」的順咖,建成 creditMap 給卡片用;不在表裡的就上鎖。 */
   creditMap = {};
-  var ids = staffList.map(function(s){ return s.id; });
   if (ids.length) {
     var cr = await sb.rpc('get_suncar_credits', { p_targets: ids });
     if (cr && cr.data) cr.data.forEach(function(row){ creditMap[row.id] = row.credit_score; });
   }
+
+  /* 評價星等:一次批次拿全部順咖的平均星等與則數(案家評順咖 = client_reviews_suncar)。
+     滿3則門檻在後台函式內擋,前端只負責顯示;不必逐位查,省掉幾十次後台往返。 */
+  reviewMap = {};
+  if (ids.length) {
+    var rv = await sb.rpc('get_review_stats_batch', { p_targets: ids, p_mode: 'client_reviews_suncar' });
+    if (rv && rv.data) rv.data.forEach(function(row){ reviewMap[row.reviewee_id] = { avg: row.overall_avg, cnt: row.cnt, enough: row.enough }; });
+  }
+
   renderStaff();
 }
 
@@ -408,6 +420,7 @@ function renderStaff() {
 
   var sortBy = document.getElementById('sort-sel').value;
   filtered.sort(function(a, b){
+    if (sortBy === 'rating') return ratingVal(b) - ratingVal(a); /* 評分高到低;未達3則門檻的沉到最後 */
     if (sortBy === 'rate-asc') return (a.hourlyRate||0) - (b.hourlyRate||0);
     if (sortBy === 'rate-desc') return (b.hourlyRate||0) - (a.hourlyRate||0);
     if (sortBy === 'online') return (b.online?1:0) - (a.online?1:0);
@@ -442,6 +455,11 @@ function renderStaff() {
     var rateHtml = s.hourlyRate
       ? '<span class="rate-label">期望時薪</span><span class="rate-num">$'+s.hourlyRate+'</span><span class="rate-unit">/時</span>'
       : '<span class="rate-label">期望時薪</span><span class="rate-num" style="font-size:0.95rem;">面議</span>';
+    /* 評價星等:達3則顯示平均星等＋則數,不足顯示「尚無足夠評價」。評價公開,不上鎖。 */
+    var rstat = reviewMap[s.id];
+    var ratingHtml = (rstat && rstat.enough)
+      ? '<div class="staff-rating"><svg class="icon"><use href="#i-star"/></svg>'+Number(rstat.avg).toFixed(1)+' <span style="color:var(--ink-light);font-weight:500;font-size:0.72rem;">('+rstat.cnt+' 則)</span></div>'
+      : '<div class="staff-done" style="color:var(--ink-light);">尚無足夠評價</div>';
     /* 信用分:creditMap 有這位(＝後台授權看得到)就顯示「分數＋等級」,否則只給鎖頭＋解鎖鈕。
        解鎖鈕 stopPropagation 不觸發卡片跳轉 */
     var cscore = creditMap[s.id];
@@ -458,6 +476,7 @@ function renderStaff() {
       onlineMark +
       '<div class="avatar">'+avatarInner+'</div>' +
       '<div class="staff-name">'+esc(s.name)+'</div>' +
+      ratingHtml +
       creditHtml +
       '<div class="staff-rate" title="順咖填的期望時薪,實際金額由案家出價">'+rateHtml+'</div>' +
       '<div class="badge-row">'+badges+'</div>' +
@@ -469,6 +488,9 @@ function renderStaff() {
 
 /* 信用分等級:高 80 以上 / 中 50–79 / 低 50 以下(同 01 第七點規則) */
 function creditBand(score){ var n = (score==null?100:score); if(n>=80) return '高'; if(n>=50) return '中'; return '低'; }
+
+/* 排序用:達3則門檻才拿平均星等當分數,否則 -1,讓沒評價的沉到最後 */
+function ratingVal(s){ var rv = reviewMap[s.id]; return (rv && rv.enough && rv.avg != null) ? Number(rv.avg) : -1; }
 
 /* 解鎖視窗:帶入要解鎖的順咖 id,顯示案家點數餘額與兩種方案價格 */
 function openUnlockModal(suncarId){
