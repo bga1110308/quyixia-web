@@ -288,6 +288,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </defs>
 </svg>
 
+<!-- 回主頁:依身分導向(案家→11、順咖→12),沒登入→index。固定左上角,各頁缺主頁入口的通病先補這頁 -->
+<a id="home-fab" onclick="goHome()" title="回主頁"
+   style="position:fixed;top:14px;left:14px;z-index:50;width:44px;height:44px;border-radius:50%;background:#fff;border:1.5px solid var(--amber,#EF9F27);color:var(--amber-deep,#C97A12);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(239,159,39,0.25);text-decoration:none;">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+</a>
+
 <div class="page-header">
   <div class="page-header-inner">
     <div class="page-tag">START · 我要下單</div>
@@ -587,6 +593,22 @@ function clearSpecifiedStaff() {
   var url = new URL(window.location.href);
   url.searchParams.delete('staff');
   window.history.replaceState({}, '', url);
+}
+
+/* 回主頁:依身分導向。有案家身分(含兩者都有)→11、只有順咖→12、沒登入→index。 */
+async function goHome() {
+  var dest = 'index.html';
+  try {
+    var sres = await sb.auth.getSession();
+    var u = (sres.data && sres.data.session) ? sres.data.session.user : null;
+    if (u) {
+      var rr = await sb.from('user_roles').select('role').eq('user_id', u.id);
+      var roles = (rr && rr.data) ? rr.data.map(function(x){ return x.role; }) : [];
+      if (roles.indexOf('client') !== -1) dest = '11_client_home.html';
+      else if (roles.indexOf('suncar') !== -1) dest = '12_staff_home.html';
+    }
+  } catch(e){}
+  window.location.href = dest;
 }
 
 var serviceMap = {
