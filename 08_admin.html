@@ -296,6 +296,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <div class="nav-item" onclick="go('workers',this)"><svg class="icon"><use href="#i-users"/></svg>順咖資料<span class="cnt">8</span></div>
       <div class="nav-section">審核 / 訂單</div>
       <div class="nav-item active" onclick="go('review',this)"><svg class="icon"><use href="#i-check"/></svg>順咖審核<span class="cnt" id="nav-review-count">0</span></div>
+      <div class="nav-item" onclick="go('certreview',this)"><svg class="icon"><use href="#i-badge-check"/></svg>證件審核<span class="cnt" id="nav-cert-count">0</span></div>
       <div class="nav-item" onclick="go('orders',this)"><svg class="icon"><use href="#i-clipboard"/></svg>訂單總覽</div>
       <div class="nav-section">設定 / 報表</div>
       <div class="nav-item" onclick="go('announce',this)"><svg class="icon"><use href="#i-speaker"/></svg>公告管理</div>
@@ -418,6 +419,16 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
         <!-- 真資料審核卡由 loadReviewList() 填入此處 -->
         <div id="review-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
+      </div>
+
+      <!-- 證件審核 -->
+      <div class="page" id="page-certreview">
+        <div class="sec-header">
+          <div style="display:flex;align-items:center;gap:9px;"><span class="sec-title">證件審核</span><span id="cert-count" style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-size:11.5px;padding:3px 10px;border-radius:99px;font-weight:700;box-shadow:0 3px 8px rgba(239,159,39,0.3);">0</span></div>
+          <div style="font-size:12.5px;color:var(--ink-soft);">順咖上傳的身分證、照服員證,通過才會設定實名 / 可接 B 池</div>
+        </div>
+        <!-- 證件審核卡由 loadCertReview() 填入此處 -->
+        <div id="cert-review-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
       </div>
 
       <!-- 訂單總覽 -->
@@ -1113,6 +1124,98 @@ async function reviewAct(userId, decision, btnEl){
   if(!left){ document.getElementById('review-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的順咖申請</div>'; }
 }
 
+/* ===== 證件審核(身分證 id、照服員證 cna) ===== */
+var CERT_TYPE_TEXT={ id:'身分證', cna:'照服員證' };
+
+function setCertCount(n){
+  var c=document.getElementById('cert-count'); if(c) c.textContent=n;
+  var nav=document.getElementById('nav-cert-count'); if(nav) nav.textContent=n;
+}
+
+// 讀待審證件,再分步接上順咖姓名(跟順咖審核同樣穩的兩步查法)
+async function loadCertReview(){
+  var box=document.getElementById('cert-review-list');
+  if(!box) return;
+  var subRes=await sb.from('cert_submissions')
+    .select('id,user_id,cert_type,file_paths,submitted_at')
+    .eq('status','pending')
+    .order('submitted_at',{ascending:true});
+  if(subRes.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(subRes.error.message)+'</div>'; return; }
+  var subs=subRes.data||[];
+  if(!subs.length){ renderCertCards([]); return; }
+  var ids=subs.map(function(s){ return s.user_id; });
+  var usersRes=await sb.from('users').select('id,display_name,phone,role_detail').in('id',ids);
+  if(usersRes.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(usersRes.error.message)+'</div>'; return; }
+  var umap={}; (usersRes.data||[]).forEach(function(u){ umap[u.id]=u; });
+  subs.forEach(function(s){ s.user=umap[s.user_id]||{}; });
+  renderCertCards(subs);
+}
+
+function renderCertCards(list){
+  var box=document.getElementById('cert-review-list');
+  setCertCount(list.length);
+  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的證件</div>'; return; }
+  box.innerHTML=list.map(function(s){
+    var u=s.user||{};
+    var name=(u.role_detail && u.role_detail.real_name) || u.display_name || '未填姓名';
+    var typeText=CERT_TYPE_TEXT[s.cert_type]||s.cert_type;
+    var paths=Array.isArray(s.file_paths)?s.file_paths:[];
+    // 每張檔一顆按鈕,點了用限時簽名網址開新分頁(私密桶只有管理員產得出來)
+    var viewBtns=paths.map(function(p,i){
+      return '<button class="btn-sm" onclick="viewCert(\''+esc(p)+'\')">看第'+(i+1)+'張</button>';
+    }).join('');
+    var meta='<span>'+esc(typeText)+'</span><span>上傳 '+esc(fmtDate(s.submitted_at))+'</span>'+(u.phone?'<span>'+esc(u.phone)+'</span>':'');
+    return '<div class="applicant-card" data-sub="'+esc(s.id)+'">'+
+      '<div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">'+esc(name.charAt(0))+'</div>'+
+      '<div style="flex:1;">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(name)+'</span><span class="badge-mini b-cna">'+esc(typeText)+'</span></div>'+
+        '<div class="card-meta">'+meta+'</div>'+
+        '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">'+viewBtns+'</div>'+
+      '</div>'+
+      '<div class="card-actions">'+
+        '<button class="btn-approve" onclick="certAct(\''+esc(s.id)+'\',\''+esc(s.user_id)+'\',\''+esc(s.cert_type)+'\',\'approved\',this)">通過</button>'+
+        '<button class="btn-reject" onclick="certAct(\''+esc(s.id)+'\',\''+esc(s.user_id)+'\',\''+esc(s.cert_type)+'\',\'rejected\',this)">退件</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+// 看證件:私密桶要用限時簽名網址(60 秒),管理員才產得出來;案家沒有這權限
+async function viewCert(path){
+  if(typeof window.sb==='undefined'){ alert('連線元件未載入'); return; }
+  var r=await sb.storage.from('certs').createSignedUrl(path, 60);
+  if(r.error || !r.data || !r.data.signedUrl){ alert('無法開啟證件:'+(r.error?r.error.message:'未知錯誤')); return; }
+  window.open(r.data.signedUrl, '_blank');
+}
+
+// 審核:通過=記結果並設資格(身分證→實名、照服員證→可接 B 池);退件=只記退件
+async function certAct(subId, userId, certType, decision, btnEl){
+  var word=decision==='approved'?'通過':'退件';
+  var extra=decision==='approved'
+    ? (certType==='id'?'\n通過後這位會被設為「已實名」。':(certType==='cna'?'\n通過後這位才能接 B 池(身體照顧)的單。':''))
+    : '';
+  if(!confirm('確定要「'+word+'」這張'+(CERT_TYPE_TEXT[certType]||'證件')+'嗎?'+extra)) return;
+  var card=btnEl.closest('.applicant-card');
+  card.style.pointerEvents='none'; card.style.opacity='0.6';
+  // 1. 記審核結果
+  var upd=await sb.from('cert_submissions').update({
+    status:decision, reviewed_at:new Date().toISOString(), reviewed_by:window._adminId||null
+  }).eq('id',subId);
+  if(upd.error){ alert('更新失敗:'+upd.error.message); card.style.pointerEvents=''; card.style.opacity=''; return; }
+  // 2. 通過才設資格。身分證→is_realname、照服員證→has_caregiver_cert
+  if(decision==='approved'){
+    var patch = certType==='id' ? {is_realname:true} : (certType==='cna' ? {has_caregiver_cert:true} : null);
+    if(patch){
+      var ur=await sb.from('users').update(patch).eq('id',userId);
+      if(ur.error){ alert('審核已記錄,但資格設定失敗:'+ur.error.message+'\n請稍後在順咖資料手動處理。'); }
+    }
+  }
+  card.remove();
+  var left=document.querySelectorAll('#cert-review-list .applicant-card').length;
+  setCertCount(left);
+  if(!left){ document.getElementById('cert-review-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的證件</div>'; }
+}
+
 /* 進頁守門:只有管理員能用後台。沿用 11/12 那套 getSession 為主、getUser 備援 */
 async function initAdmin(){
   if(typeof window.sb==='undefined'){ alert('連線元件未載入,請重新整理頁面'); return; }
@@ -1124,7 +1227,9 @@ async function initAdmin(){
   // 確認是不是管理員(讀自己那筆的 is_admin),不是就擋掉
   var me=await sb.from('users').select('is_admin').eq('id',user.id).maybeSingle();
   if(!me.data || !me.data.is_admin){ alert('此頁僅限管理員使用'); window.location.href='11_client_home.html'; return; }
+  window._adminId = user.id; // 記住審核者,寫進 cert_submissions.reviewed_by
   loadReviewList();
+  loadCertReview();
   loadPricing(); // 進頁就把收費總控的現值讀進表單
 }
 
