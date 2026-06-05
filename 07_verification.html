@@ -1232,6 +1232,15 @@ async function realUploadCert(key){
   input.onchange = async function(){
     var files = Array.prototype.slice.call(input.files || []);
     if(!files.length) return;
+    // 上傳前先擋:身分證最多正反兩張、單張不超過 10MB、只收圖片或 PDF(跟後台倉庫限制一致,前端先給友善提示)
+    if(isId && files.length > 2){ alert('身分證最多上傳兩張(正面、反面),請重新選擇。'); return; }
+    var MAX_BYTES = 10 * 1024 * 1024;
+    for(var c = 0; c < files.length; c++){
+      if(files[c].size > MAX_BYTES){ alert('「' + files[c].name + '」超過 10MB,請壓縮或重拍後再上傳。'); return; }
+      if(files[c].type && !/^image\//.test(files[c].type) && files[c].type !== 'application/pdf'){
+        alert('「' + files[c].name + '」格式不支援,只能上傳照片或 PDF。'); return;
+      }
+    }
     if(isId && files.length < 2 && !confirm('身分證建議正反兩面都上傳,目前只選了一張,要繼續嗎?')) return;
 
     var card = document.getElementById('cert-' + key);
