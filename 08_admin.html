@@ -417,6 +417,11 @@ textarea.form-input{min-height:80px;resize:vertical;}
           <button class="filter-btn" onclick="filterRisk('yellow',this)">🟡 待確認</button>
           <button class="filter-btn" onclick="filterRisk('green',this)">🟢 低風險</button>
         </div>
+        <!-- 批次審核:勾選你已經看過的,一次通過 -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+          <label style="font-size:13px;color:var(--ink-soft);cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="batchall-review-list" onclick="toggleAllChk('review-list',this)" style="width:16px;height:16px;cursor:pointer;"> 全選</label>
+          <button class="btn-approve" onclick="batchApprove('review-list')">通過勾選的</button>
+        </div>
         <!-- 真資料審核卡由 loadReviewList() 填入此處 -->
         <div id="review-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
       </div>
@@ -427,6 +432,11 @@ textarea.form-input{min-height:80px;resize:vertical;}
           <div style="display:flex;align-items:center;gap:9px;"><span class="sec-title">證件審核</span><span id="cert-count" style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-size:11.5px;padding:3px 10px;border-radius:99px;font-weight:700;box-shadow:0 3px 8px rgba(239,159,39,0.3);">0</span></div>
           <div style="font-size:12.5px;color:var(--ink-soft);">順咖上傳的身分證、照服員證,通過才會設定實名 / 可接 B 池</div>
         </div>
+        <!-- 批次審核 -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+          <label style="font-size:13px;color:var(--ink-soft);cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="batchall-cert-review-list" onclick="toggleAllChk('cert-review-list',this)" style="width:16px;height:16px;cursor:pointer;"> 全選</label>
+          <button class="btn-approve" onclick="batchApprove('cert-review-list')">通過勾選的</button>
+        </div>
         <!-- 證件審核卡由 loadCertReview() 填入此處 -->
         <div id="cert-review-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
 
@@ -434,6 +444,11 @@ textarea.form-input{min-height:80px;resize:vertical;}
         <div class="sec-header" style="margin-top:22px;">
           <div style="display:flex;align-items:center;gap:9px;"><span class="sec-title">自訂證件待審</span></div>
           <div style="font-size:12.5px;color:var(--ink-soft);">順咖自填名稱(如護理師、駕照)。通過＝案家會看到此名稱徽章;名稱不實、誇大或需執照未附證明,請退件</div>
+        </div>
+        <!-- 批次審核 -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">
+          <label style="font-size:13px;color:var(--ink-soft);cursor:pointer;display:inline-flex;align-items:center;gap:5px;"><input type="checkbox" id="batchall-custom-cert-review-list" onclick="toggleAllChk('custom-cert-review-list',this)" style="width:16px;height:16px;cursor:pointer;"> 全選</label>
+          <button class="btn-approve" onclick="batchApprove('custom-cert-review-list')">通過勾選的</button>
         </div>
         <!-- 自訂證件卡由 loadCustomCertReview() 填入此處 -->
         <div id="custom-cert-review-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
@@ -1099,6 +1114,7 @@ function renderReviewCards(list){
     var meta=metaParts.map(function(t){return '<span>'+esc(t)+'</span>';}).join('');
     var bio=rd.bio?'<div class="ai-reason">'+esc(rd.bio)+'</div>':'';
     return '<div class="applicant-card" data-uid="'+esc(r.user_id)+'">'+
+      '<input type="checkbox" class="rev-chk" data-uid="'+esc(r.user_id)+'" style="margin-top:14px;width:17px;height:17px;cursor:pointer;flex-shrink:0;">'+
       '<div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">'+esc(name.charAt(0))+'</div>'+
       '<div style="flex:1;">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(name)+'</span></div>'+
@@ -1175,8 +1191,7 @@ async function loadCertReview(){
 
 function renderCertCards(list){
   var box=document.getElementById('cert-review-list');
-  setCertCount(list.length);
-  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的證件</div>'; return; }
+  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的證件</div>'; setCertCount(); return; }
   box.innerHTML=list.map(function(s){
     var u=s.user||{};
     var name=(u.role_detail && u.role_detail.real_name) || u.display_name || '未填姓名';
@@ -1188,6 +1203,7 @@ function renderCertCards(list){
     }).join('');
     var meta='<span>'+esc(typeText)+'</span><span>上傳 '+esc(fmtDate(s.submitted_at))+'</span>'+(u.phone?'<span>'+esc(u.phone)+'</span>':'');
     return '<div class="applicant-card" data-sub="'+esc(s.id)+'">'+
+      '<input type="checkbox" class="rev-chk" data-sub="'+esc(s.id)+'" data-uid="'+esc(s.user_id)+'" data-ctype="'+esc(s.cert_type)+'" style="margin-top:14px;width:17px;height:17px;cursor:pointer;flex-shrink:0;">'+
       '<div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">'+esc(name.charAt(0))+'</div>'+
       '<div style="flex:1;">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(name)+'</span><span class="badge-mini b-cna">'+esc(typeText)+'</span></div>'+
@@ -1200,6 +1216,7 @@ function renderCertCards(list){
       '</div>'+
     '</div>';
   }).join('');
+  setCertCount();
 }
 
 // 看證件:私密桶要用限時簽名網址(60 秒),管理員才產得出來;案家沒有這權限
@@ -1233,6 +1250,7 @@ function renderCustomCertCards(list){
     var viewBtns=paths.map(function(p,i){ return '<button class="btn-sm" onclick="viewCert(\''+esc(p)+'\')">看第'+(i+1)+'張</button>'; }).join('');
     var meta='<span>上傳 '+esc(fmtDate(s.submitted_at))+'</span>'+(u.phone?'<span>'+esc(u.phone)+'</span>':'');
     return '<div class="applicant-card" data-sub="'+esc(s.id)+'">'+
+      '<input type="checkbox" class="rev-chk" data-sub="'+esc(s.id)+'" style="margin-top:14px;width:17px;height:17px;cursor:pointer;flex-shrink:0;">'+
       '<div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">'+esc(name.charAt(0))+'</div>'+
       '<div style="flex:1;">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(name)+'</span><span class="badge-mini b-cna">'+esc(certName)+'</span></div>'+
@@ -1263,6 +1281,42 @@ async function customCertAct(subId, decision, btnEl){
   if(!document.querySelectorAll('#custom-cert-review-list .applicant-card').length){
     document.getElementById('custom-cert-review-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的自訂證件</div>';
   }
+}
+
+/* ===== 批次審核:勾選已看過的多筆,一次通過。三個清單共用一支,依 listId 走對應的通過邏輯。 ===== */
+function toggleAllChk(listId, master){
+  document.querySelectorAll('#'+listId+' .rev-chk').forEach(function(c){ c.checked = master.checked; });
+}
+
+async function batchApprove(listId){
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('#'+listId+' .rev-chk:checked'));
+  if(!boxes.length){ alert('請先勾選要通過的項目'); return; }
+  if(!confirm('確定一次通過勾選的 '+boxes.length+' 筆嗎?\n(請確認都已經看過內容)')) return;
+  var ok=0, fail=0;
+  for(var i=0;i<boxes.length;i++){
+    var b=boxes[i]; var card=b.closest('.applicant-card'); var e=null;
+    if(listId==='review-list'){
+      var res=await sb.from('user_roles').update({status:'active'}).eq('user_id',b.dataset.uid).eq('role','suncar'); e=res.error;
+    } else if(listId==='cert-review-list'){
+      var upd=await sb.from('cert_submissions').update({status:'approved',reviewed_at:new Date().toISOString(),reviewed_by:window._adminId||null}).eq('id',b.dataset.sub);
+      e=upd.error;
+      if(!e){ var flag=CERT_FLAG[b.dataset.ctype]; if(flag){ var patch={}; patch[flag]=true; await sb.from('users').update(patch).eq('id',b.dataset.uid); } }
+    } else if(listId==='custom-cert-review-list'){
+      var cu=await sb.from('custom_certs').update({status:'approved',reviewed_at:new Date().toISOString(),reviewed_by:window._adminId||null}).eq('id',b.dataset.sub); e=cu.error;
+    }
+    if(e){ fail++; } else { ok++; if(card) card.remove(); }
+  }
+  /* 更新數字與空狀態 */
+  if(listId==='review-list'){
+    var left=document.querySelectorAll('#review-list .applicant-card').length; setReviewCount(left);
+    if(!left) document.getElementById('review-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的順咖申請</div>';
+  } else {
+    setCertCount();
+    if(!document.querySelectorAll('#cert-review-list .applicant-card').length) document.getElementById('cert-review-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的證件</div>';
+    if(!document.querySelectorAll('#custom-cert-review-list .applicant-card').length) document.getElementById('custom-cert-review-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的自訂證件</div>';
+  }
+  var master=document.getElementById('batchall-'+listId); if(master) master.checked=false;
+  alert('完成:通過 '+ok+' 筆'+(fail?'、失敗 '+fail+' 筆':''));
 }
 
 async function viewCert(path){
