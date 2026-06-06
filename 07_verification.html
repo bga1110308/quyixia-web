@@ -922,6 +922,13 @@ function updatePointsDisplay() {
   if (!btn) return;
   var max = CFG_FREE_QUOTA + CFG_PAID_CAP;
   var willCharge = (customCertCount >= CFG_FREE_QUOTA) && CFG_CHARGE_ON && CFG_PRICE > 0;
+  /* 上一張還沒上傳完,新增鈕先變灰提示,逼一次處理一張(addCustomCert 也會再擋一次) */
+  if (typeof hasUnfinishedDraft === 'function' && hasUnfinishedDraft()) {
+    btn.classList.add('maxed');
+    label.textContent = '請先完成上一張的上傳';
+    cost.style.display = 'none';
+    return;
+  }
   if (customCertCount >= max) {
     btn.classList.add('maxed');
     label.textContent = '已達上限('+max+' 個)';
@@ -953,15 +960,20 @@ function renderCustomCard(row) {
   card.className = 'cert-card';
   card.id = 'custom-cert-' + row.id;
   card.dataset.cid = row.id;
+  card.dataset.status = row.status;          // 用來判斷「上一張是否還沒上傳」(draft=尚未上傳)
+  card.dataset.paid = row.paid ? '1' : '0';
   if (row.status === 'pending') card.classList.add('pending');
   else if (row.status === 'approved') card.classList.add('uploaded');
   var showBadge = row.show_badge !== false;
+  /* 付費欄位的「框」不可刪(永久,避免重複扣款),所以不放 × ;免費欄位才給刪。
+     付費欄位要清空,到編輯頁(15)用「清除證件」。 */
+  var removeBtn = row.paid ? '' : '<button class="cert-remove" onclick="event.stopPropagation();removeCustomCert(\''+row.id+'\')" title="刪除這個欄位">×</button>';
   card.innerHTML =
     '<div class="cert-icon-wrap"><svg><use href="#i-doc"/></svg></div>' +
     '<div class="cert-info">' +
       '<div class="custom-cert-row" style="margin-bottom:6px;">' +
         '<input type="text" class="custom-cert-input" placeholder="證件名稱(例:駕照、職訓結業證書)" value="'+escAttr(row.name)+'">' +
-        '<button class="cert-remove" onclick="event.stopPropagation();removeCustomCert(\''+row.id+'\')" title="刪除這個欄位">×</button>' +
+        removeBtn +
       '</div>' +
       '<div class="cert-desc">'+(row.paid?'<span style="color:var(--amber-deep);font-weight:600;">已扣點</span>':'<span style="color:var(--forest);font-weight:600;">免費名額</span>')+' · 可上傳影本作為佐證</div>' +
       '<div class="cert-visibility'+(showBadge?' on':'')+'" onclick="event.stopPropagation();toggleVisibility(this)" data-cid="'+row.id+'">' +
@@ -983,9 +995,19 @@ function goBuyPoints() {
   window.location.href = '16_buy_credits.html';
 }
 
-/* 新增一張自訂證件欄位。扣點與額度判斷都在後台 buy_custom_cert_slot,這裡只做友善預判與確認。 */
+/* 有沒有「還沒上傳完成」的欄位(draft=已開欄位但還沒上傳檔案)。
+   有的話不准再開下一張,逼使用者一次處理一張,避免像之前一次開出好幾個空欄位。 */
+function hasUnfinishedDraft() {
+  return !!document.querySelector('#custom-certs-area .cert-card[data-status="draft"]');
+}
+
+var _addingSlot = false; // 同步上鎖,防連點:上一次請求還沒回來就擋掉(網路再慢也只開一個)
+
+/* 新增一張自訂證件欄位。扣點與額度判斷都在後台 buy_custom_cert_slot,這裡只做防連點、一次一張、友善確認。 */
 async function addCustomCert() {
+  if (_addingSlot) return;                                   // 防連點(同步,擋住延遲時的多次點擊)
   if (typeof window.sb === 'undefined') { alert('系統載入中,請稍候再試'); return; }
+  if (hasUnfinishedDraft()) { alert('請先完成上一張證件的上傳,再新增下一張。'); return; }
   if (customCertCount >= CFG_FREE_QUOTA + CFG_PAID_CAP) { alert('每個帳號最多 '+(CFG_FREE_QUOTA+CFG_PAID_CAP)+' 張自訂證件'); return; }
 
   var willCharge = (customCertCount >= CFG_FREE_QUOTA) && CFG_CHARGE_ON && CFG_PRICE > 0;
@@ -994,12 +1016,23 @@ async function addCustomCert() {
       if (confirm('新增 1 張其他證件需 '+CFG_PRICE+' 點,你目前有 '+myPoints+' 點。\n\n要前往購買點數嗎?')) goBuyPoints();
       return;
     }
-    if (!confirm('將扣除 '+CFG_PRICE+' 點\n目前 '+myPoints+' 點 → 扣後剩 '+(myPoints-CFG_PRICE)+' 點\n\n確定新增此證件嗎?')) return;
+    /* 收費確認:講清楚會扣點、不退、欄位之後不可刪;按取消就不開 */
+    if (!confirm('確定新增這個付費欄位嗎?\n\n・將扣除 '+CFG_PRICE+' 點(目前 '+myPoints+' 點 → 扣後 '+(myPoints-CFG_PRICE)+' 點)\n・點數一旦扣除不退還\n・付費欄位開了之後不能刪除(可清空內容回空白)\n\n按「確定」開欄位,按「取消」不扣點。')) return;
   }
 
-  var btn = document.getElementById('add-cert-btn'); if (btn) btn.style.pointerEvents = 'none';
-  var res = await sb.rpc('buy_custom_cert_slot');
+  _addingSlot = true;
+  var btn = document.getElementById('add-cert-btn');
+  var lbl = document.getElementById('add-cert-label');
+  var oldLbl = lbl ? lbl.textContent : '';
+  if (btn) btn.style.pointerEvents = 'none';
+  if (lbl) lbl.textContent = '開啟中…';
+  try {
+    var res = await sb.rpc('buy_custom_cert_slot');
+  } catch (e) { res = { error: { message: '連線出錯,請稍後再試' } }; }
+  _addingSlot = false;
   if (btn) btn.style.pointerEvents = '';
+  if (lbl) lbl.textContent = oldLbl;
+
   if (res.error) { alert('新增失敗:' + res.error.message); return; }
   var r = res.data || {};
   if (!r.ok) {
@@ -1015,6 +1048,8 @@ async function addCustomCert() {
   var inp = card.querySelector('.custom-cert-input'); if (inp) inp.focus();
   updatePointsDisplay();
   updateDoneSummary();
+  /* 扣完點立刻給明確提醒,讓使用者知道欄位已開、扣了多少、剩多少 */
+  if (r.charged) alert('已開啟 1 個付費欄位,扣 '+r.charged+' 點,目前剩 '+myPoints+' 點。\n請填寫證件名稱並上傳檔案。');
 }
 
 /* 真上傳:填名稱→開檔案選擇器→上傳到私密 certs 桶→該列更新為待審。重傳會回到審核中。 */
@@ -1056,7 +1091,9 @@ async function uploadCustomCert(tag) {
     }).eq('id', cid);
     if (upd.error) { alert('送審失敗:'+upd.error.message); tag.className='cert-status-tag cs-empty'; tag.innerHTML='<svg><use href="#i-upload"/></svg>上傳'; return; }
     card.classList.remove('uploaded'); card.classList.add('pending');
+    card.dataset.status = 'pending';   // 已上傳→放行「一次一張」可再新增下一張
     tag.className = 'cert-status-tag cs-pending'; tag.innerHTML = '<svg><use href="#i-clock"/></svg>審核中';
+    updatePointsDisplay();
     updateDoneSummary();
     alert('證件已上傳,進入審核。通過後(且你選擇顯示)案家名單會出現這個證件徽章。你的證件只有平台審核看得到,案家看不到檔案本身。');
   };
@@ -1065,7 +1102,8 @@ async function uploadCustomCert(tag) {
 
 async function removeCustomCert(cid) {
   var card = document.getElementById('custom-cert-' + cid); if (!card) return;
-  if (!confirm('確定刪除這個證件欄位?(已扣的點數不退還)')) return;
+  if (card.dataset.paid === '1') { alert('付費欄位不可刪除,只能到編輯頁清除內容'); return; } // 雙保險:付費不給刪
+  if (!confirm('確定刪除這個免費證件欄位?')) return;
   if (typeof window.sb !== 'undefined') {
     var del = await sb.from('custom_certs').delete().eq('id', cid);
     if (del.error) { alert('刪除失敗:'+del.error.message); return; }

@@ -468,6 +468,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div id="cert-list">
         <!-- JS 渲染 -->
       </div>
+
+      <!-- 其他證件(自訂):真資料 custom_certs。付費欄位框不可刪,只能清除內容回空白;免費欄位可整個刪 -->
+      <div class="section-desc" style="margin-top:14px;font-weight:600;color:var(--ink);">其他證件(自訂)</div>
+      <div id="custom-cert-list">
+        <!-- loadCustomCertMgmt() 渲染 -->
+      </div>
+
       <a class="cert-link" href="07_verification.html?tab=certs" style="margin-top:0.7rem;">
         <span><svg style="vertical-align:-0.15em;margin-right:5px;"><use href="#i-cert"/></svg>新增 / 更新證件(前往 07 上傳頁)</span>
         <span style="font-size:1.1rem;">›</span>
@@ -929,6 +936,79 @@ function deleteCert(key) {
   renderCerts();
 }
 
+/* ============ 其他證件(自訂)管理:真資料 custom_certs ============
+   規則(林慧怡定):付費欄位的「框」永久保留、不可刪除(避免重複扣款);但可「清除證件」把內容清空回空白,
+   空白＝案家端不顯示任何徽章。免費欄位(沒花點數)可整個刪除。清除/刪除都會一併移除私密桶裡的檔(個資)。 */
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+var _custCerts = [];
+
+async function loadCustomCertMgmt(){
+  var box = document.getElementById('custom-cert-list'); if(!box) return;
+  if(typeof window.sb === 'undefined' || !DB.user){ box.innerHTML = ''; return; }
+  var res = await sb.from('custom_certs').select('id,name,status,paid,file_paths').eq('user_id', DB.user.id).order('created_at',{ascending:true});
+  if(res.error){ box.innerHTML = '<div style="font-size:0.78rem;color:var(--danger);padding:8px 2px;">讀取失敗:'+escHtml(res.error.message)+'</div>'; return; }
+  _custCerts = res.data || [];
+  renderCustomCertMgmt();
+}
+
+function custStatusBadge(s){
+  if(s==='approved') return '<span class="cert-status verified">🟢 已通過</span>';
+  if(s==='pending')  return '<span class="cert-status pending">🔵 審核中</span>';
+  if(s==='rejected') return '<span class="cert-status expired">🔴 未通過</span>';
+  return '<span class="cert-status empty">⚪ 未上傳</span>';
+}
+
+function renderCustomCertMgmt(){
+  var box = document.getElementById('custom-cert-list'); if(!box) return;
+  if(!_custCerts.length){ box.innerHTML = '<div style="font-size:0.78rem;color:var(--ink-soft);padding:6px 2px;">尚未新增其他證件。到下方「新增 / 更新證件」可以新增。</div>'; return; }
+  box.innerHTML = _custCerts.map(function(c){
+    var nm = c.name || '(未命名)';
+    var hasContent = (Array.isArray(c.file_paths) && c.file_paths.length) || c.status==='pending' || c.status==='approved' || c.status==='rejected';
+    var tag = c.paid ? '<span style="font-size:0.66rem;color:var(--amber-deep);">付費欄位</span>' : '<span style="font-size:0.66rem;color:var(--forest);">免費</span>';
+    var item = '<div class="cert-item">';
+    item += '<div class="cert-thumb"><svg><use href="#i-cert"/></svg></div>';
+    item += '<div class="cert-meta">';
+    item += '<div class="cert-name">' + escHtml(nm) + ' ' + tag + '</div>';
+    item += custStatusBadge(c.status);
+    item += '</div>';
+    if(c.paid){
+      /* 付費:框不可刪,只能清除內容(有內容才給清) */
+      if(hasContent) item += '<button class="cert-del-btn" onclick="clearCustomCert(\''+c.id+'\')" title="清除證件內容,回到空白(欄位保留、點數不退)"><svg><use href="#i-trash"/></svg></button>';
+      else item += '<button class="cert-del-btn" disabled title="付費欄位已是空白,可到上傳頁重新上傳"><svg><use href="#i-trash"/></svg></button>';
+    } else {
+      /* 免費:整個刪除 */
+      item += '<button class="cert-del-btn" onclick="deleteCustomCert(\''+c.id+'\')" title="刪除這個欄位"><svg><use href="#i-trash"/></svg></button>';
+    }
+    item += '</div>';
+    return item;
+  }).join('');
+}
+
+/* 清除付費欄位的內容→回空白(欄位保留、不退點)。一併移除私密桶檔案 */
+async function clearCustomCert(id){
+  var c = _custCerts.find(function(x){ return x.id===id; }); if(!c) return;
+  if(!confirm('確定清除「'+(c.name||'這張')+'」的證件內容?\n\n欄位會保留(付費欄位不退點),變回空白、案家端不會顯示。之後可到上傳頁重新上傳。')) return;
+  var paths = Array.isArray(c.file_paths)?c.file_paths:[];
+  if(paths.length){ try{ await sb.storage.from('certs').remove(paths); }catch(e){} }
+  var upd = await sb.from('custom_certs').update({ name:c.name, file_paths:[], status:'draft', submitted_at:null, reviewed_at:null, reviewed_by:null, note:null }).eq('id', id);
+  if(upd.error){ alert('清除失敗:'+upd.error.message); return; }
+  showToast('已清除,欄位回到空白');
+  loadCustomCertMgmt();
+}
+
+/* 刪除免費欄位(整列刪)。付費的擋下,只能清除 */
+async function deleteCustomCert(id){
+  var c = _custCerts.find(function(x){ return x.id===id; }); if(!c) return;
+  if(c.paid){ alert('付費欄位不可刪除,只能清除內容'); return; }
+  if(!confirm('確定刪除「'+(c.name||'這個欄位')+'」?\n\n這是免費欄位,刪除後就不見了。')) return;
+  var paths = Array.isArray(c.file_paths)?c.file_paths:[];
+  if(paths.length){ try{ await sb.storage.from('certs').remove(paths); }catch(e){} }
+  var del = await sb.from('custom_certs').delete().eq('id', id);
+  if(del.error){ alert('刪除失敗:'+del.error.message); return; }
+  showToast('已刪除');
+  loadCustomCertMgmt();
+}
+
 /* ============ 儲存 / 取消 ============ */
 /* 補填提示:捲到該欄位、框紅一下、聚焦,再跳提示。全站表單共用同一套寫法。 */
 function gotoField(elId, msg){
@@ -1123,6 +1203,7 @@ function loadStaffProfile() {
   renderAreas();
   renderServices();
   renderCerts();
+  loadCustomCertMgmt(); /* 真資料:載入順咖自訂證件,提供清除/刪除 */
 
   /* 交通方式:依存檔勾選 */
   if (Array.isArray(d.transport)) {
