@@ -368,8 +368,10 @@ async function loadStaff() {
     var cats = [];
     services.forEach(function(k){ var c = SVC2CAT[k]; if (c && cats.indexOf(c) === -1) cats.push(c); });
     var badges = [];
-    if (r.is_realname) badges.push('verified');
-    if (r.has_caregiver_cert) badges.push('cna');
+    if (r.is_realname) badges.push('verified');       /* 身分證過審 */
+    if (r.has_caregiver_cert) badges.push('cna');     /* 照服員證過審 */
+    if (r.has_good_conduct) badges.push('safe');      /* 良民證過審 */
+    if (r.has_cpr) badges.push('cpr');                /* CPR/AED 急救證過審 */
     var areas = Array.isArray(p.areas) ? p.areas : [];
     return {
       id: r.id,

@@ -1126,6 +1126,15 @@ async function reviewAct(userId, decision, btnEl){
 
 /* ===== 證件審核(身分證 id、照服員證 cna) ===== */
 var CERT_TYPE_TEXT={ id:'身分證', cna:'照服員證', safe:'良民證', cpr:'CPR/AED 急救證' };
+/* 證件過審要設的 users 旗標對照表。為什麼用表不用巢狀三元:案家端靠 public_suncars
+   讀這幾個布林欄位畫徽章,日後加新證件種類只要在這裡加一行,不會散落多處。 */
+var CERT_FLAG={ id:'is_realname', cna:'has_caregiver_cert', safe:'has_good_conduct', cpr:'has_cpr' };
+var CERT_APPROVE_NOTE={
+  id:'\n通過後這位會被設為「已實名」。',
+  cna:'\n通過後這位才能接 B 池(身體照顧)的單。',
+  safe:'\n通過後案家端順咖名單會出現「良民」徽章。',
+  cpr:'\n通過後案家端順咖名單會出現「急救」徽章。'
+};
 
 function setCertCount(n){
   var c=document.getElementById('cert-count'); if(c) c.textContent=n;
@@ -1191,9 +1200,7 @@ async function viewCert(path){
 // 審核:通過=記結果並設資格(身分證→實名、照服員證→可接 B 池);退件=只記退件
 async function certAct(subId, userId, certType, decision, btnEl){
   var word=decision==='approved'?'通過':'退件';
-  var extra=decision==='approved'
-    ? (certType==='id'?'\n通過後這位會被設為「已實名」。':(certType==='cna'?'\n通過後這位才能接 B 池(身體照顧)的單。':''))
-    : '';
+  var extra=decision==='approved' ? (CERT_APPROVE_NOTE[certType]||'') : '';
   if(!confirm('確定要「'+word+'」這張'+(CERT_TYPE_TEXT[certType]||'證件')+'嗎?'+extra)) return;
   var card=btnEl.closest('.applicant-card');
   card.style.pointerEvents='none'; card.style.opacity='0.6';
@@ -1202,10 +1209,11 @@ async function certAct(subId, userId, certType, decision, btnEl){
     status:decision, reviewed_at:new Date().toISOString(), reviewed_by:window._adminId||null
   }).eq('id',subId);
   if(upd.error){ alert('更新失敗:'+upd.error.message); card.style.pointerEvents=''; card.style.opacity=''; return; }
-  // 2. 通過才設資格。身分證→is_realname、照服員證→has_caregiver_cert
+  // 2. 通過才設資格。四種證件各對應一個 users 旗標(見上方 CERT_FLAG),案家端靠這些畫徽章
   if(decision==='approved'){
-    var patch = certType==='id' ? {is_realname:true} : (certType==='cna' ? {has_caregiver_cert:true} : null);
-    if(patch){
+    var flag = CERT_FLAG[certType];
+    if(flag){
+      var patch = {}; patch[flag] = true;
       var ur=await sb.from('users').update(patch).eq('id',userId);
       if(ur.error){ alert('審核已記錄,但資格設定失敗:'+ur.error.message+'\n請稍後在順咖資料手動處理。'); }
     }
