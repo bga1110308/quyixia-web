@@ -840,48 +840,62 @@ function toggleChip(el) {
 }
 
 /* ============ 證件清單(可刪)============ */
-/* 4 張固定證件 + 解鎖對應徽章/服務項目 */
+/* 4 張固定證件。status 進頁由 loadFixedCertStatus() 讀真資料覆蓋(預設先當未上傳,避免閃假狀態)。
+   cert_type＝cert_submissions 的種類;flag＝過審對應的 users 旗標,刪除時要一起取消。 */
 var certData = [
   {
-    key: 'id_card',
+    key: 'id_card', cert_type: 'id', flag: 'is_realname',
     name: '身分證',
-    status: 'verified',     /* verified / pending / empty / expired */
+    status: 'empty',        /* verified / pending / rejected / empty */
     required: true,         /* 必備證件,不可刪 */
     unlocks: ['實名徽章', '接案資格']
   },
   {
-    key: 'cna_cert',
+    key: 'cna_cert', cert_type: 'cna', flag: 'has_caregiver_cert',
     name: '居服員證',
-    status: 'verified',
+    status: 'empty',
     required: false,
     unlocks: ['照服員徽章', 'B 池接案資格', '身體照顧服務開通']
   },
   {
-    key: 'crime_check',
+    key: 'crime_check', cert_type: 'safe', flag: 'has_good_conduct',
     name: '良民證',
-    status: 'verified',
+    status: 'empty',
     required: false,
     unlocks: ['良民徽章', '兒童任務開通']
   },
   {
-    key: 'first_aid',
+    key: 'first_aid', cert_type: 'cpr', flag: 'has_cpr',
     name: '急救證',
-    status: 'pending',
+    status: 'empty',
     required: false,
     unlocks: ['急救徽章 案家加分']
   }
 ];
 
+/* 進頁讀真實審核狀態(cert_submissions),覆蓋掉預設值。讓固定證件狀態跟 07、08 後台一致。 */
+async function loadFixedCertStatus() {
+  if (typeof window.sb === 'undefined' || !DB.user) return;
+  var res = await sb.from('cert_submissions').select('cert_type,status').eq('user_id', DB.user.id).in('cert_type', ['id','cna','safe','cpr']);
+  var map = {};
+  (res.data || []).forEach(function(r){ map[r.cert_type] = r.status; });
+  certData.forEach(function(c){
+    var s = map[c.cert_type];
+    c.status = (s === 'approved') ? 'verified' : (s === 'pending') ? 'pending' : (s === 'rejected') ? 'rejected' : 'empty';
+  });
+  renderCerts();
+}
+
 function getCertStatusBadge(status) {
   if (status === 'verified') return '<span class="cert-status verified">🟢 已驗證</span>';
   if (status === 'pending')  return '<span class="cert-status pending">🔵 審核中</span>';
-  if (status === 'expired')  return '<span class="cert-status expired">🔴 已過期</span>';
+  if (status === 'rejected') return '<span class="cert-status expired">🔴 未通過</span>';
   return '<span class="cert-status empty">⚪ 未上傳</span>';
 }
 
 function renderCerts() {
   var html = certData.map(function(c) {
-    var canDelete = !c.required && (c.status === 'verified' || c.status === 'pending' || c.status === 'expired');
+    var canDelete = !c.required && c.status !== 'empty';
     var delTitle = c.required ? '必備證件,不可刪除' : (c.status === 'empty' ? '尚未上傳' : '刪除此證件');
 
     var item = '<div class="cert-item">';
@@ -901,39 +915,48 @@ function renderCerts() {
   document.getElementById('cert-list').innerHTML = html;
 }
 
-function deleteCert(key) {
+/* 真刪除固定證件:刪審核紀錄＋砍私密桶檔＋取消對應資格旗標(只設 false,不會自行給資格)＋連動關服務。
+   必備(身分證)不可刪。刪完案家端對應徽章就會消失。 */
+async function deleteCert(key) {
   var cert = certData.find(function(c){ return c.key === key; });
-  if (!cert) return;
+  if (!cert || cert.required) return;
+  if (typeof window.sb === 'undefined' || !DB.user) { alert('連線未就緒,請稍後再試'); return; }
 
   var msg = '確定要刪除「' + cert.name + '」?\n\n' +
             '⚠️ 刪除後會關閉以下功能:\n' +
             cert.unlocks.map(function(u){ return '・' + u; }).join('\n') + '\n\n' +
-            '若要重新啟用,需重新上傳審核。';
-
+            '若要重新啟用,需到上傳頁(07)重新上傳審核。';
   if (!confirm(msg)) return;
 
-  /* 把證件狀態設為 empty */
-  cert.status = 'empty';
+  /* 1. 撈檔案路徑,連私密桶的證件檔一起刪(個資) */
+  var subRes = await sb.from('cert_submissions').select('file_paths').eq('user_id', DB.user.id).eq('cert_type', cert.cert_type).maybeSingle();
+  var paths = (subRes && subRes.data && Array.isArray(subRes.data.file_paths)) ? subRes.data.file_paths : [];
+  if (paths.length) { try { await sb.storage.from('certs').remove(paths); } catch(e){} }
 
-  /* 連動關閉:依證件 key 鎖回相應的服務項目 */
-  if (key === 'cna_cert') {
-    /* 居服員證刪了 → 取消身體照顧勾選 */
-    var idx = selectedSvcs.indexOf('body-care');
-    if (idx > -1) selectedSvcs.splice(idx, 1);
-    renderServices();
-    showToast('已刪除居服員證,身體照顧服務已關閉');
-  } else if (key === 'crime_check') {
-    /* 良民證刪了 → 取消兒童相關勾選 */
-    ['kid-care','pick-kid'].forEach(function(k) {
-      var idx2 = selectedSvcs.indexOf(k);
-      if (idx2 > -1) selectedSvcs.splice(idx2, 1);
-    });
-    renderServices();
-    showToast('已刪除良民證,兒童任務已關閉');
-  } else {
-    showToast('已刪除' + cert.name);
+  /* 2. 刪審核紀錄 */
+  var del = await sb.from('cert_submissions').delete().eq('user_id', DB.user.id).eq('cert_type', cert.cert_type);
+  if (del.error) { alert('刪除失敗:' + del.error.message); return; }
+
+  /* 3. 取消對應資格旗標(設 false。案家端徽章靠這個,設掉徽章就不見) */
+  if (cert.flag) {
+    var patch = {}; patch[cert.flag] = false;
+    var up = await sb.from('users').update(patch).eq('id', DB.user.id);
+    if (up.error) { alert('證件已刪,但資格狀態更新失敗:' + up.error.message + '\n請稍後再試或通知平台。'); }
   }
+
+  /* 4. 連動關閉相關服務勾選(儲存變更後生效) */
+  if (key === 'cna_cert') {
+    var idx = selectedSvcs.indexOf('body-care'); if (idx > -1) selectedSvcs.splice(idx, 1);
+    renderServices();
+  } else if (key === 'crime_check') {
+    ['kid-care','pick-kid'].forEach(function(k){ var j = selectedSvcs.indexOf(k); if (j > -1) selectedSvcs.splice(j, 1); });
+    renderServices();
+  }
+
+  /* 5. 更新畫面 */
+  cert.status = 'empty';
   renderCerts();
+  showToast('已刪除' + cert.name);
 }
 
 /* ============ 其他證件(自訂)管理:真資料 custom_certs ============
@@ -1203,7 +1226,8 @@ function loadStaffProfile() {
   renderAreas();
   renderServices();
   renderCerts();
-  loadCustomCertMgmt(); /* 真資料:載入順咖自訂證件,提供清除/刪除 */
+  loadFixedCertStatus();  /* 真資料:讀固定四種證件的真實審核狀態,覆蓋預設 */
+  loadCustomCertMgmt();   /* 真資料:載入順咖自訂證件,提供清除/刪除 */
 
   /* 交通方式:依存檔勾選 */
   if (Array.isArray(d.transport)) {

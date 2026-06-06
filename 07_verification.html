@@ -591,18 +591,18 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="sec-title">認證標章預覽</div>
     <div style="font-size:0.8rem;color:var(--ink-soft);margin-bottom:0.85rem;">完成認證後,你的卡片上會這樣顯示:</div>
     <div class="preview-card">
-      <div class="p-avatar">芳</div>
+      <div class="p-avatar" id="preview-avatar">順</div>
       <div style="flex:1;">
-        <div style="font-weight:600;font-size:1rem;color:var(--ink);">小芳</div>
+        <div style="font-weight:600;font-size:1rem;color:var(--ink);" id="preview-name">順咖</div>
         <div class="p-badges">
-          <span class="p-badge vip">VIP</span>
-          <span class="p-badge email" id="preview-email-badge" style="display:none;"><svg><use href="#i-mail"/></svg>信箱已驗證</span>
-          <span class="p-badge phone" id="preview-phone-badge" style="display:none;"><svg><use href="#i-phone"/></svg>手機已驗證</span>
           <span class="p-badge email" id="preview-id-badge" style="display:none;"><svg><use href="#i-check"/></svg>實名</span>
+          <span class="p-badge email" id="preview-cna-badge" style="display:none;"><svg><use href="#i-star"/></svg>照服員</span>
           <span class="p-badge phone" id="preview-safe-badge" style="display:none;"><svg><use href="#i-shield"/></svg>良民</span>
+          <span class="p-badge phone" id="preview-cpr-badge" style="display:none;"><svg><use href="#i-heart-cross"/></svg>急救</span>
+          <span id="preview-custom"></span>
           <span class="p-badge unverified" id="preview-unverified"><svg><use href="#i-warn"/></svg>尚未完成認證</span>
         </div>
-        <div class="p-rating">★ 4.9 · 已完成 23 件</div>
+        <div class="p-rating" id="preview-rating">尚無足夠評價</div>
       </div>
     </div>
   </div>
@@ -860,15 +860,15 @@ function updateStatusTab() {
     safeBadge.style.background = certStatus.safe === 'uploaded' ? 'var(--forest)' : (certStatus.safe === 'pending' ? 'var(--info)' : 'var(--warn)');
   }
 
-  document.getElementById('preview-email-badge').style.display = emailVerified ? 'inline-flex' : 'none';
-  document.getElementById('preview-phone-badge').style.display = phoneVerified ? 'inline-flex' : 'none';
-  var idBadgePrev = document.getElementById('preview-id-badge');
-  if (idBadgePrev) idBadgePrev.style.display = certStatus.id === 'uploaded' ? 'inline-flex' : 'none';
-  var safeBadgePrev = document.getElementById('preview-safe-badge');
-  if (safeBadgePrev) safeBadgePrev.style.display = certStatus.safe === 'uploaded' ? 'inline-flex' : 'none';
-
-  var anyVerified = emailVerified || phoneVerified || certStatus.id === 'uploaded' || certStatus.safe === 'uploaded';
-  document.getElementById('preview-unverified').style.display = anyVerified ? 'none' : 'inline-flex';
+  /* 預覽卡的徽章＝跟 02 案家端看到的一致(實名/照服員/良民/急救);email/phone 不在案家卡上,預覽不放 */
+  var setPrev = function(id, on){ var e = document.getElementById(id); if (e) e.style.display = on ? 'inline-flex' : 'none'; };
+  setPrev('preview-id-badge',   certStatus.id   === 'uploaded');
+  setPrev('preview-cna-badge',  certStatus.cna  === 'uploaded');
+  setPrev('preview-safe-badge', certStatus.safe === 'uploaded');
+  setPrev('preview-cpr-badge',  certStatus.cpr  === 'uploaded');
+  var hasCustomPrev = !!document.querySelector('#preview-custom .p-badge');
+  var anyVerified = certStatus.id === 'uploaded' || certStatus.cna === 'uploaded' || certStatus.safe === 'uploaded' || certStatus.cpr === 'uploaded' || hasCustomPrev;
+  setPrev('preview-unverified', !anyVerified);
 
   updateProgress();
 }
@@ -1382,8 +1382,34 @@ async function realUploadCert(key){
   input.click();
 }
 
-/* 先讀固定四種證件狀態(會設好 window._suncarId),再載入自訂證件(要用到 _suncarId) */
-loadCertStatus().then(loadCustomCerts);
+/* 預覽卡載入真資料:真名、頭像字、真實評價、過審的自訂名稱徽章。跟 02 案家端看到的一致。 */
+async function loadPreviewIdentity(){
+  if (typeof window.sb === 'undefined' || !window._suncarId) return;
+  var prof = await sb.from('users').select('display_name').eq('id', window._suncarId).maybeSingle();
+  var nm = (prof && prof.data && prof.data.display_name) ? prof.data.display_name : '順咖';
+  var nEl = document.getElementById('preview-name'); if (nEl) nEl.textContent = nm;
+  var aEl = document.getElementById('preview-avatar'); if (aEl) aEl.textContent = (nm.charAt(0) || '順');
+  var pr = document.getElementById('preview-rating');
+  if (pr) {
+    try {
+      var rv = await sb.rpc('get_review_stats_batch', { p_targets: [window._suncarId], p_mode: 'client_reviews_suncar' });
+      var row = (rv && rv.data && rv.data[0]) ? rv.data[0] : null;
+      pr.textContent = (row && row.enough && row.overall_avg != null) ? ('★ ' + Number(row.overall_avg).toFixed(1) + ' · ' + row.cnt + ' 則評價') : '尚無足夠評價';
+    } catch(e) { pr.textContent = '尚無足夠評價'; }
+  }
+  var box = document.getElementById('preview-custom');
+  if (box) {
+    box.innerHTML = '';
+    try {
+      var cb = await sb.rpc('get_suncar_custom_badges', { p_targets: [window._suncarId] });
+      (cb && cb.data ? cb.data : []).forEach(function(r){ var s = document.createElement('span'); s.className = 'p-badge email'; s.textContent = r.name; box.appendChild(s); });
+    } catch(e) {}
+  }
+  updateStatusTab(); // 重算「尚未完成認證」是否顯示(含自訂徽章)
+}
+
+/* 先讀固定四種證件狀態(會設好 window._suncarId),再載入自訂證件與預覽卡真資料 */
+loadCertStatus().then(loadCustomCerts).then(loadPreviewIdentity);
 </script>
 </body>
 </html>
