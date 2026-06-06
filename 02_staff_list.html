@@ -131,6 +131,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .b-cpr{background:var(--danger-pale);color:var(--danger);}
 .b-cna{background:var(--warn-pale);color:var(--warn);}
 .b-senior{background:#FCE4F2;color:#A8367C;}
+.b-custom{background:var(--champagne-soft);color:var(--ink-soft);border:1px solid var(--border-soft);}
 
 .mini-tags{position:relative;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:10px;z-index:1;}
 .mtag{font-size:0.68rem;background:var(--champagne-soft);color:var(--ink-soft);padding:3px 9px;border-radius:99px;border:1px solid var(--border-soft);}
@@ -297,6 +298,9 @@ var creditMap = {};
    一律走後台 get_review_stats_batch,只回彙總(平均+則數),不吐個別留言或誰寫的;不足3則 enough=false。
    評價是公開資訊(挑順咖看得到),不像信用分要付費解鎖。 */
 var reviewMap = {};
+/* 自訂證件徽章:customBadgeMap = {順咖id: [證件名稱,...]}。後台 get_suncar_custom_badges 只回
+   已過審＋順咖選擇顯示的名稱,不吐檔案或其他個資。一位順咖可有多張,故存陣列。公開資訊不上鎖。 */
+var customBadgeMap = {};
 var myId = null; /* 登入者自己的 id:用來擋「點自己卡片變成指定自己下單」 */
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -404,6 +408,15 @@ async function loadStaff() {
     if (rv && rv.data) rv.data.forEach(function(row){ reviewMap[row.reviewee_id] = { avg: row.overall_avg, cnt: row.cnt, enough: row.enough }; });
   }
 
+  /* 自訂證件徽章:批次拿全部順咖已過審且選擇顯示的自訂證件名稱(後台只吐 user_id 與 name)。 */
+  customBadgeMap = {};
+  if (ids.length) {
+    var cb = await sb.rpc('get_suncar_custom_badges', { p_targets: ids });
+    if (cb && cb.data) cb.data.forEach(function(row){
+      (customBadgeMap[row.user_id] = customBadgeMap[row.user_id] || []).push(row.name);
+    });
+  }
+
   renderStaff();
 }
 
@@ -447,6 +460,9 @@ function renderStaff() {
 
   grid.innerHTML = filtered.map(function(s){
     var badges = s.badges.map(function(b){ var bm = badgeMap[b]; return '<span class="badge '+bm.cls+'"><svg><use href="#'+bm.icon+'"/></svg>'+bm.name+'</span>'; }).join('');
+    /* 自訂證件名稱徽章:過審才會在這裡(後台把關),純文字、無固定圖示 */
+    var customNames = customBadgeMap[s.id] || [];
+    badges += customNames.map(function(nm){ return '<span class="badge b-custom">'+esc(nm)+'</span>'; }).join('');
     var tags = s.tags.map(function(t){ return '<span class="mtag">'+esc(t)+'</span>'; }).join('');
     var onlineMark = s.online
       ? '<span class="online-mark"><span class="dot"></span>接單中</span>'

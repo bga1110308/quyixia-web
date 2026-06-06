@@ -882,151 +882,216 @@ function showToast(msg) {
 }
 
 /* 顯示給案家切換 */
-function toggleVisibility(el) {
+async function toggleVisibility(el) {
   var on = el.classList.toggle('on');
   var label = el.querySelector('.vis-label');
   var eyeSvg = el.querySelector('.vis-eye svg use');
-  if (on) {
-    label.textContent = '顯示給案家看';
-    eyeSvg.setAttribute('href', '#i-eye');
-  } else {
-    label.textContent = '不顯示給案家';
-    eyeSvg.setAttribute('href', '#i-eye-off');
+  label.textContent = on ? '顯示給案家看' : '不顯示給案家';
+  eyeSvg.setAttribute('href', on ? '#i-eye' : '#i-eye-off');
+  /* 自訂證件卡的顯示開關要存進後台(show_badge),案家端徽章才會跟著開關。固定四種證件沒有 data-cid,不寫。 */
+  var cid = el.dataset.cid;
+  if (cid && typeof window.sb !== 'undefined') {
+    var r = await sb.from('custom_certs').update({ show_badge: on }).eq('id', cid);
+    if (r && r.error) { /* 存失敗就還原畫面,避免假成功 */
+      var back = el.classList.toggle('on');
+      label.textContent = back ? '顯示給案家看' : '不顯示給案家';
+      eyeSvg.setAttribute('href', back ? '#i-eye' : '#i-eye-off');
+      alert('設定顯示失敗:' + r.error.message);
+    }
   }
 }
 
-/* 自訂證件 */
-var myPoints = 0;
-try {
-  myPoints = parseInt(sessionStorage.getItem('suncarPoints') || '0', 10);
-  if (isNaN(myPoints)) myPoints = 0;
-} catch(e) { myPoints = 0; }
-var customCertCount = 0;
-var customCertSeq = 0;
-var FREE_QUOTA = 1;
-var MAX_EXTRA = 5;
-var POINTS_PER_CERT = 50;
+/* ===== 自訂證件(真上傳＋伺服器端扣點) =====
+   收費規則全在後台 app_config:custom_cert_free_quota 免費額度、cert_charge_on 收不收費、price_cert 每張幾點。
+   扣點走後台函式 buy_custom_cert_slot(伺服器端驗、前端改不動,守金流紅線);前端只負責畫面與呼叫。 */
+var myPoints = 0;          // 順咖點數,進頁從後台讀
+var customCertCount = 0;   // 目前畫面上的自訂證件張數
+var CFG_FREE_QUOTA = 1;    // 免費額度(後台可改)
+var CFG_CHARGE_ON = false; // 是否收費(後台可切)
+var CFG_PRICE = 0;         // 每張幾點(後台可改)
+var CFG_PAID_CAP = 10;     // 付費張數上限,跟後台函式一致
+
+/* value 屬性用的最小跳脫,避免證件名稱含引號或角括號把 HTML 弄壞(07 沒有共用 esc) */
+function escAttr(s) { return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function updatePointsDisplay() {
-  document.getElementById('my-points').textContent = myPoints;
+  var pEl = document.getElementById('my-points'); if (pEl) pEl.textContent = myPoints;
   var btn = document.getElementById('add-cert-btn');
   var label = document.getElementById('add-cert-label');
   var cost = document.getElementById('add-cert-cost');
-  if (customCertCount >= (FREE_QUOTA + MAX_EXTRA)) {
+  if (!btn) return;
+  var max = CFG_FREE_QUOTA + CFG_PAID_CAP;
+  var willCharge = (customCertCount >= CFG_FREE_QUOTA) && CFG_CHARGE_ON && CFG_PRICE > 0;
+  if (customCertCount >= max) {
     btn.classList.add('maxed');
-    label.textContent = '已達上限('+(FREE_QUOTA+MAX_EXTRA)+' 個)';
+    label.textContent = '已達上限('+max+' 個)';
     cost.style.display = 'none';
-  } else if (customCertCount < FREE_QUOTA) {
+  } else if (customCertCount < CFG_FREE_QUOTA) {
     btn.classList.remove('maxed');
-    label.textContent = '新增其他證件(免費,還可加 '+(FREE_QUOTA - customCertCount)+' 個)';
+    label.textContent = '新增其他證件(免費,還可加 '+(CFG_FREE_QUOTA - customCertCount)+' 個)';
     cost.style.display = 'none';
   } else {
     btn.classList.remove('maxed');
     label.textContent = '新增其他證件';
-    cost.style.display = 'inline-flex';
-    cost.innerHTML = '<svg><use href="#i-coin"/></svg>'+POINTS_PER_CERT+' 點';
+    if (willCharge) { cost.style.display = 'inline-flex'; cost.innerHTML = '<svg><use href="#i-coin"/></svg>'+CFG_PRICE+' 點'; }
+    else { cost.style.display = 'none'; }
   }
 }
 
-function addCustomCert() {
-  if (customCertCount >= (FREE_QUOTA + MAX_EXTRA)) {
-    alert('每個帳號最多 '+(FREE_QUOTA+MAX_EXTRA)+' 張自訂證件');
-    return;
-  }
-  var isFree = customCertCount < FREE_QUOTA;
-  if (!isFree) {
-    var pts = 0;
-    try {
-      pts = parseInt(sessionStorage.getItem('suncarPoints') || '0', 10);
-      if (isNaN(pts)) pts = 0;
-    } catch(e) { pts = 0; }
+/* 依審核狀態回傳右側狀態標籤。draft/rejected 可上傳;onclick 用 closest 拿卡片,不寫死序號 */
+function customStatusTag(status) {
+  if (status === 'approved') return '<span class="cert-status-tag cs-uploaded"><svg><use href="#i-check"/></svg>已通過</span>';
+  if (status === 'pending')  return '<span class="cert-status-tag cs-pending"><svg><use href="#i-clock"/></svg>審核中</span>';
+  var txt = (status === 'rejected') ? '<svg><use href="#i-warn"/></svg>未通過,請重傳' : '<svg><use href="#i-upload"/></svg>上傳';
+  return '<span class="cert-status-tag cs-empty" onclick="uploadCustomCert(this)">'+txt+'</span>';
+}
 
-    if (pts < POINTS_PER_CERT) {
-      if (confirm('新增 1 張其他證件需 '+POINTS_PER_CERT+' 點,你目前有 '+pts+' 點。\n\n要前往購買點數嗎?')) {
-        try {
-          sessionStorage.setItem('credits_pool', 'suncar');
-          sessionStorage.setItem('credits_returnTo', '07_verification.html?tab=certs');
-        } catch(e){}
-        window.location.href = '16_buy_credits.html';
-      }
-      return;
-    }
-
-    if (!confirm('將扣除 '+POINTS_PER_CERT+' 點\n目前 '+pts+' 點 → 扣後剩 '+(pts-POINTS_PER_CERT)+' 點\n\n確定新增此證件嗎?')) return;
-
-    try {
-      sessionStorage.setItem('suncarPoints', String(pts - POINTS_PER_CERT));
-    } catch(e){}
-    myPoints = pts - POINTS_PER_CERT;
-  }
-
-  customCertCount++;
-  customCertSeq++;
-  var idx = customCertSeq;
+/* 畫一張自訂證件卡。row = custom_certs 一列 {id,name,status,paid,show_badge} */
+function renderCustomCard(row) {
   var area = document.getElementById('custom-certs-area');
   var card = document.createElement('div');
   card.className = 'cert-card';
-  card.id = 'custom-cert-' + idx;
+  card.id = 'custom-cert-' + row.id;
+  card.dataset.cid = row.id;
+  if (row.status === 'pending') card.classList.add('pending');
+  else if (row.status === 'approved') card.classList.add('uploaded');
+  var showBadge = row.show_badge !== false;
   card.innerHTML =
     '<div class="cert-icon-wrap"><svg><use href="#i-doc"/></svg></div>' +
     '<div class="cert-info">' +
       '<div class="custom-cert-row" style="margin-bottom:6px;">' +
-        '<input type="text" class="custom-cert-input" placeholder="證件名稱(例:駕照、職訓結業證書)">' +
-        '<button class="cert-remove" onclick="event.stopPropagation();removeCustomCert('+idx+')" title="刪除這個欄位">×</button>' +
+        '<input type="text" class="custom-cert-input" placeholder="證件名稱(例:駕照、職訓結業證書)" value="'+escAttr(row.name)+'">' +
+        '<button class="cert-remove" onclick="event.stopPropagation();removeCustomCert(\''+row.id+'\')" title="刪除這個欄位">×</button>' +
       '</div>' +
-      '<div class="cert-desc">'+(isFree?'<span style="color:var(--forest);font-weight:600;">免費名額</span>':'<span style="color:var(--amber-deep);font-weight:600;">已扣 '+POINTS_PER_CERT+' 點</span>')+' · 可上傳影本作為佐證</div>' +
-      '<div class="cert-visibility on" onclick="event.stopPropagation();toggleVisibility(this)" data-key="custom-'+idx+'">' +
+      '<div class="cert-desc">'+(row.paid?'<span style="color:var(--amber-deep);font-weight:600;">已扣點</span>':'<span style="color:var(--forest);font-weight:600;">免費名額</span>')+' · 可上傳影本作為佐證</div>' +
+      '<div class="cert-visibility'+(showBadge?' on':'')+'" onclick="event.stopPropagation();toggleVisibility(this)" data-cid="'+row.id+'">' +
         '<span class="vis-switch"></span>' +
-        '<span class="vis-eye"><svg class="ico"><use href="#i-eye"/></svg></span>' +
-        '<span class="vis-label">顯示給案家看</span>' +
+        '<span class="vis-eye"><svg class="ico"><use href="#'+(showBadge?'i-eye':'i-eye-off')+'"/></svg></span>' +
+        '<span class="vis-label">'+(showBadge?'顯示給案家看':'不顯示給案家')+'</span>' +
       '</div>' +
     '</div>' +
-    '<span class="cert-status-tag cs-empty" onclick="uploadCustomCert(this,'+idx+')"><svg><use href="#i-upload"/></svg>上傳</span>';
+    customStatusTag(row.status);
   area.appendChild(card);
-  var inp = card.querySelector('.custom-cert-input');
-  inp.focus();
+  return card;
+}
+
+function goBuyPoints() {
+  try {
+    sessionStorage.setItem('credits_pool', 'suncar');
+    sessionStorage.setItem('credits_returnTo', '07_verification.html?tab=certs');
+  } catch(e){}
+  window.location.href = '16_buy_credits.html';
+}
+
+/* 新增一張自訂證件欄位。扣點與額度判斷都在後台 buy_custom_cert_slot,這裡只做友善預判與確認。 */
+async function addCustomCert() {
+  if (typeof window.sb === 'undefined') { alert('系統載入中,請稍候再試'); return; }
+  if (customCertCount >= CFG_FREE_QUOTA + CFG_PAID_CAP) { alert('每個帳號最多 '+(CFG_FREE_QUOTA+CFG_PAID_CAP)+' 張自訂證件'); return; }
+
+  var willCharge = (customCertCount >= CFG_FREE_QUOTA) && CFG_CHARGE_ON && CFG_PRICE > 0;
+  if (willCharge) {
+    if (myPoints < CFG_PRICE) {
+      if (confirm('新增 1 張其他證件需 '+CFG_PRICE+' 點,你目前有 '+myPoints+' 點。\n\n要前往購買點數嗎?')) goBuyPoints();
+      return;
+    }
+    if (!confirm('將扣除 '+CFG_PRICE+' 點\n目前 '+myPoints+' 點 → 扣後剩 '+(myPoints-CFG_PRICE)+' 點\n\n確定新增此證件嗎?')) return;
+  }
+
+  var btn = document.getElementById('add-cert-btn'); if (btn) btn.style.pointerEvents = 'none';
+  var res = await sb.rpc('buy_custom_cert_slot');
+  if (btn) btn.style.pointerEvents = '';
+  if (res.error) { alert('新增失敗:' + res.error.message); return; }
+  var r = res.data || {};
+  if (!r.ok) {
+    if (r.reason === 'insufficient') { if (confirm('點數不足,需 '+r.need+' 點、你目前 '+r.have+' 點。\n\n要前往購買點數嗎?')) goBuyPoints(); }
+    else if (r.reason === 'limit') { alert('已達自訂證件上限('+r.max+' 張)'); }
+    else if (r.reason === 'not_logged_in') { alert('請先登入'); window.location.href = '13_login.html'; }
+    else { alert('新增失敗,請稍後再試'); }
+    return;
+  }
+  if (r.charged) myPoints -= r.charged;  // 後台已扣,畫面同步
+  customCertCount++;
+  var card = renderCustomCard({ id: r.id, name: '', status: 'draft', paid: !!r.charged, show_badge: true });
+  var inp = card.querySelector('.custom-cert-input'); if (inp) inp.focus();
   updatePointsDisplay();
   updateDoneSummary();
 }
 
-function uploadCustomCert(tag, idx) {
-  if (tag.classList.contains('cs-uploaded')) {
-    if (confirm('已上傳的證件要重新上傳嗎?')) {
-      tag.className = 'cert-status-tag cs-empty';
-      tag.innerHTML = '<svg><use href="#i-upload"/></svg>上傳';
-      var c = document.getElementById('custom-cert-'+idx);
-      c.classList.remove('uploaded','pending');
-      updateDoneSummary();
-    }
-    return;
-  }
-  var card = document.getElementById('custom-cert-'+idx);
+/* 真上傳:填名稱→開檔案選擇器→上傳到私密 certs 桶→該列更新為待審。重傳會回到審核中。 */
+async function uploadCustomCert(tag) {
+  var card = tag.closest('.cert-card'); if (!card) return;
+  var cid = card.dataset.cid;
+  if (tag.classList.contains('cs-uploaded') && !confirm('這張已通過審核,重新上傳會回到「審核中」,確定嗎?')) return;
   var nameInp = card.querySelector('.custom-cert-input');
-  if (!nameInp.value.trim()) {
-    alert('請先填寫證件名稱');
-    nameInp.focus();
-    return;
-  }
-  card.classList.add('pending');
-  tag.className = 'cert-status-tag cs-pending';
-  tag.innerHTML = '<svg><use href="#i-clock"/></svg>審核中';
-  setTimeout(function(){
-    card.classList.remove('pending');
-    card.classList.add('uploaded');
-    tag.className = 'cert-status-tag cs-uploaded';
-    tag.innerHTML = '<svg><use href="#i-check"/></svg>已通過';
+  var name = (nameInp.value || '').trim();
+  if (!name) { alert('請先填寫證件名稱'); nameInp.focus(); return; }
+  if (!window._suncarId) { alert('請先登入'); window.location.href = '13_login.html'; return; }
+
+  var input = document.createElement('input');
+  input.type = 'file'; input.accept = 'image/*,application/pdf'; input.multiple = true;
+  input.onchange = async function(){
+    var files = Array.prototype.slice.call(input.files || []);
+    if (!files.length) return;
+    if (files.length > 3) { alert('一張證件最多上傳 3 個檔,請重新選擇。'); return; }
+    var MAX_BYTES = 10 * 1024 * 1024;
+    for (var c = 0; c < files.length; c++) {
+      if (files[c].size > MAX_BYTES) { alert('「'+files[c].name+'」超過 10MB,請壓縮或重拍後再上傳。'); return; }
+      if (files[c].type && !/^image\//.test(files[c].type) && files[c].type !== 'application/pdf') {
+        alert('「'+files[c].name+'」格式不支援,只能上傳照片或 PDF。'); return;
+      }
+    }
+    tag.className = 'cert-status-tag cs-pending'; tag.innerHTML = '<svg><use href="#i-clock"/></svg>上傳中…';
+    var paths = [];
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var ext = ((f.name.split('.').pop()) || 'jpg').toLowerCase();
+      var path = window._suncarId + '/custom_' + cid + '_' + (i+1) + '.' + ext;
+      var up = await sb.storage.from('certs').upload(path, f, { upsert: true });
+      if (up.error) { alert('上傳失敗:'+up.error.message); tag.className='cert-status-tag cs-empty'; tag.innerHTML='<svg><use href="#i-upload"/></svg>上傳'; return; }
+      paths.push(path);
+    }
+    var upd = await sb.from('custom_certs').update({
+      name: name, file_paths: paths, status: 'pending',
+      submitted_at: new Date().toISOString(), reviewed_at: null, reviewed_by: null, note: null
+    }).eq('id', cid);
+    if (upd.error) { alert('送審失敗:'+upd.error.message); tag.className='cert-status-tag cs-empty'; tag.innerHTML='<svg><use href="#i-upload"/></svg>上傳'; return; }
+    card.classList.remove('uploaded'); card.classList.add('pending');
+    tag.className = 'cert-status-tag cs-pending'; tag.innerHTML = '<svg><use href="#i-clock"/></svg>審核中';
     updateDoneSummary();
-  }, 2000);
+    alert('證件已上傳,進入審核。通過後(且你選擇顯示)案家名單會出現這個證件徽章。你的證件只有平台審核看得到,案家看不到檔案本身。');
+  };
+  input.click();
+}
+
+async function removeCustomCert(cid) {
+  var card = document.getElementById('custom-cert-' + cid); if (!card) return;
+  if (!confirm('確定刪除這個證件欄位?(已扣的點數不退還)')) return;
+  if (typeof window.sb !== 'undefined') {
+    var del = await sb.from('custom_certs').delete().eq('id', cid);
+    if (del.error) { alert('刪除失敗:'+del.error.message); return; }
+  }
+  card.remove();
+  customCertCount--;
+  updatePointsDisplay();
   updateDoneSummary();
 }
 
-function removeCustomCert(idx) {
-  var card = document.getElementById('custom-cert-'+idx);
-  if (!card) return;
-  var hasContent = card.querySelector('.custom-cert-input').value.trim() || card.classList.contains('uploaded') || card.classList.contains('pending');
-  if (hasContent && !confirm('確定刪除這個證件欄位?(不會退還點數)')) return;
-  card.remove();
-  customCertCount--;
+/* 進頁載入:讀後台收費設定、我的點數、我已有的自訂證件,全部回填(取代舊的 sessionStorage 假點數) */
+async function loadCustomCerts() {
+  if (typeof window.sb === 'undefined' || !window._suncarId) return;
+  var cfg = await sb.from('app_config').select('custom_cert_free_quota,cert_charge_on,price_cert').eq('id', 1).maybeSingle();
+  if (cfg && cfg.data) {
+    CFG_FREE_QUOTA = (cfg.data.custom_cert_free_quota == null ? 1 : cfg.data.custom_cert_free_quota);
+    CFG_CHARGE_ON = !!cfg.data.cert_charge_on;
+    CFG_PRICE = (cfg.data.price_cert == null ? 0 : cfg.data.price_cert);
+  }
+  var prof = await sb.from('users').select('suncar_points').eq('id', window._suncarId).maybeSingle();
+  myPoints = (prof && prof.data && prof.data.suncar_points != null) ? prof.data.suncar_points : 0;
+
+  var area = document.getElementById('custom-certs-area'); if (area) area.innerHTML = '';
+  customCertCount = 0;
+  var rows = await sb.from('custom_certs').select('id,name,status,paid,show_badge').eq('user_id', window._suncarId).order('created_at', { ascending: true });
+  (rows.data || []).forEach(function(row){ renderCustomCard(row); customCertCount++; });
   updatePointsDisplay();
   updateDoneSummary();
 }
@@ -1158,19 +1223,14 @@ applyIdentityRule();
   } catch(e){}
 })();
 
-/* 點數從 sessionStorage 同步 */
-function syncPointsFromStorage() {
-  try {
-    var stored = parseInt(sessionStorage.getItem('suncarPoints') || '0', 10);
-    if (isNaN(stored)) stored = 0;
-    myPoints = stored;
-    updatePointsDisplay();
-  } catch(e){}
+/* 點數從後台重讀(取代舊的 sessionStorage 假點數)。從購買點數頁返回時刷新真餘額。 */
+async function refreshMyPoints() {
+  if (typeof window.sb === 'undefined' || !window._suncarId) return;
+  var prof = await sb.from('users').select('suncar_points').eq('id', window._suncarId).maybeSingle();
+  if (prof && prof.data && prof.data.suncar_points != null) { myPoints = prof.data.suncar_points; updatePointsDisplay(); }
 }
-document.addEventListener('visibilitychange', function(){
-  if (!document.hidden) syncPointsFromStorage();
-});
-window.addEventListener('pageshow', syncPointsFromStorage);
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) refreshMyPoints(); });
+window.addEventListener('pageshow', refreshMyPoints);
 
 /* ===== 證件真上傳(第一階段:身分證 id、照服員證 cna) =====
    為什麼只接這兩張:身分證對應實名、照服員證對應能不能接 B 池(身體照顧),是法律相關的核心。
@@ -1284,7 +1344,8 @@ async function realUploadCert(key){
   input.click();
 }
 
-loadCertStatus();
+/* 先讀固定四種證件狀態(會設好 window._suncarId),再載入自訂證件(要用到 _suncarId) */
+loadCertStatus().then(loadCustomCerts);
 </script>
 </body>
 </html>

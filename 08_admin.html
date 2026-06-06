@@ -429,6 +429,14 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
         <!-- 證件審核卡由 loadCertReview() 填入此處 -->
         <div id="cert-review-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
+
+        <!-- 自訂證件審核(順咖自填名稱的其他證照)。通過後案家名單會顯示該名稱徽章,名稱不實或誇大請退件 -->
+        <div class="sec-header" style="margin-top:22px;">
+          <div style="display:flex;align-items:center;gap:9px;"><span class="sec-title">自訂證件待審</span></div>
+          <div style="font-size:12.5px;color:var(--ink-soft);">順咖自填名稱(如護理師、駕照)。通過＝案家會看到此名稱徽章;名稱不實、誇大或需執照未附證明,請退件</div>
+        </div>
+        <!-- 自訂證件卡由 loadCustomCertReview() 填入此處 -->
+        <div id="custom-cert-review-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
       </div>
 
       <!-- 訂單總覽 -->
@@ -560,10 +568,11 @@ textarea.form-input{min-height:80px;resize:vertical;}
           </div>
           <div class="setting-row">
             <div class="sr-left">
-              <div class="sr-label">加照服員證收費</div>
-              <div class="sr-desc">順咖上傳照服員證、升級可接 B 池(身體照顧)時要不要收費。<strong>開</strong>=收下面的點數;<strong>關</strong>=免費。目前 07 證件頁仍是免費審核,這顆先存著,07 接上金流後生效。</div>
+              <div class="sr-label">自訂證件收費</div>
+              <div class="sr-desc">順咖在「其他證件(自訂)」每多加一張要不要收費。<strong>開</strong>=超過免費額度後每張收下面的點數(扣順咖池);<strong>關</strong>=全免費。免費額度=前幾張不收費(例:填 1=第 1 張免費、第 2 張起收費)。付費張數上限固定 10 張。</div>
               <span class="status-chip chip-off" id="chip-cert">讀取中…</span>
-              <div class="price-input-row"><input class="price-input" id="cfg-certprice" type="number" min="0"><span class="price-unit">點 / 次</span></div>
+              <div class="price-input-row"><input class="price-input" id="cfg-certprice" type="number" min="0"><span class="price-unit">點 / 張</span></div>
+              <div class="price-input-row"><span class="price-unit" style="margin-right:8px;">免費額度</span><input class="price-input" id="cfg-certfree" type="number" min="0"><span class="price-unit">張</span></div>
             </div>
             <label class="toggle"><input type="checkbox" id="cfg-cert" onchange="updateChip(this,'chip-cert','收費','免費')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
@@ -1136,7 +1145,11 @@ var CERT_APPROVE_NOTE={
   cpr:'\n通過後案家端順咖名單會出現「急救」徽章。'
 };
 
-function setCertCount(n){
+/* 證件待審數=固定證件區＋自訂證件區兩邊卡片總數;標題徽章與左側 nav 都顯示總數。
+   忽略傳入參數、一律重數 DOM,呼叫端在 DOM 更新後呼叫即可同步,不會兩區各算各的。 */
+function setCertCount(){
+  var n=document.querySelectorAll('#cert-review-list .applicant-card').length
+       +document.querySelectorAll('#custom-cert-review-list .applicant-card').length;
   var c=document.getElementById('cert-count'); if(c) c.textContent=n;
   var nav=document.getElementById('nav-cert-count'); if(nav) nav.textContent=n;
 }
@@ -1190,6 +1203,68 @@ function renderCertCards(list){
 }
 
 // 看證件:私密桶要用限時簽名網址(60 秒),管理員才產得出來;案家沒有這權限
+/* ===== 自訂證件審核(順咖自填名稱的其他證照,獨立 custom_certs 表) ===== */
+async function loadCustomCertReview(){
+  var box=document.getElementById('custom-cert-review-list');
+  if(!box) return;
+  var subRes=await sb.from('custom_certs')
+    .select('id,user_id,name,file_paths,submitted_at')
+    .eq('status','pending')
+    .order('submitted_at',{ascending:true});
+  if(subRes.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(subRes.error.message)+'</div>'; return; }
+  var subs=subRes.data||[];
+  if(!subs.length){ renderCustomCertCards([]); return; }
+  var ids=subs.map(function(s){ return s.user_id; });
+  var usersRes=await sb.from('users').select('id,display_name,phone,role_detail').in('id',ids);
+  if(usersRes.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(usersRes.error.message)+'</div>'; return; }
+  var umap={}; (usersRes.data||[]).forEach(function(u){ umap[u.id]=u; });
+  subs.forEach(function(s){ s.user=umap[s.user_id]||{}; });
+  renderCustomCertCards(subs);
+}
+
+function renderCustomCertCards(list){
+  var box=document.getElementById('custom-cert-review-list');
+  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的自訂證件</div>'; setCertCount(); return; }
+  box.innerHTML=list.map(function(s){
+    var u=s.user||{};
+    var name=(u.role_detail && u.role_detail.real_name) || u.display_name || '未填姓名';
+    var certName=s.name||'(未命名)';
+    var paths=Array.isArray(s.file_paths)?s.file_paths:[];
+    var viewBtns=paths.map(function(p,i){ return '<button class="btn-sm" onclick="viewCert(\''+esc(p)+'\')">看第'+(i+1)+'張</button>'; }).join('');
+    var meta='<span>上傳 '+esc(fmtDate(s.submitted_at))+'</span>'+(u.phone?'<span>'+esc(u.phone)+'</span>':'');
+    return '<div class="applicant-card" data-sub="'+esc(s.id)+'">'+
+      '<div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">'+esc(name.charAt(0))+'</div>'+
+      '<div style="flex:1;">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(name)+'</span><span class="badge-mini b-cna">'+esc(certName)+'</span></div>'+
+        '<div class="card-meta">'+meta+'</div>'+
+        '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">'+viewBtns+'</div>'+
+      '</div>'+
+      '<div class="card-actions">'+
+        '<button class="btn-approve" onclick="customCertAct(\''+esc(s.id)+'\',\'approved\',this)">通過</button>'+
+        '<button class="btn-reject" onclick="customCertAct(\''+esc(s.id)+'\',\'rejected\',this)">退件</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  setCertCount();
+}
+
+async function customCertAct(subId, decision, btnEl){
+  var word=decision==='approved'?'通過':'退件';
+  var extra=decision==='approved' ? '\n通過後案家名單會顯示這個證件名稱徽章(若順咖選擇顯示)。' : '';
+  if(!confirm('確定要「'+word+'」這張自訂證件嗎?'+extra)) return;
+  var card=btnEl.closest('.applicant-card');
+  card.style.pointerEvents='none'; card.style.opacity='0.6';
+  var upd=await sb.from('custom_certs').update({
+    status:decision, reviewed_at:new Date().toISOString(), reviewed_by:window._adminId||null
+  }).eq('id',subId);
+  if(upd.error){ alert('更新失敗:'+upd.error.message); card.style.pointerEvents=''; card.style.opacity=''; return; }
+  card.remove();
+  setCertCount();
+  if(!document.querySelectorAll('#custom-cert-review-list .applicant-card').length){
+    document.getElementById('custom-cert-review-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的自訂證件</div>';
+  }
+}
+
 async function viewCert(path){
   if(typeof window.sb==='undefined'){ alert('連線元件未載入'); return; }
   var r=await sb.storage.from('certs').createSignedUrl(path, 60);
@@ -1238,6 +1313,7 @@ async function initAdmin(){
   window._adminId = user.id; // 記住審核者,寫進 cert_submissions.reviewed_by
   loadReviewList();
   loadCertReview();
+  loadCustomCertReview(); // 自訂證件待審清單
   loadPricing(); // 進頁就把收費總控的現值讀進表單
 }
 
@@ -1363,6 +1439,7 @@ async function loadPricing(){
   document.getElementById('cfg-sd').value=(c.single_unlock_days==null?'':c.single_unlock_days);
   var cert=document.getElementById('cfg-cert'); cert.checked=!!c.cert_charge_on; updateChip(cert,'chip-cert','收費','免費');
   document.getElementById('cfg-certprice').value=(c.price_cert==null?'':c.price_cert);
+  document.getElementById('cfg-certfree').value=(c.custom_cert_free_quota==null?'':c.custom_cert_free_quota);
 }
 
 /* 數字欄轉存:空字串→null(讓「單次永久」可存),其餘轉整數 */
@@ -1381,7 +1458,9 @@ async function savePricing(){
     month_days: numOrNull('cfg-md'),
     single_unlock_days: numOrNull('cfg-sd'),
     cert_charge_on: document.getElementById('cfg-cert').checked,
-    price_cert: numOrNull('cfg-certprice')
+    price_cert: numOrNull('cfg-certprice'),
+    /* 免費額度欄位不可為 null(資料庫 NOT NULL),清空就回預設 1 */
+    custom_cert_free_quota: (numOrNull('cfg-certfree')==null ? 1 : numOrNull('cfg-certfree'))
   };
   var up=await sb.from('app_config').update(payload).eq('id',1);
   if(up.error){ r.textContent='儲存失敗(可能缺 app_config_admin_write 政策,要先跑 SQL):'+up.error.message; return; }
