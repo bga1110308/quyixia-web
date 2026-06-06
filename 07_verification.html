@@ -860,14 +860,20 @@ function updateStatusTab() {
     safeBadge.style.background = certStatus.safe === 'uploaded' ? 'var(--forest)' : (certStatus.safe === 'pending' ? 'var(--info)' : 'var(--warn)');
   }
 
-  /* 預覽卡的徽章＝跟 02 案家端看到的一致(實名/照服員/良民/急救);email/phone 不在案家卡上,預覽不放 */
+  /* 預覽卡的徽章＝跟 02 案家端看到的一致:要「過審」且「顯示開關開著」才秀(關掉就跟案家端一樣看不到)。
+     email/phone 不在案家卡上,預覽不放。 */
   var setPrev = function(id, on){ var e = document.getElementById(id); if (e) e.style.display = on ? 'inline-flex' : 'none'; };
-  setPrev('preview-id-badge',   certStatus.id   === 'uploaded');
-  setPrev('preview-cna-badge',  certStatus.cna  === 'uploaded');
-  setPrev('preview-safe-badge', certStatus.safe === 'uploaded');
-  setPrev('preview-cpr-badge',  certStatus.cpr  === 'uploaded');
+  var showOn = function(key){ var el = document.querySelector('.cert-visibility[data-key="'+key+'"]'); return !el || el.classList.contains('on'); };
+  var pid   = certStatus.id   === 'uploaded' && showOn('id');
+  var pcna  = certStatus.cna  === 'uploaded' && showOn('cna');
+  var psafe = certStatus.safe === 'uploaded' && showOn('safe');
+  var pcpr  = certStatus.cpr  === 'uploaded' && showOn('cpr');
+  setPrev('preview-id-badge',   pid);
+  setPrev('preview-cna-badge',  pcna);
+  setPrev('preview-safe-badge', psafe);
+  setPrev('preview-cpr-badge',  pcpr);
   var hasCustomPrev = !!document.querySelector('#preview-custom .p-badge');
-  var anyVerified = certStatus.id === 'uploaded' || certStatus.cna === 'uploaded' || certStatus.safe === 'uploaded' || certStatus.cpr === 'uploaded' || hasCustomPrev;
+  var anyVerified = pid || pcna || psafe || pcpr || hasCustomPrev;
   setPrev('preview-unverified', !anyVerified);
 
   updateProgress();
@@ -881,24 +887,42 @@ function showToast(msg) {
   setTimeout(function(){ t.classList.remove('show'); }, 2500);
 }
 
-/* 顯示給案家切換 */
+/* 固定四種證件的「顯示給案家」對應到 users 的哪個欄位(自訂證件則用 custom_certs.show_badge) */
+var FIXED_SHOW_COL = { id: 'show_realname', cna: 'show_caregiver', safe: 'show_good_conduct', cpr: 'show_cpr' };
+
+/* 顯示給案家切換。把選擇存進後台,案家端徽章才會跟著開關。 */
 async function toggleVisibility(el) {
   var on = el.classList.toggle('on');
   var label = el.querySelector('.vis-label');
   var eyeSvg = el.querySelector('.vis-eye svg use');
   label.textContent = on ? '顯示給案家看' : '不顯示給案家';
   eyeSvg.setAttribute('href', on ? '#i-eye' : '#i-eye-off');
-  /* 自訂證件卡的顯示開關要存進後台(show_badge),案家端徽章才會跟著開關。固定四種證件沒有 data-cid,不寫。 */
-  var cid = el.dataset.cid;
+  var revert = function(msg){ var back = el.classList.toggle('on'); label.textContent = back ? '顯示給案家看' : '不顯示給案家'; eyeSvg.setAttribute('href', back ? '#i-eye' : '#i-eye-off'); alert(msg); };
+
+  var cid = el.dataset.cid;       // 自訂證件:存 custom_certs.show_badge
+  var key = el.dataset.key;       // 固定證件:存 users 對應 show_* 欄位
   if (cid && typeof window.sb !== 'undefined') {
     var r = await sb.from('custom_certs').update({ show_badge: on }).eq('id', cid);
-    if (r && r.error) { /* 存失敗就還原畫面,避免假成功 */
-      var back = el.classList.toggle('on');
-      label.textContent = back ? '顯示給案家看' : '不顯示給案家';
-      eyeSvg.setAttribute('href', back ? '#i-eye' : '#i-eye-off');
-      alert('設定顯示失敗:' + r.error.message);
-    }
+    if (r && r.error) revert('設定顯示失敗:' + r.error.message);
+  } else if (key && FIXED_SHOW_COL[key] && typeof window.sb !== 'undefined' && window._suncarId) {
+    var patch = {}; patch[FIXED_SHOW_COL[key]] = on;
+    var r2 = await sb.from('users').update(patch).eq('id', window._suncarId);
+    if (r2 && r2.error) revert('設定顯示失敗:' + r2.error.message);
   }
+  if (typeof updateStatusTab === 'function') updateStatusTab(); // 同步刷新下方預覽卡
+}
+
+/* 進頁把固定四種證件的顯示開關狀態,依 users 的 show_* 欄位回填(預設顯示) */
+function applyFixedVisibility(d) {
+  if (!d) return;
+  Object.keys(FIXED_SHOW_COL).forEach(function(key){
+    var el = document.querySelector('.cert-visibility[data-key="' + key + '"]');
+    if (!el) return;
+    var on = d[FIXED_SHOW_COL[key]] !== false;
+    el.classList.toggle('on', on);
+    var label = el.querySelector('.vis-label'); if (label) label.textContent = on ? '顯示給案家看' : '不顯示給案家';
+    var eye = el.querySelector('.vis-eye svg use'); if (eye) eye.setAttribute('href', on ? '#i-eye' : '#i-eye-off');
+  });
 }
 
 /* ===== 自訂證件(真上傳＋伺服器端扣點) =====
@@ -1287,6 +1311,9 @@ async function loadCertStatus(){
 
   var res = await sb.from('cert_submissions').select('cert_type,status').eq('user_id', user.id).in('cert_type', ['id','cna','safe','cpr']);
   (res.data || []).forEach(function(r){ applyCertCardStatus(r.cert_type, r.status); });
+  /* 回填固定證件的「顯示給案家」開關狀態 */
+  var uShow = await sb.from('users').select('show_realname,show_caregiver,show_good_conduct,show_cpr').eq('id', user.id).maybeSingle();
+  if (uShow && uShow.data) applyFixedVisibility(uShow.data);
   updateProgress();
   updateDoneSummary();
 }

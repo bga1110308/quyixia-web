@@ -371,11 +371,12 @@ async function loadStaff() {
     var services = Array.isArray(p.services) ? p.services : [];
     var cats = [];
     services.forEach(function(k){ var c = SVC2CAT[k]; if (c && cats.indexOf(c) === -1) cats.push(c); });
+    /* 徽章要「過審」且「順咖選擇顯示(show_*,預設顯示)」才出現。順咖可在 07 把某張關掉不給案家看。 */
     var badges = [];
-    if (r.is_realname) badges.push('verified');       /* 身分證過審 */
-    if (r.has_caregiver_cert) badges.push('cna');     /* 照服員證過審 */
-    if (r.has_good_conduct) badges.push('safe');      /* 良民證過審 */
-    if (r.has_cpr) badges.push('cpr');                /* CPR/AED 急救證過審 */
+    if (r.is_realname && r.show_realname !== false) badges.push('verified');           /* 身分證過審 */
+    if (r.has_caregiver_cert && r.show_caregiver !== false) badges.push('cna');        /* 照服員證過審 */
+    if (r.has_good_conduct && r.show_good_conduct !== false) badges.push('safe');      /* 良民證過審 */
+    if (r.has_cpr && r.show_cpr !== false) badges.push('cpr');                         /* CPR/AED 急救證過審 */
     var areas = Array.isArray(p.areas) ? p.areas : [];
     return {
       id: r.id,
