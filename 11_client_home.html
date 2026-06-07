@@ -442,12 +442,21 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   function fmtDate(ts){ if(!ts) return ''; var d=new Date(ts); return d.getFullYear()+'/'+('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+' '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
   function hoursText(min){ if(!min) return ''; return (Math.round(min/60*10)/10)+' 小時'; }
 
+  /* 從備註(address_note,用「；」串)抓出某一段的值,例如 pickNote(note,'其他需求')。找不到回空字串 */
+  function pickNote(note, label){
+    if(!note) return '';
+    var parts = String(note).split('；');
+    for(var i=0;i<parts.length;i++){ if(parts[i].indexOf(label+':')===0) return parts[i].slice(label.length+1).trim(); }
+    return '';
+  }
+
   function buildCard(o, staffName){
     var st = STATUS[o.status] || STATUS.matching;
     // 只有「媒合中、待服務」可由案家取消;服務中/已完成不給取消,要走後台
     var canCancel = (o.status === 'matching' || o.status === 'accepted');
     var loc = [o.service_district, o.service_address].filter(Boolean).join(' · ');
     var metaTime = hoursText(o.duration_minutes);
+    var otherNeed = pickNote(o.address_note, '其他需求');  /* 案家下單寫的其他需求,有才顯示 */
     var priceLabel = st.group==='done' ? '已付' : (st.group==='matching' ? '願付' : '總計');
     return ''+
       '<div class="order-card '+(st.group==='active'?'active-order':st.group==='matching'?'matching':'done-order')+'" data-status="'+st.group+'" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+
@@ -462,6 +471,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
           (loc ? '<span class="oc-meta-item"><svg><use href="#i-pin"/></svg>'+esc(loc)+'</span>' : '')+
           (metaTime ? '<span class="oc-meta-item"><svg><use href="#i-clock"/></svg>'+esc(metaTime)+'</span>' : '')+
         '</div>'+
+        (otherNeed ? '<div class="oc-need" style="font-size:0.8rem;color:#6b5e4d;background:rgba(239,159,39,0.08);border-radius:8px;padding:6px 10px;margin-top:2px;line-height:1.55;word-break:break-word;">需求：'+esc(otherNeed)+'</div>' : '')+
         '<div class="oc-bottom">'+
           (staffName
             ? '<div class="oc-staff"><div class="oc-staff-avatar">'+esc(firstChar(staffName))+'</div><span>'+esc(staffName)+'</span></div>'
@@ -591,7 +601,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     }
 
     /* 本人訂單 */
-    var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,suncar_id').eq('client_id', user.id).order('created_at',{ascending:false});
+    var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,suncar_id,address_note').eq('client_id', user.id).order('created_at',{ascending:false});
     // 濾掉已取消的單:案家畫面與所有計數都不顯示 cancelled(只有後台查得到)
     var orders = (ores.data || []).filter(function(o){ return o.status !== 'cancelled'; });
 

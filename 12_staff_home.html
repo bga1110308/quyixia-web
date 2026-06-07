@@ -618,7 +618,14 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     return parts.join('　·　');
   }
 
-  function metaRow(o){ var loc=[o.service_district,o.service_address].filter(Boolean).join(' · '); return '<div class="oc-meta">'+(loc?'<span class="oc-meta-item"><svg><use href="#i-pin"/></svg>'+esc(loc)+'</span>':'')+(o.duration_minutes?'<span class="oc-meta-item"><svg><use href="#i-clock"/></svg>'+esc(hoursText(o.duration_minutes))+'</span>':'')+'</div>'+clientTrustSlot(o.client_id); }
+  /* 從備註(address_note,用「；」串)抓出某一段的值,例如 pickNote(note,'其他需求')。找不到回空字串 */
+  function pickNote(note, label){
+    if(!note) return '';
+    var parts = String(note).split('；');
+    for(var i=0;i<parts.length;i++){ if(parts[i].indexOf(label+':')===0) return parts[i].slice(label.length+1).trim(); }
+    return '';
+  }
+  function metaRow(o){ var loc=[o.service_district,o.service_address].filter(Boolean).join(' · '); var need=pickNote(o.address_note,'其他需求'); return '<div class="oc-meta">'+(loc?'<span class="oc-meta-item"><svg><use href="#i-pin"/></svg>'+esc(loc)+'</span>':'')+(o.duration_minutes?'<span class="oc-meta-item"><svg><use href="#i-clock"/></svg>'+esc(hoursText(o.duration_minutes))+'</span>':'')+'</div>'+(need?'<div class="oc-need" style="font-size:0.8rem;color:#4a5249;background:rgba(95,181,142,0.10);border-radius:8px;padding:6px 10px;margin-top:6px;line-height:1.55;word-break:break-word;">需求：'+esc(need)+'</div>':'')+clientTrustSlot(o.client_id); }
   function head(o, tag){ return '<div class="oc-top"><div style="flex:1;min-width:0;"><div class="oc-id-row"><span class="oc-id">'+esc(shortNo(o.order_no))+'</span> · '+esc(fmtDate(o.service_time))+'</div><div class="oc-title">'+esc(o.service_type||'服務')+poolChip(o.pool)+'</div></div>'+tag+'</div>'; }
   function price(o){ return '<div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'; }
 
@@ -818,7 +825,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     }
 
     /* 本人接的單(suncar_id = 我) */
-    var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id').eq('suncar_id', user.id).order('service_time',{ascending:false});
+    var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id,address_note').eq('suncar_id', user.id).order('service_time',{ascending:false});
     var myOrders = ores.data || [];
     var pendingOrders = myOrders.filter(function(o){ return o.status==='accepted'; });
     var activeOrders = myOrders.filter(function(o){ return o.status==='active'; });
@@ -875,7 +882,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     /* 可接任務(媒合中且尚無人接,審核通過才查) */
     if(canAcceptJobs){
       // neq client_id:排除自己下的單,順咖不能接到自己當案家下的單(第一層,清單就不列出)
-      var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id').eq('status','matching').is('suncar_id', null).neq('client_id', user.id).order('service_time',{ascending:true});
+      var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id,address_note').eq('status','matching').is('suncar_id', null).neq('client_id', user.id).order('service_time',{ascending:true});
       var openOrders = (open.data || []).filter(function(o){ return o.pool==='A' || (o.pool==='B' && u.has_caregiver_cert); });
       $('stat-open').textContent = openOrders.length;
       $('open-badge').textContent = openOrders.length + ' 筆';
