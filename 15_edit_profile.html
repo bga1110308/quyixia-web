@@ -263,7 +263,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
     <div class="avatar-block">
       <div class="avatar-wrap">
-        <div class="big-avatar" id="big-avatar">慧</div>
+        <div class="big-avatar" id="big-avatar">順</div>
         <label class="cam-btn" for="avatar-upload" title="更換大頭照">
           <svg><use href="#i-cam"/></svg>
         </label>
@@ -294,25 +294,25 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
     <div class="field">
       <label class="field-label">暱稱 <span class="req">*</span></label>
-      <input type="text" id="nickname" value="慧怡" maxlength="20">
+      <input type="text" id="nickname" value="" maxlength="20">
       <div class="field-hint">顯示在訂單與評價上,限 20 字內</div>
     </div>
 
     <div class="field">
       <label class="field-label">真實姓名 <span class="req">*</span><span class="opt">(不會公開)</span></label>
-      <input type="text" id="realname" value="林慧怡" maxlength="10">
+      <input type="text" id="realname" value="" maxlength="10">
       <div class="field-hint">僅後台與訂單核對使用</div>
     </div>
 
     <div class="field">
       <label class="field-label">手機號碼 <span class="req">*</span></label>
-      <input type="tel" id="phone" value="0912345678" maxlength="10" pattern="09[0-9]{8}">
+      <input type="tel" id="phone" value="" maxlength="10" pattern="09[0-9]{8}" placeholder="09xxxxxxxx">
       <div class="field-hint">緊急聯繫用,請填可接通號碼</div>
     </div>
 
     <div class="field">
       <label class="field-label">LINE ID <span class="opt">(選填)</span></label>
-      <input type="text" id="lineid" value="" placeholder="例:huiyi_line">
+      <input type="text" id="lineid" value="" placeholder="例:your_line_id">
       <div class="field-hint">訂單成立後自動建群會用到</div>
     </div>
 
@@ -933,18 +933,16 @@ async function deleteCert(key) {
   var paths = (subRes && subRes.data && Array.isArray(subRes.data.file_paths)) ? subRes.data.file_paths : [];
   if (paths.length) { try { await sb.storage.from('certs').remove(paths); } catch(e){} }
 
-  /* 2. 刪審核紀錄 */
-  var del = await sb.from('cert_submissions').delete().eq('user_id', DB.user.id).eq('cert_type', cert.cert_type);
-  if (del.error) { alert('刪除失敗:' + del.error.message); return; }
-
-  /* 3. 取消對應資格旗標(設 false。案家端徽章靠這個,設掉徽章就不見) */
-  if (cert.flag) {
-    var patch = {}; patch[cert.flag] = false;
-    var up = await sb.from('users').update(patch).eq('id', DB.user.id);
-    if (up.error) { alert('證件已刪,但資格狀態更新失敗:' + up.error.message + '\n請稍後再試或通知平台。'); }
+  /* 2. 刪審核紀錄＋取消資格旗標:走後台受信任函式 remove_my_cert。
+     為什麼不直接改 users:資格旗標(has_caregiver_cert 等)已被觸發器鎖住,本人不能直接改(防自我竄改),
+     只能透過這個受信任函式設掉。函式內會刪 cert_submissions 並把對應旗標設 false。 */
+  var rmv = await sb.rpc('remove_my_cert', { p_cert_type: cert.cert_type });
+  if (rmv.error || !(rmv.data && rmv.data.ok)) {
+    alert('刪除失敗:' + (rmv.error ? rmv.error.message : (rmv.data ? rmv.data.reason : '未知錯誤')));
+    return;
   }
 
-  /* 4. 連動關閉相關服務勾選(儲存變更後生效) */
+  /* 3. 連動關閉相關服務勾選(儲存變更後生效) */
   if (key === 'cna_cert') {
     var idx = selectedSvcs.indexOf('body-care'); if (idx > -1) selectedSvcs.splice(idx, 1);
     renderServices();
@@ -953,14 +951,14 @@ async function deleteCert(key) {
     renderServices();
   }
 
-  /* 5. 更新畫面 */
+  /* 4. 更新畫面 */
   cert.status = 'empty';
   renderCerts();
   showToast('已刪除' + cert.name);
 }
 
 /* ============ 其他證件(自訂)管理:真資料 custom_certs ============
-   規則(林慧怡定):付費欄位的「框」永久保留、不可刪除(避免重複扣款);但可「清除證件」把內容清空回空白,
+   規則(負責人定):付費欄位的「框」永久保留、不可刪除(避免重複扣款);但可「清除證件」把內容清空回空白,
    空白＝案家端不顯示任何徽章。免費欄位(沒花點數)可整個刪除。清除/刪除都會一併移除私密桶裡的檔(個資)。 */
 function escHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 var _custCerts = [];
