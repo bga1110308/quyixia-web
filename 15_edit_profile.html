@@ -516,7 +516,7 @@ async function loadFromDB() {
   if (!user) { window.location.href = '13_login.html'; return; }
   DB.user = user;
 
-  var prof = await sb.from('users').select('display_name,phone,email,expected_rate,role_detail').eq('id', user.id).maybeSingle();
+  var prof = await sb.from('users').select('display_name,phone,email,expected_rate,role_detail,has_caregiver_cert').eq('id', user.id).maybeSingle();
   DB.profile = prof.data || {};
   avatarUrl = (DB.profile.role_detail && DB.profile.role_detail.avatar_url) || '';
 
@@ -763,7 +763,7 @@ var serviceCategories = [
       {k:'shopping-elder', n:'陪同採買 / 協助領藥 / 買菜'},
       {k:'digital-help', n:'教手機 / LINE / 視訊 / 政府 APP / 協助繳費'},
       {k:'family-report', n:'到家拍照回報長輩狀況 / 緊急代處理'},
-      {k:'body-care', n:'身體照顧(洗澡 / 翻身 / 擦澡 / 服藥提醒)', locked:true, lockText:'需照服員證'}
+      {k:'body-care', n:'身體照顧(洗澡 / 翻身 / 擦澡 / 服藥提醒)', requiresCert:true, lockText:'需照服員證'}
     ]
   },
   {
@@ -789,11 +789,16 @@ var serviceCategories = [
     ]
   }
 ];
-/* 預設可接全部非鎖定項目(身體照顧需照服員證,維持鎖定不預選)。
-   載入時若資料庫已有存過服務項目,會在下方用存的值覆蓋。 */
+/* 居服員證(cna)有沒有過審。身體照顧(B 池)要靠它解鎖,沒證一律鎖住(長照法 18 條:非照服員不可接身體照顧) */
+function hasCnaCert(){ return !!(DB.profile && DB.profile.has_caregiver_cert); }
+/* 某服務項目此刻是否鎖住:固定鎖(s.locked) 或 需證但沒證(s.requiresCert 且未驗證) */
+function svcLocked(s){ return !!s.locked || (s.requiresCert && !hasCnaCert()); }
+
+/* 預設可接全部「目前沒被鎖」的項目(身體照顧:沒證鎖住不預選;有證 svcLocked 放行,預設也帶進來)。
+   載入時若資料庫已有存過服務項目,會在 loadStaffProfile 用存的值覆蓋。 */
 function allUnlockedSvcKeys(){
   var keys = [];
-  serviceCategories.forEach(function(cat){ cat.items.forEach(function(s){ if(!s.locked) keys.push(s.k); }); });
+  serviceCategories.forEach(function(cat){ cat.items.forEach(function(s){ if(!svcLocked(s)) keys.push(s.k); }); });
   return keys;
 }
 var selectedSvcs = allUnlockedSvcKeys();
@@ -807,7 +812,7 @@ function renderServices() {
     html += '<div class="svc-list">';
     cat.items.forEach(function(s) {
       var on = selectedSvcs.indexOf(s.k) > -1;
-      var locked = !!s.locked;
+      var locked = svcLocked(s);
       var cls = 'svc-item' + (on && !locked ? ' checked' : '') + (locked ? ' locked' : '');
       var clickAttr = locked ? '' : 'onclick="toggleSvc(this, \''+s.k+'\')"';
       html += '<label class="'+cls+'" '+clickAttr+'>';
@@ -944,6 +949,7 @@ async function deleteCert(key) {
 
   /* 3. 連動關閉相關服務勾選(儲存變更後生效) */
   if (key === 'cna_cert') {
+    if (DB.profile) DB.profile.has_caregiver_cert = false;  /* 證刪了,身體照顧要即時鎖回去 */
     var idx = selectedSvcs.indexOf('body-care'); if (idx > -1) selectedSvcs.splice(idx, 1);
     renderServices();
   } else if (key === 'crime_check') {
@@ -1116,6 +1122,8 @@ async function saveProfile() {
         transport: transport,
         acceptingOrders: document.getElementById('status-toggle').classList.contains('on')
       });
+      /* 已驗證居服員證者存檔後,身體照顧的勾選與否就以他這次的選擇為準,之後不再自動勾(opt-out 記得住) */
+      if (hasCnaCert()) staffData.bodyCareSeen = true;
       var sRes = await sb.from('user_roles').update({ role_data: staffData }).eq('user_id', DB.user.id).eq('role', 'suncar');
       if (sRes.error) { throw sRes.error; }
       if (DB.suncarRole) DB.suncarRole.role_data = staffData;
@@ -1205,8 +1213,18 @@ function loadStaffProfile() {
   // 班表交給共用檔,mount 時帶入 d.schedule(見下方 QYXSchedule.mount)
   if (Array.isArray(d.areas)) selectedAreas = d.areas;
   /* 服務項目相容兩種鍵名:services 或 service_categories */
-  if (Array.isArray(d.services)) selectedSvcs = d.services;
-  else if (Array.isArray(d.service_categories)) selectedSvcs = d.service_categories;
+  if (Array.isArray(d.services)) selectedSvcs = d.services.slice();
+  else if (Array.isArray(d.service_categories)) selectedSvcs = d.service_categories.slice();
+
+  /* 身體照顧(B 池)依居服員證動態處理:
+     已驗證+第一次解鎖(還沒存過 bodyCareSeen)→預設勾起來,順咖可自己取消;
+     取消後按儲存(寫入 bodyCareSeen=true)之後,就尊重他的選擇、不再自動勾。
+     沒驗證→確保不在選取裡(鎖住不可選,也不會被存進去)。 */
+  if (hasCnaCert()) {
+    if (!d.bodyCareSeen && selectedSvcs.indexOf('body-care') === -1) selectedSvcs.push('body-care');
+  } else {
+    var _bi = selectedSvcs.indexOf('body-care'); if (_bi > -1) selectedSvcs.splice(_bi, 1);
+  }
 
   if (rate) {
     var preset = [200,250,300,350,400,450,500,600,800,1000,1500,2000,3000,5000,8000,12000,20000];
