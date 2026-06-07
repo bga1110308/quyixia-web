@@ -1112,7 +1112,7 @@ async function submitOrder(payload, rateCheck) {
       return;
     }
 
-    /* 檢查點數是否足夠扣 50 */
+    /* 點數不足先帶去加值(UX 順手;真正的餘額檢查在後台 place_order,前端擋不算數) */
     var pr = await sb.from('users').select('client_points').eq('id', user.id).maybeSingle();
     var pts = (pr.data && pr.data.client_points != null) ? pr.data.client_points : 0;
     if (pts < 50) {
@@ -1125,29 +1125,34 @@ async function submitOrder(payload, rateCheck) {
       return;
     }
 
-    /* 寫入訂單,order_no 由 trigger 自動產生,不要自己填 */
-    payload.client_id = user.id;
-    var ins = await sb.from('orders').insert(payload).select('id').single();
-    if (ins.error || !ins.data) {
-      alert('下單失敗:' + (ins.error ? ins.error.message : '未知錯誤'));
+    /* 建單＋扣點一次做完,全部在後台(伺服器端)驗。
+       為什麼改這樣:原本是前端直接 insert orders + update client_points,
+       登入者打開瀏覽器主控台就能自己把點數改大(免費灌點,踩金流紅線)。
+       改呼叫 place_order 後,建單與扣點同一個交易原子完成、餘額一律後台說了算,前端改不了。 */
+    var res = await sb.rpc('place_order', { p_payload: payload });
+    if (res.error) {
+      alert('下單失敗:' + res.error.message);
       if (btn) { btn.disabled = false; btn.textContent = '送出訂單'; }
       return;
     }
-    var newId = ins.data.id;
-
-    /* 扣 50 點:寫點數明細(負值)+ 更新餘額 */
-    var ptx = await sb.from('point_transactions').insert({
-      user_id: user.id,
-      pool: payload.pool,
-      change: -50,
-      reason: '下單服務費',
-      order_id: newId
-    });
-    if (ptx.error) console.error('point_transactions:', ptx.error);
-
-    var remain = pts - 50;
-    var upd = await sb.from('users').update({ client_points: remain }).eq('id', user.id);
-    if (upd.error) console.error('update points:', upd.error);
+    var r = res.data || {};
+    if (!r.ok) {
+      if (r.reason === 'insufficient') {
+        alert('點數不足 50 點,先帶你去加值。目前點數:' + (r.balance != null ? r.balance : 0) + ' 點');
+        try {
+          sessionStorage.setItem('pending_order', JSON.stringify(payload));
+          sessionStorage.setItem('credits_returnTo', '04_order_form.html?resume=1');
+        } catch(e){}
+        window.location.href = '16_buy_credits.html';
+        return;
+      }
+      if (r.reason === 'not_logged_in') { window.location.href = '13_login.html'; return; }
+      alert('下單失敗,請稍後再試');
+      if (btn) { btn.disabled = false; btn.textContent = '送出訂單'; }
+      return;
+    }
+    var newId = r.order_id;
+    var remain = r.remain;
 
     /* 下單成功:補案家身分 + 綁推薦人(順咖第一次下單時最關鍵,失敗不影響訂單) */
     await ensureClientRoleAndRef(user.id);
