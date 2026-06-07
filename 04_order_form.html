@@ -351,7 +351,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="field">
         <label>選擇服務項目(可複選)</label>
         <div class="service-grid" id="service-grid"></div>
-        <input type="text" style="margin-top:9px;" placeholder="其他需求請直接寫,越詳細越好">
+        <input type="text" id="other-need" style="margin-top:9px;" placeholder="其他需求請直接寫,越詳細越好">
         <div class="pro-note" id="pro-note">
           <span class="ico"><svg><use href="#i-info"/></svg></span>
           <span><strong>標示星號的項目</strong>會由有照服員證的順咖接單,給你跟長輩更安心。價格會比一般任務略高一些。</span>
@@ -359,7 +359,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       </div>
       <div class="field">
         <label>補充說明</label>
-        <textarea placeholder="例:家裡有養狗、門口需要密碼、長輩會講台語比較好..."></textarea>
+        <textarea id="extra-note" placeholder="例:家裡有養狗、門口需要密碼、長輩會講台語比較好..."></textarea>
       </div>
     </div>
 
@@ -1040,8 +1040,16 @@ function handleSubmit() {
   var durNote = (durSel === 'custom') ? durCustom : '';
 
   /* 服務地址與備註 */
+  /* 讀案家自己寫的需求:其他需求(服務項目下方那格)、補充說明。原本這兩格沒 id、沒被讀,
+     案家寫的東西整個丟掉;備註只剩開頭硬塞的「縣市+行政區」,跟「地點」欄重複又沒用。 */
+  var otherNeed = (document.getElementById('other-need') ? document.getElementById('other-need').value.trim() : '');
+  var extraNote = (document.getElementById('extra-note') ? document.getElementById('extra-note').value.trim() : '');
+
   var serviceAddress;
-  var addrNoteParts = [cityName + districtVal];
+  var addrNoteParts = [];
+  /* 案家寫的需求放最前面,順咖一眼看到要做什麼(尤其選「其他」時,服務項目只寫「其他」沒資訊) */
+  if (otherNeed) addrNoteParts.push('其他需求:' + otherNeed);
+  if (extraNote) addrNoteParts.push('補充說明:' + extraNote);
   if (noAddr) {
     serviceAddress = placeName;
     addrNoteParts.push('地標:' + landmark);
@@ -1050,6 +1058,8 @@ function handleSubmit() {
     serviceAddress = addr;
   }
   if (durNote) addrNoteParts.push('時數:' + durNote);
+  /* 只留縣市(行政區已在「地點」欄顯示,不再重複);聯絡人接單前由 10 的 maskContact 遮蔽 */
+  addrNoteParts.push('縣市:' + cityName);
   addrNoteParts.push('聯絡人:' + name + ' ' + cleanPhone);
 
   var payload = {
