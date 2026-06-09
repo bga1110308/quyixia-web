@@ -1157,6 +1157,7 @@ async function submitOrder(payload, rateCheck) {
         return;
       }
       if (r.reason === 'not_logged_in') { window.location.href = '13_login.html'; return; }
+      if (r.reason === 'suspended') { alert('你的案家身分目前已被停權,無法下單。如有疑問請聯絡平台。'); if (btn) { btn.disabled = false; btn.textContent = '送出訂單'; } return; }
       alert('下單失敗,請稍後再試');
       if (btn) { btn.disabled = false; btn.textContent = '送出訂單'; }
       return;
