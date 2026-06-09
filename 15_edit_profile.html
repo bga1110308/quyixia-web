@@ -37,6 +37,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 /* 順咖端:綠色版 */
 .staff-mode .home-fab{border:1px solid var(--border-mint);color:var(--forest);box-shadow:0 4px 14px rgba(47,96,72,0.15);}
 .staff-mode .home-fab:hover{background:var(--mint-pale);border-color:var(--mint);}
+/* 登出鈕:跟回首頁鈕同款,放右上角。直接呼叫 window.sb 登出,不依賴頁面函式 */
+.logout-fab{position:fixed;top:14px;right:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;}
+.logout-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.logout-fab svg{width:19px;height:19px;}
+.staff-mode .logout-fab{border:1px solid var(--border-mint);color:var(--forest);box-shadow:0 4px 14px rgba(47,96,72,0.15);}
+.staff-mode .logout-fab:hover{background:var(--mint-pale);border-color:var(--mint);}
 
 /* HERO */
 .hero{background:linear-gradient(135deg,var(--champagne) 0%,#fff 70%);padding:2rem 1.5rem 1.5rem;border-bottom:1px solid var(--border-soft);}
@@ -242,6 +248,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <a class="home-fab" id="home-link" href="11_client_home.html" title="返回首頁">
   <svg><use href="#i-home"/></svg>
 </a>
+<button class="logout-fab" title="登出" onclick="if(confirm('確定要登出嗎?')){window.sb.auth.signOut().finally(function(){location.href='index.html';});}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
 
 <!-- 頁面識別條 -->
 <div class="role-strip client" id="role-strip">

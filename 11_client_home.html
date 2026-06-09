@@ -38,6 +38,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
 .home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
 .home-fab svg{width:18px;height:18px;fill:currentColor;}
+/* 登出鈕:跟回首頁鈕同款,放右上角。直接呼叫 window.sb 登出,不依賴頁面函式(本頁腳本包在 IIFE 裡) */
+.logout-fab{position:fixed;top:14px;right:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;}
+.logout-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.logout-fab svg{width:19px;height:19px;}
 
 /* === 身份識別條 === */
 .role-strip{display:flex;align-items:center;gap:8px;padding:10px 1.25rem 10px 4rem;background:#fff;border-bottom:1px solid var(--border);font-size:0.82rem;color:var(--ink-soft);}
@@ -261,6 +265,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </svg>
 
 <a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+<button class="logout-fab" title="登出" onclick="if(confirm('確定要登出嗎?')){window.sb.auth.signOut().finally(function(){location.href='index.html';});}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
 
 <!-- 頁面身份識別條 -->
 <div class="role-strip">

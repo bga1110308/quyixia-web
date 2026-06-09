@@ -286,7 +286,11 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span>
       <span>後台管理</span>
     </div>
-    <div class="admin-badge"><svg class="icon" width="14" height="14"><use href="#i-shield"/></svg>林慧怡</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="admin-badge"><svg class="icon" width="14" height="14"><use href="#i-shield"/></svg>林慧怡</div>
+      <!-- 登出鈕:直接呼叫 window.sb 登出後回首頁 -->
+      <button title="登出" onclick="if(confirm('確定要登出嗎?')){window.sb.auth.signOut().finally(function(){location.href='index.html';});}" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);color:var(--ink-soft);font-family:inherit;font-size:13px;font-weight:600;padding:7px 14px;border-radius:99px;cursor:pointer;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>登出</button>
+    </div>
   </div>
 
   <div class="layout">
@@ -298,6 +302,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <div class="nav-item active" onclick="go('review',this)"><svg class="icon"><use href="#i-check"/></svg>順咖審核<span class="cnt" id="nav-review-count">0</span></div>
       <div class="nav-item" onclick="go('certreview',this)"><svg class="icon"><use href="#i-badge-check"/></svg>證件審核<span class="cnt" id="nav-cert-count">0</span></div>
       <div class="nav-item" onclick="go('orders',this)"><svg class="icon"><use href="#i-clipboard"/></svg>訂單總覽</div>
+      <div class="nav-item" onclick="go('flags',this)"><svg class="icon"><use href="#i-shield"/></svg>紅旗回報<span class="cnt" id="nav-flag-count">0</span></div>
       <div class="nav-section">設定 / 報表</div>
       <div class="nav-item" onclick="go('announce',this)"><svg class="icon"><use href="#i-speaker"/></svg>公告管理</div>
       <div class="nav-item" onclick="go('settings',this)"><svg class="icon"><use href="#i-settings"/></svg>系統設定</div>
@@ -452,6 +457,17 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
         <!-- 自訂證件卡由 loadCustomCertReview() 填入此處 -->
         <div id="custom-cert-review-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
+      </div>
+
+      <!-- 紅旗回報:順咖在評價時勾的「案家風險狀況」,寫在 reviews.flags/flag_notes,不對外公開。
+           讓負責人看得到每一筆,才對得起對順咖「平台會收到你的回報」的承諾。此頁唯讀,撈資料走後台函式 get_flag_reports() -->
+      <div class="page" id="page-flags">
+        <div class="sec-header">
+          <div style="display:flex;align-items:center;gap:9px;"><span class="sec-title">紅旗回報</span><span id="flag-count" style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-size:11.5px;padding:3px 10px;border-radius:99px;font-weight:700;box-shadow:0 3px 8px rgba(239,159,39,0.3);">0</span></div>
+          <div style="font-size:12.5px;color:var(--ink-soft);">順咖服務後回報的案家風險狀況。紅底為嚴重項(人身安全),請優先處理。此資訊不對外公開</div>
+        </div>
+        <!-- 紅旗卡由 loadFlagReports() 填入此處 -->
+        <div id="flag-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
       </div>
 
       <!-- 訂單總覽 -->
@@ -1283,6 +1299,58 @@ async function customCertAct(subId, decision, btnEl){
   }
 }
 
+/* ===== 紅旗回報:順咖評價時勾的案家風險狀況,存在 reviews.flags(勾哪幾項)/ flag_notes(順咖寫的描述)兩個 jsonb。
+   reviews 表沒有「管理員可讀」政策(只有本人讀自己的),所以這裡不能直接 select reviews,
+   改走後台函式 get_flag_reports()(security definer,內含 is_admin 檢查,順咖/案家名字也在後台 join 好)。
+   此頁唯讀,只負責讓負責人看得到每一筆回報。 ===== */
+// 嚴重項(跟 05 評價頁 SEVERE_FLAG_KEYS 同一份字串):勾這兩項紅底、優先處理。05 改字串時這裡要一起改
+var SEVERE_FLAGS = [
+  '長輩有不自主或踰矩的肢體、言語接觸(常見於失智或疾病)',
+  '服務中曾發生肢體衝突或人身威脅狀況'
+];
+
+async function loadFlagReports(){
+  var box=document.getElementById('flag-list');
+  if(!box) return;
+  var res=await sb.rpc('get_flag_reports');
+  if(res.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(res.error.message)+'</div>'; return; }
+  renderFlagCards(res.data||[]);
+}
+
+function renderFlagCards(list){
+  var box=document.getElementById('flag-list');
+  var badge=document.getElementById('flag-count');
+  var navCnt=document.getElementById('nav-flag-count');
+  if(badge) badge.textContent=list.length;
+  if(navCnt) navCnt.textContent=list.length;
+  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有紅旗回報</div>'; return; }
+  box.innerHTML=list.map(function(r){
+    var flags=r.flags||{};
+    var notes=r.flag_notes||{};
+    // 勾起來的每一項列一條:嚴重項紅底、其餘香檳底;順咖有寫描述就接在下面
+    var keys=Object.keys(flags).filter(function(k){ return flags[k]; });
+    var rows=keys.map(function(k){
+      var severe=SEVERE_FLAGS.indexOf(k)>=0;
+      var note=notes[k]?'<div style="font-size:12.5px;color:var(--ink-soft);margin-top:3px;">「'+esc(notes[k])+'」</div>':'';
+      return '<div style="padding:8px 11px;border-radius:9px;margin-bottom:6px;background:'+(severe?'#FDECEC':'var(--champagne-soft)')+';border:1px solid '+(severe?'#F0C9C9':'var(--border)')+';">'+
+        '<div style="font-size:13px;font-weight:600;color:'+(severe?'#9B2C2C':'var(--ink)')+';">'+(severe?'⚠ ':'')+esc(k)+'</div>'+note+'</div>';
+    }).join('');
+    var hasSevere=keys.some(function(k){ return SEVERE_FLAGS.indexOf(k)>=0; });
+    var orderLine=r.order_no?'單號 '+r.order_no:'';
+    if(r.service_district) orderLine+=(orderLine?' · ':'')+r.service_district;
+    return '<div class="applicant-card" style="align-items:flex-start;'+(hasSevere?'border-left:4px solid #E5484D;':'')+'">'+
+      '<div style="flex:1;">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">'+
+          '<span style="font-size:14.5px;font-weight:600;color:var(--ink);">案家:'+esc(r.subject_name||'未填姓名')+'</span>'+
+          (hasSevere?'<span class="badge-mini" style="background:#FCE8E7;color:#D9534F;">嚴重</span>':'')+
+        '</div>'+
+        '<div class="card-meta"><span>回報順咖:'+esc(r.reporter_name||'未填姓名')+'</span><span>'+esc(fmtDate(r.created_at))+'</span>'+(orderLine?'<span>'+esc(orderLine)+'</span>':'')+'</div>'+
+        '<div style="margin-top:9px;">'+rows+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
 /* ===== 批次審核:勾選已看過的多筆,一次通過。三個清單共用一支,依 listId 走對應的通過邏輯。 ===== */
 function toggleAllChk(listId, master){
   document.querySelectorAll('#'+listId+' .rev-chk').forEach(function(c){ c.checked = master.checked; });
@@ -1368,6 +1436,7 @@ async function initAdmin(){
   loadReviewList();
   loadCertReview();
   loadCustomCertReview(); // 自訂證件待審清單
+  loadFlagReports(); // 紅旗回報:順咖回報的案家風險狀況
   loadPricing(); // 進頁就把收費總控的現值讀進表單
 }
 
