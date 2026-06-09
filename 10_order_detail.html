@@ -592,7 +592,8 @@ async function renderReviewStats(revieweeId, mode, isPrivileged, label){
 
 /* 進度時間軸:依訂單真實狀態畫五階梯。
    為什麼這樣做:orders 只有 created_at 一個可靠時間,中間各階段沒有逐步時間戳,
-   所以只在「下單」放真實時間、「服務開始」放約定時間(service_time),
+   所以「下單」放真實時間;「服務開始」放約定時間(service_time),順咖按下開始後
+   再多放一行「實際開始」(started_at),兩個時間並列,案家與順咖都看得到;
    其餘階段只標記 完成/進行中/未開始,不捏造時間(原本是寫死的假資料)。
    TL_CURRENT[狀態]=目前進行中的階段索引;小於它=已完成、等於它=進行中、大於它=未開始。 */
 var TL_STEPS = ['下單成立','順咖接單','服務開始','服務完成','確認結案'];
@@ -628,7 +629,11 @@ function renderTimeline(o){
     html += '<div class="tl-dot">'+dot+'</div>';
     html += '<div class="tl-content">'+TL_STEPS[i]+'</div>';
     if(i === 0){ html += '<div class="tl-time">'+fmtDT(o.created_at)+'</div>'; }
-    else if(i === 2 && o.service_time){ html += '<div class="tl-time">約定 '+fmtDT(o.service_time)+'</div>'; }
+    else if(i === 2){
+      /* 服務開始:約定時間一定顯示;順咖按下開始後(started_at)再多顯示「實際開始」 */
+      if(o.service_time){ html += '<div class="tl-time">約定 '+fmtDT(o.service_time)+'</div>'; }
+      if(o.started_at){ html += '<div class="tl-time">實際開始 '+fmtDT(o.started_at)+'</div>'; }
+    }
     if(i === cur && TL_DESC[o.status]){ html += '<div class="tl-detail">'+TL_DESC[o.status]+'</div>'; }
     html += '</div>';
   }
@@ -655,7 +660,7 @@ async function init(){
   }
 
   var ores = await sb.from('orders')
-    .select('id,order_no,status,pool,order_type,service_type,service_time,service_district,service_address,address_note,duration_minutes,amount,points_cost,suncar_id,created_at,client_id')
+    .select('id,order_no,status,pool,order_type,service_type,service_time,started_at,service_district,service_address,address_note,duration_minutes,amount,points_cost,suncar_id,created_at,client_id')
     .eq('id', orderId).maybeSingle();
   var o = (ores && ores.data) ? ores.data : null;
   if(!o){

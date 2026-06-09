@@ -635,7 +635,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   }
   function pendingCard(o, clientName, clientPhone){
     var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
-    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">待服務</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-red" onclick="event.stopPropagation(); window.releaseOrder(\''+esc(o.id)+'\', this)">取消接單</button><button class="btn btn-green" onclick="event.stopPropagation(); window.startService(\''+esc(o.id)+'\', this)">開始服務</button></div>'+price(o)+'</div></div>';
+    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">待服務</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-red" onclick="event.stopPropagation(); window.releaseOrder(\''+esc(o.id)+'\', this)">取消接單</button><button class="btn btn-green" onclick="event.stopPropagation(); window.startService(\''+esc(o.id)+'\', this, \''+esc(o.service_time||'')+'\')">開始服務</button></div>'+price(o)+'</div></div>';
   }
   /* 已完成卡的評價狀態列:我評過這位案家就顯示「已評價」,沒評就給「去評價」按鈕(帶訂單 id 進 05) */
   function reviewRow(o){
@@ -677,13 +677,27 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     location.reload();
   };
 
-  /* 開始服務:把自己的待服務單(accepted)改成服務中(active) */
-  window.startService = async function(orderId, btnEl){
+  /* 開始服務:把自己的待服務單(accepted)改成服務中(active),並記下實際按開始的時間 started_at。
+     為什麼記時間:進度頁(10)要同時顯示「約定時間」與「順咖實際開始時間」,案家與順咖都看得到。
+     兩道提醒(都可按取消、就不開始),用 else if 只跳最相關的一個,不重複轟炸:
+     ① 不是約定當天 → 提醒今天不是服務日,讓順咖選擇先不開始(避免提早一整天就按)。
+     ② 同一天但比約定時間早超過 1 小時 → 提醒太早,讓順咖再確認。 */
+  function isSameDay(a, b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  window.startService = async function(orderId, btnEl, serviceTime){
     if(!currentUserId){ alert('請重新整理頁面後再試'); return; }
-    if(!confirm('確定要開始這筆服務嗎?')) return;
+    var now = new Date();
+    var appt = serviceTime ? new Date(serviceTime) : null;
+    var apptText = appt ? fmtDate(serviceTime) : '';
+    if(appt && !isSameDay(now, appt)){
+      if(!confirm('今天不是約定的服務日(約定 '+apptText+')。\n確定現在就開始嗎?\n按「取消」就先不開始。')) return;
+    } else if(appt && now.getTime() < appt.getTime() - 3600000){
+      if(!confirm('現在比約定時間早超過 1 小時(約定 '+apptText+')。\n確定要開始嗎?\n按「取消」就先不開始。')) return;
+    } else {
+      if(!confirm('確定要開始這筆服務嗎?')) return;
+    }
     btnEl.disabled = true; btnEl.textContent = '處理中…';
     var res = await sb.from('orders')
-      .update({ status: 'active' })
+      .update({ status: 'active', started_at: now.toISOString() })
       .eq('id', orderId).eq('suncar_id', currentUserId).eq('status', 'accepted')
       .select('id');
     if(res.error){ alert('操作失敗:' + res.error.message); btnEl.disabled = false; btnEl.textContent = '開始服務'; return; }
