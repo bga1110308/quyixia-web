@@ -1127,17 +1127,30 @@ function pickTip(btn, val) {
   }
 }
 
+/* 沒填必填項時:除了 alert 提醒,還把畫面捲到那一格、閃一下框。
+   為什麼這樣做:表單很長,只跳提醒使用者不知道要往哪補(跟 04/14 的自動捲同一套)。
+   傳進來的 el 是該題的輸入區,往上找最近的 .card 捲過去,連題目一起看得到。 */
+function focusMissing(el, msg){
+  alert(msg);
+  if (!el) return;
+  var card = el.closest('.card') || el;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card.style.transition = 'box-shadow 0.2s';
+  card.style.boxShadow = '0 0 0 3px rgba(239,159,39,0.55)';
+  setTimeout(function(){ card.style.boxShadow = ''; }, 1600);
+}
+
 async function submitReview() {
   var R = window._review;
   if (!R) { alert('找不到這張訂單的資料,請從訂單頁的「留下評價」重新進來'); return; }
 
   if (R.mode === 'suncar_reviews_client') {
     // === 順咖評案家:結構化表單 ===
-    if (ratings.client === 0) { alert('請先給整體評分'); return; }
+    if (ratings.client === 0) { focusMissing(document.querySelector('.stars-input[data-target="client"]'), '請先給整體評分'); return; }
     var missing = SUB_ITEMS_STAFF.filter(function(it){ return it.req && !subRatings[it.key]; });
-    if (missing.length) { alert('請完成必填的分項評分:' + missing.map(function(m){ return m.key; }).join('、')); return; }
-    if (!choiceAns.would_serve_again) { alert('請回答:之後還願意再服務這位案家嗎?'); return; }
-    if (!choiceAns.service_as_ordered) { alert('請回答:實際服務和訂單說的一樣嗎?'); return; }
+    if (missing.length) { focusMissing(document.getElementById('sub-stars-staff'), '請完成必填的分項評分:' + missing.map(function(m){ return m.key; }).join('、')); return; }
+    if (!choiceAns.would_serve_again) { focusMissing(document.querySelector('.choice[data-q="would_serve_again"]'), '請回答:之後還願意再服務這位案家嗎?'); return; }
+    if (!choiceAns.service_as_ordered) { focusMissing(document.querySelector('.choice[data-q="service_as_ordered"]'), '請回答:實際服務和當初訂單說的一樣嗎?'); return; }
 
     var items = {};
     SUB_ITEMS_STAFF.forEach(function(it){ if (subRatings[it.key]) items[it.key] = subRatings[it.key]; });
@@ -1171,7 +1184,7 @@ async function submitReview() {
 
   } else {
     // === 案家評順咖:沿用原星等+留言,接成真寫入(最小版) ===
-    if (ratings.staff === 0) { alert('請先給順咖評分'); return; }
+    if (ratings.staff === 0) { focusMissing(document.querySelector('.stars-input[data-target="staff"]'), '請先給順咖評分'); return; }
     doInsertReview({
       order_id: R.orderId,
       reviewer_id: R.me,
