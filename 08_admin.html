@@ -394,31 +394,25 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <div class="page" id="page-orders">
         <div class="sec-header">
           <span class="sec-title">訂單總覽</span>
-          <span style="font-size:12.5px;color:var(--ink-soft);">2025 年 5 月 · 全台</span>
+          <span style="font-size:12.5px;color:var(--ink-soft);" id="order-period"></span>
         </div>
         <div class="stats-row">
-          <div class="stat-card"><div class="stat-label">本月新訂單</div><div class="stat-val">18</div><div class="stat-sub">↑ 較上月 +4</div></div>
-          <div class="stat-card"><div class="stat-label">媒合中</div><div class="stat-val">5</div><div class="stat-sub warn">等候指派</div></div>
-          <div class="stat-card"><div class="stat-label">執行中</div><div class="stat-val">4</div><div class="stat-sub warn">服務進行中</div></div>
-          <div class="stat-card"><div class="stat-label">已完成</div><div class="stat-val">7</div><div class="stat-sub">本月</div></div>
+          <div class="stat-card"><div class="stat-label">本月新訂單</div><div class="stat-val" id="stat-new">—</div><div class="stat-sub" id="stat-new-sub">本月</div></div>
+          <div class="stat-card"><div class="stat-label">媒合中</div><div class="stat-val" id="stat-match">—</div><div class="stat-sub warn">等候指派</div></div>
+          <div class="stat-card"><div class="stat-label">執行中</div><div class="stat-val" id="stat-run">—</div><div class="stat-sub warn">服務進行中</div></div>
+          <div class="stat-card"><div class="stat-label">已完成</div><div class="stat-val" id="stat-done">—</div><div class="stat-sub">本月</div></div>
         </div>
         <div class="tab-row">
-          <div class="tab on" onclick="switchTab('all',this)">全部(18)</div>
-          <div class="tab" onclick="switchTab('match',this)">媒合中(5)</div>
-          <div class="tab" onclick="switchTab('run',this)">執行中(4)</div>
-          <div class="tab" onclick="switchTab('done',this)">已完成(7)</div>
-          <div class="tab" onclick="switchTab('cancel',this)">已取消(2)</div>
+          <div class="tab on" id="tab-all" onclick="switchTab('all',this)">全部</div>
+          <div class="tab" id="tab-match" onclick="switchTab('match',this)">媒合中</div>
+          <div class="tab" id="tab-run" onclick="switchTab('run',this)">執行中</div>
+          <div class="tab" id="tab-done" onclick="switchTab('done',this)">已完成</div>
+          <div class="tab" id="tab-cancel" onclick="switchTab('cancel',this)">已取消</div>
         </div>
         <table class="data-table" id="order-tbl">
           <thead><tr><th>任務單編號</th><th>案家</th><th>服務類型</th><th>順咖</th><th>服務時長</th><th>進度</th><th>狀態</th><th>日期</th></tr></thead>
-          <tbody>
-            <tr data-status="run"><td style="font-size:11px;color:var(--ink-light);">#0521-08</td><td>鄭○雄</td><td>身體照顧 <span class="pill p-poolB" style="font-size:10px;margin-left:3px;">照服員</span></td><td>林○珠</td><td>3 小時</td><td><div class="progress-wrap"><div class="prog-bar"><div class="prog-fill" style="width:60%;"></div></div><span style="font-size:11px;color:var(--amber-deep);font-weight:600;">60%</span></div></td><td><span class="pill p-run"><span class="dot dot-run"></span>執行中</span></td><td style="font-size:11px;color:var(--ink-light);">05/22</td></tr>
-            <tr data-status="run"><td style="font-size:11px;color:var(--ink-light);">#0521-07</td><td>張○美</td><td>身體照顧 <span class="pill p-poolB" style="font-size:10px;margin-left:3px;">照服員</span></td><td>林○珠</td><td>2 小時</td><td><div class="progress-wrap"><div class="prog-bar"><div class="prog-fill" style="width:80%;"></div></div><span style="font-size:11px;color:var(--amber-deep);font-weight:600;">80%</span></div></td><td><span class="pill p-run"><span class="dot dot-run"></span>執行中</span></td><td style="font-size:11px;color:var(--ink-light);">05/21</td></tr>
-            <tr data-status="match"><td style="font-size:11px;color:var(--ink-light);">#0521-06</td><td>李○仁</td><td>家事服務 <span class="pill p-poolA" style="font-size:10px;margin-left:3px;">一般</span></td><td>(待指派)</td><td>2 小時</td><td style="color:var(--ink-light);font-size:12px;">—</td><td><span class="pill p-match"><span class="dot dot-match"></span>媒合中</span></td><td style="font-size:11px;color:var(--ink-light);">05/20</td></tr>
-            <tr data-status="match"><td style="font-size:11px;color:var(--ink-light);">#0520-05</td><td>陳○明</td><td>陪打遊戲 <span class="pill p-poolA" style="font-size:10px;margin-left:3px;">一般</span></td><td>(待指派)</td><td>1 小時</td><td style="color:var(--ink-light);font-size:12px;">—</td><td><span class="pill p-match"><span class="dot dot-match"></span>媒合中</span></td><td style="font-size:11px;color:var(--ink-light);">05/20</td></tr>
-            <tr data-status="done"><td style="font-size:11px;color:var(--ink-light);">#0518-04</td><td>吳○華</td><td>陪同就醫 <span class="pill p-poolB" style="font-size:10px;margin-left:3px;">照服員</span></td><td>王○芳</td><td>4 小時</td><td><div class="progress-wrap"><div class="prog-bar"><div class="prog-fill prog-done" style="width:100%;"></div></div><span style="font-size:11px;color:var(--forest);font-weight:600;">完成</span></div></td><td><span class="pill p-done"><span class="dot dot-done"></span>已完成</span></td><td style="font-size:11px;color:var(--ink-light);">05/18</td></tr>
-            <tr data-status="done"><td style="font-size:11px;color:var(--ink-light);">#0515-03</td><td>黃○蓮</td><td>家事服務 <span class="pill p-poolA" style="font-size:10px;margin-left:3px;">一般</span></td><td>劉○英</td><td>2.5 小時</td><td><div class="progress-wrap"><div class="prog-bar"><div class="prog-fill prog-done" style="width:100%;"></div></div><span style="font-size:11px;color:var(--forest);font-weight:600;">完成</span></div></td><td><span class="pill p-done"><span class="dot dot-done"></span>已完成</span></td><td style="font-size:11px;color:var(--ink-light);">05/15</td></tr>
-            <tr data-status="cancel"><td style="font-size:11px;color:var(--ink-light);">#0510-02</td><td>林○達</td><td>身體照顧 <span class="pill p-poolB" style="font-size:10px;margin-left:3px;">照服員</span></td><td>(取消)</td><td>—</td><td style="color:var(--ink-light);font-size:12px;">—</td><td><span class="pill p-cancel">已取消</span></td><td style="font-size:11px;color:var(--ink-light);">05/10</td></tr>
+          <tbody id="order-tbody">
+            <tr><td colspan="8" style="text-align:center;color:var(--ink-light);padding:24px;">載入中…</td></tr>
           </tbody>
         </table>
       </div>
@@ -1546,6 +1540,7 @@ async function initAdmin(){
   loadCustomCertReview(); // 自訂證件待審清單
   loadFlagReports(); // 紅旗回報:順咖回報的案家風險狀況
   loadAccounts(); // 帳號管理:會員清單與分身分停權
+  loadOrders();   // 訂單總覽:全部訂單統計與清單
   loadPricing(); // 進頁就把收費總控的現值讀進表單
 }
 
@@ -1563,6 +1558,95 @@ function switchTab(status,el){
   document.querySelectorAll('#order-tbl tbody tr').forEach(r=>{
     r.style.display=(status==='all'||r.dataset.status===status)?'':'none';
   });
+}
+
+/* 訂單總覽:撈全部訂單(需 admin_read_all_orders 政策)+ join 案家/順咖姓名,算統計與分頁數、渲染表格 */
+async function loadOrders(){
+  var tb=document.getElementById('order-tbody');
+  if(!tb) return;
+  var now=new Date();
+  var period=document.getElementById('order-period');
+  if(period) period.textContent=now.getFullYear()+' 年 '+(now.getMonth()+1)+' 月 · 全台';
+  var or=await sb.from('orders').select('order_no,client_id,suncar_id,status,pool,service_type,duration_minutes,created_at').order('created_at',{ascending:false});
+  if(or.error){ tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--danger);padding:24px;">讀取失敗:'+esc(or.error.message)+'</td></tr>'; return; }
+  var orders=or.data||[];
+  // orders 只存 id,撈案家/順咖姓名(admin_read_all_users 政策允許管理員讀)
+  var ids=[]; orders.forEach(function(o){ if(o.client_id)ids.push(o.client_id); if(o.suncar_id)ids.push(o.suncar_id); });
+  ids=ids.filter(function(v,i,a){ return v&&a.indexOf(v)===i; });
+  var nameMap={};
+  if(ids.length){
+    var us=await sb.from('users').select('id,display_name,role_detail').in('id',ids);
+    (us.data||[]).forEach(function(u){ nameMap[u.id]=(u.role_detail&&u.role_detail.real_name)||u.display_name||'未命名'; });
+  }
+  // 算統計 + 渲染。本月/上月用 created_at 比對
+  var cnt={all:orders.length,match:0,run:0,done:0,cancel:0};
+  var ym=now.getFullYear()+'-'+now.getMonth();
+  var lm=new Date(now.getFullYear(),now.getMonth()-1,1), lym=lm.getFullYear()+'-'+lm.getMonth();
+  var thisM=0,lastM=0,doneThisM=0;
+  var rows=orders.map(function(o){
+    var b=orderBucket(o.status); cnt[b]=(cnt[b]||0)+1;
+    if(o.created_at){ var d=new Date(o.created_at); var k=d.getFullYear()+'-'+d.getMonth(); if(k===ym){ thisM++; if(b==='done')doneThisM++; } if(k===lym)lastM++; }
+    return orderRowHtml(o,b,nameMap);
+  });
+  tb.innerHTML=rows.length?rows.join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-light);padding:24px;">目前沒有訂單</td></tr>';
+  setText('stat-new',thisM); setText('stat-match',cnt.match); setText('stat-run',cnt.run); setText('stat-done',doneThisM);
+  var diff=thisM-lastM, sub=document.getElementById('stat-new-sub');
+  if(sub) sub.textContent=diff>=0?'↑ 較上月 +'+diff:'↓ 較上月 '+diff;
+  setText('tab-all','全部('+cnt.all+')'); setText('tab-match','媒合中('+cnt.match+')');
+  setText('tab-run','執行中('+cnt.run+')'); setText('tab-done','已完成('+cnt.done+')'); setText('tab-cancel','已取消('+cnt.cancel+')');
+}
+
+function setText(id,v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+
+// 訂單狀態歸成四桶(對應分頁),沿用 01 的 status 定義
+function orderBucket(status){
+  if(status==='matching') return 'match';
+  if(status==='accepted'||status==='active'||status==='await_confirm') return 'run';
+  if(status==='done') return 'done';
+  if(status==='cancelled') return 'cancel';
+  return 'match';
+}
+
+// 服務時長:分鐘轉小時(整除顯整數,否則一位小數)
+function orderHours(m){ var h=m/60; return h%1===0?String(h):h.toFixed(1); }
+
+// 進度欄:依訂單走到的階段給進度條。matching/取消顯—,done 滿條。百分比對應狀態階段,不是憑空捏造
+function orderProgress(status){
+  var dash='<span style="color:var(--ink-light);font-size:12px;">—</span>';
+  if(status==='matching'||status==='cancelled') return dash;
+  if(status==='done') return '<div class="progress-wrap"><div class="prog-bar"><div class="prog-fill prog-done" style="width:100%;"></div></div><span style="font-size:11px;color:var(--forest);font-weight:600;">完成</span></div>';
+  var pct={accepted:25,active:65,await_confirm:90}[status]||0;
+  return '<div class="progress-wrap"><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;"></div></div><span style="font-size:11px;color:var(--amber-deep);font-weight:600;">'+pct+'%</span></div>';
+}
+
+// 狀態徽章(四桶各一色,沿用既有 pill/dot 樣式)
+function orderStatusPill(b){
+  if(b==='run') return '<span class="pill p-run"><span class="dot dot-run"></span>執行中</span>';
+  if(b==='done') return '<span class="pill p-done"><span class="dot dot-done"></span>已完成</span>';
+  if(b==='cancel') return '<span class="pill p-cancel">已取消</span>';
+  return '<span class="pill p-match"><span class="dot dot-match"></span>媒合中</span>';
+}
+
+// 日期:ISO 轉 MM/DD
+function fmtMD(iso){ var d=new Date(iso); return ('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2); }
+
+// 訂單一列:編號 案家 服務類型(+池別標籤) 順咖 時長 進度 狀態 日期
+function orderRowHtml(o,b,nameMap){
+  var pool=o.pool==='B'?'<span class="pill p-poolB" style="font-size:10px;margin-left:3px;">照服員</span>':'<span class="pill p-poolA" style="font-size:10px;margin-left:3px;">一般</span>';
+  var client=o.client_id?esc(nameMap[o.client_id]||'未命名'):'—';
+  var suncar=o.suncar_id?esc(nameMap[o.suncar_id]||'未命名'):(b==='cancel'?'(取消)':'(待指派)');
+  var dur=o.duration_minutes?orderHours(o.duration_minutes)+' 小時':'—';
+  var date=o.created_at?fmtMD(o.created_at):'—';
+  return '<tr data-status="'+b+'">'+
+    '<td style="font-size:11px;color:var(--ink-light);">'+esc(o.order_no||'—')+'</td>'+
+    '<td>'+client+'</td>'+
+    '<td>'+esc(o.service_type||'服務')+' '+pool+'</td>'+
+    '<td>'+suncar+'</td>'+
+    '<td>'+dur+'</td>'+
+    '<td>'+orderProgress(o.status)+'</td>'+
+    '<td>'+orderStatusPill(b)+'</td>'+
+    '<td style="font-size:11px;color:var(--ink-light);">'+date+'</td>'+
+  '</tr>';
 }
 
 function updateChip(cb,chipId,onText,offText){
