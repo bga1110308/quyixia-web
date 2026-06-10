@@ -949,10 +949,18 @@ function memberArea(sd){
   var t=(sd.address.city||'')+(sd.address.district||'');
   return t ? esc(t) : '—';
 }
-// 服務類型:順咖申請勾的項目(role_data.categories,存的就是中文,直接顯示)
+// 服務類型:只歸成「一般」與「身體照顧」兩類(對應 A/B 池),不列細項。
+// 身體照顧類=03 申請頁需照服員證的鎖定項目(B池);其餘都算一般(A池)。
+// ⚠️ BODY 清單要跟 03_staff_apply 的 locked 項目(協助洗澡/翻身擦澡/服藥提醒)一致,那邊加項目這裡也要加
 function memberCats(sd){
   if(!sd||!Array.isArray(sd.categories)||!sd.categories.length) return '—';
-  return esc(sd.categories.join('、'));
+  var BODY=['協助洗澡','翻身擦澡','服藥提醒'];
+  var hasBody=sd.categories.some(function(c){ return BODY.indexOf(c)>=0; });
+  var hasGeneral=sd.categories.some(function(c){ return BODY.indexOf(c)<0; });
+  var out=[];
+  if(hasGeneral) out.push('一般');
+  if(hasBody) out.push('身體照顧');
+  return out.length ? out.join('、') : '—';
 }
 
 // 一個身分一個區塊(標題 + 狀態 + 該身分的明細列)
