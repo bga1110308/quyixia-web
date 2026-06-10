@@ -297,8 +297,6 @@ textarea.form-input{min-height:80px;resize:vertical;}
     <div class="sidebar">
       <div class="nav-section">資料管理</div>
       <div class="nav-item" onclick="go('accounts',this)"><svg class="icon"><use href="#i-users"/></svg>帳號管理<span class="cnt" id="nav-account-count">0</span></div>
-      <div class="nav-item" onclick="go('clients',this)"><svg class="icon"><use href="#i-heart"/></svg>案家資料<span class="cnt">12</span></div>
-      <div class="nav-item" onclick="go('workers',this)"><svg class="icon"><use href="#i-users"/></svg>順咖資料<span class="cnt">8</span></div>
       <div class="nav-section">審核 / 訂單</div>
       <div class="nav-item active" onclick="go('review',this)"><svg class="icon"><use href="#i-check"/></svg>順咖審核<span class="cnt" id="nav-review-count">0</span></div>
       <div class="nav-item" onclick="go('certreview',this)"><svg class="icon"><use href="#i-badge-check"/></svg>證件審核<span class="cnt" id="nav-cert-count">0</span></div>
@@ -312,103 +310,6 @@ textarea.form-input{min-height:80px;resize:vertical;}
 
     <div class="main">
 
-      <!-- 案家資料 -->
-      <div class="page" id="page-clients">
-        <div class="sec-header">
-          <span class="sec-title">案家資料</span>
-          <button class="btn-gold-sm"><svg class="icon"><use href="#i-plus"/></svg>新增案家</button>
-        </div>
-        <div class="search-bar">
-          <input class="search-input" placeholder="搜尋姓名、電話、地址…" oninput="filterTable('clients-table',this.value)">
-          <button class="filter-btn on" onclick="filterStatus('clients-table','',this)">全部</button>
-          <button class="filter-btn" onclick="filterStatus('clients-table','活躍',this)">活躍</button>
-          <button class="filter-btn" onclick="filterStatus('clients-table','常客',this)">常客</button>
-          <button class="filter-btn" onclick="filterStatus('clients-table','暫停',this)">暫停</button>
-        </div>
-        <table class="data-table" id="clients-table">
-          <thead><tr><th>姓名</th><th>電話</th><th>地址</th><th>服務類型</th><th>指定順咖</th><th>訂單數</th><th>狀態</th></tr></thead>
-          <tbody>
-            <tr onclick="openDrawer('client','張○美','c')">
-              <td><div class="cell-flex"><div class="avatar av-c">張</div>張○美</div></td>
-              <td>0912-***-456</td><td>新北市板橋區</td><td>身體照顧</td><td>林○珠</td><td>5</td><td><span class="pill p-active">活躍</span></td>
-            </tr>
-            <tr onclick="openDrawer('client','李○仁','c')">
-              <td><div class="cell-flex"><div class="avatar av-c">李</div>李○仁</div></td>
-              <td>0933-***-111</td><td>台北市中山區</td><td>家事服務</td><td>(未指定)</td><td>2</td><td><span class="pill p-new">新客</span></td>
-            </tr>
-            <tr onclick="openDrawer('client','吳○華','c')">
-              <td><div class="cell-flex"><div class="avatar av-c">吳</div>吳○華</div></td>
-              <td>0955-***-789</td><td>新北市新莊區</td><td>陪同就醫</td><td>王○芳</td><td>8</td><td><span class="pill p-vip">常客</span></td>
-            </tr>
-            <tr onclick="openDrawer('client','黃○蓮','c')">
-              <td><div class="cell-flex"><div class="avatar av-c">黃</div>黃○蓮</div></td>
-              <td>0922-***-333</td><td>台北市大安區</td><td>身體照顧</td><td>(取消)</td><td>3</td><td><span class="pill p-inactive">暫停</span></td>
-            </tr>
-            <tr onclick="openDrawer('client','鄭○雄','c')">
-              <td><div class="cell-flex"><div class="avatar av-c">鄭</div>鄭○雄</div></td>
-              <td>0966-***-200</td><td>新北市三重區</td><td>家事、身體</td><td>林○珠</td><td>11</td><td><span class="pill p-vip">常客</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 順咖資料 -->
-      <div class="page" id="page-workers">
-        <div class="sec-header">
-          <span class="sec-title">順咖資料</span>
-          <div style="display:flex;gap:7px;">
-            <button class="btn-sm"><svg class="icon"><use href="#i-download"/></svg>匯出</button>
-            <button class="btn-gold-sm"><svg class="icon"><use href="#i-plus"/></svg>手動新增</button>
-          </div>
-        </div>
-        <div class="search-bar">
-          <input class="search-input" placeholder="搜尋姓名、證照、地區…" oninput="filterTable('workers-table',this.value)">
-          <button class="filter-btn on" onclick="filterStatus('workers-table','',this)">全部</button>
-          <button class="filter-btn" onclick="filterStatus('workers-table','上架中',this)">上架中</button>
-          <button class="filter-btn" onclick="filterStatus('workers-table','審核中',this)">審核中</button>
-          <button class="filter-btn" onclick="filterStatus('workers-table','停用',this)">停用</button>
-        </div>
-        <table class="data-table" id="workers-table">
-          <thead><tr><th>姓名</th><th>電話</th><th>服務區域</th><th>服務類型</th><th>徽章</th><th>池別</th><th>評分</th><th>接單數</th><th>狀態</th></tr></thead>
-          <tbody>
-            <tr onclick="openDrawer('worker','林○珠','g')">
-              <td><div class="cell-flex"><div class="avatar av-g">林</div>林○珠</div></td>
-              <td>0911-***-001</td><td>雙北</td><td>身體、陪同</td>
-              <td><div class="badge-row"><span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span><span class="badge-mini b-safe"><svg class="icon"><use href="#i-shield-s"/></svg>良民</span><span class="badge-mini b-cpr"><svg class="icon"><use href="#i-cross-med"/></svg>急救</span><span class="badge-mini b-cna"><svg class="icon"><use href="#i-star"/></svg>照服</span><span class="badge-mini b-senior"><svg class="icon"><use href="#i-crown"/></svg>資深</span></div></td>
-              <td><span class="pill p-poolB">照服員池</span></td>
-              <td><span class="star">★</span> 4.9</td><td>23</td><td><span class="pill p-active">上架中</span></td>
-            </tr>
-            <tr onclick="openDrawer('worker','王○芳','g')">
-              <td><div class="cell-flex"><div class="avatar av-g">王</div>王○芳</div></td>
-              <td>0922-***-002</td><td>台北市</td><td>家事服務</td>
-              <td><div class="badge-row"><span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span></div></td>
-              <td><span class="pill p-poolA">一般跑腿</span></td>
-              <td><span class="star">★</span> 4.7</td><td>9</td><td><span class="pill p-pending">審核中</span></td>
-            </tr>
-            <tr onclick="openDrawer('worker','陳○明','r')">
-              <td><div class="cell-flex"><div class="avatar av-r">陳</div>陳○明</div></td>
-              <td>0933-***-003</td><td>台北市</td><td>身體照顧</td>
-              <td><div class="badge-row"><span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span></div></td>
-              <td><span style="color:var(--ink-light);font-size:11px;">—</span></td>
-              <td><span style="color:var(--ink-light);">—</span></td><td>0</td><td><span class="pill p-inactive">審核中</span></td>
-            </tr>
-            <tr onclick="openDrawer('worker','劉○英','g')">
-              <td><div class="cell-flex"><div class="avatar av-g">劉</div>劉○英</div></td>
-              <td>0944-***-004</td><td>新北市</td><td>家事、陪同</td>
-              <td><div class="badge-row"><span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span><span class="badge-mini b-safe"><svg class="icon"><use href="#i-shield-s"/></svg>良民</span><span class="badge-mini b-cna"><svg class="icon"><use href="#i-star"/></svg>照服</span></div></td>
-              <td><span class="pill p-poolB">照服員池</span></td>
-              <td><span class="star">★</span> 4.6</td><td>17</td><td><span class="pill p-active">上架中</span></td>
-            </tr>
-            <tr onclick="openDrawer('worker','趙○梅','g')">
-              <td><div class="cell-flex"><div class="avatar av-g">趙</div>趙○梅</div></td>
-              <td>0955-***-005</td><td>雙北</td><td>身體照顧</td>
-              <td><div class="badge-row"><span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span><span class="badge-mini b-safe"><svg class="icon"><use href="#i-shield-s"/></svg>良民</span><span class="badge-mini b-cna"><svg class="icon"><use href="#i-star"/></svg>照服</span></div></td>
-              <td><span class="pill p-poolB">照服員池</span></td>
-              <td><span class="star">★</span> 4.8</td><td>31</td><td><span class="pill p-inactive">停用</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
       <!-- 帳號管理:真資料。列出所有有角色的會員;一個人可同時是案家與順咖,兩種身分各自顯示狀態、可分開停權/復權。
            停權順咖→接單那關(後台 RLS)立刻擋;停權案家→需搭配 place_order 檢查才擋得住下單(第二段補) -->
@@ -992,20 +893,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
 <script src="supabase-init.js"></script>
 <script src="qyx-load-guard.js"></script>
 <script>
-const CLIENTS={
-  '張○美':{phone:'0912-***-456',addr:'新北市板橋區文化路',age:78,relation:'女兒代為聯絡',service:'身體照顧(含沐浴、翻身)',freq:'每週三次',prefer:'林○珠',orders:5,status:'活躍',note:'有糖尿病,需注意飲食;女兒在新加坡,需主動回報'},
-  '李○仁':{phone:'0933-***-111',addr:'台北市中山區民生東路',age:72,relation:'本人',service:'家事服務',freq:'每週一次',prefer:'(未指定)',orders:2,status:'新客',note:'行動尚可,主要需要打掃協助'},
-  '吳○華':{phone:'0955-***-789',addr:'新北市新莊區化成路',age:84,relation:'兒子',service:'陪同就醫',freq:'不定期',prefer:'王○芳',orders:8,status:'常客',note:'定期回診台大醫院,每月約一到兩次,須提前兩天確認'},
-  '黃○蓮':{phone:'0922-***-333',addr:'台北市大安區和平東路',age:69,relation:'本人',service:'身體照顧',freq:'已暫停',prefer:'(取消)',orders:3,status:'暫停',note:'暫停原因:家屬自行照顧,可能年底重啟'},
-  '鄭○雄':{phone:'0966-***-200',addr:'新北市三重區重新路',age:80,relation:'配偶',service:'家事 + 身體照顧',freq:'每週五次',prefer:'林○珠',orders:11,status:'常客',note:'長期固定,滿意度高,可優先保留林○珠時段'}
-};
-const WORKERS={
-  '林○珠':{phone:'0911-***-001',area:'雙北全區',service:'身體照顧、陪同外出',cert:'照顧服務員丙級技術士',certNo:'112-XXXX-0034',avail:'週一至週五 08:00–18:00',orders:23,rating:4.9,status:'上架中',note:'評分最高,回覆速度快,建議優先推薦',badges:'<span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span> <span class="badge-mini b-safe"><svg class="icon"><use href="#i-shield-s"/></svg>良民</span> <span class="badge-mini b-cpr"><svg class="icon"><use href="#i-cross-med"/></svg>急救</span> <span class="badge-mini b-cna"><svg class="icon"><use href="#i-star"/></svg>照服</span> <span class="badge-mini b-senior"><svg class="icon"><use href="#i-crown"/></svg>資深</span>'},
-  '王○芳':{phone:'0922-***-002',area:'台北市',service:'家事服務',cert:'居服員結業證書(60 小時)',certNo:'新北社局-2022-0891',avail:'週一三五 09:00–17:00',orders:9,rating:4.7,status:'審核中',note:'證照類型待確認是否符合收案標準',badges:'<span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span>'},
-  '陳○明':{phone:'0933-***-003',area:'台北市(填寫)',service:'身體照顧',cert:'丙級(影像不清)',certNo:'待確認',avail:'不定',orders:0,rating:null,status:'審核中',note:'⚠️ 高風險:證照模糊、戶籍地不符、緊急聯絡人空白',badges:'<span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span>'},
-  '劉○英':{phone:'0944-***-004',area:'新北市',service:'家事、陪同外出',cert:'照顧服務員丙級技術士',certNo:'111-XXXX-2210',avail:'週二四六 09:00–17:00',orders:17,rating:4.6,status:'上架中',note:'新北南區為主,板橋、中和、土城',badges:'<span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span> <span class="badge-mini b-safe"><svg class="icon"><use href="#i-shield-s"/></svg>良民</span> <span class="badge-mini b-cna"><svg class="icon"><use href="#i-star"/></svg>照服</span>'},
-  '趙○梅':{phone:'0955-***-005',area:'雙北全區',service:'身體照顧',cert:'照顧服務員丙級技術士',certNo:'110-XXXX-1198',avail:'停用中',orders:31,rating:4.8,status:'停用',note:'接單最多,目前因個人因素暫停,預計下季回歸',badges:'<span class="badge-mini b-verified"><svg class="icon"><use href="#i-badge-check"/></svg>實名</span> <span class="badge-mini b-safe"><svg class="icon"><use href="#i-shield-s"/></svg>良民</span> <span class="badge-mini b-cna"><svg class="icon"><use href="#i-star"/></svg>照服</span>'}
-};
+// 會員明細改由 openMemberDrawer() 從後台撈真資料,不再用寫死假物件(CLIENTS/WORKERS 已移除)
 
 function go(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1015,75 +903,80 @@ function go(id,el){
   closeDrawer();
 }
 
-function openDrawer(type,name,avColor){
-  const d=document.getElementById('drawer');
-  const body=document.getElementById('d-body');
-  document.getElementById('d-title').textContent=type==='client'?'案家資料':'順咖資料';
-  const data=type==='client'?CLIENTS[name]:WORKERS[name];
-  if(!data){body.innerHTML='<p style="color:var(--ink-light);font-size:13px;">查無資料</p>';d.classList.add('open');return}
-  const avBg=avColor==='g'?'#E8F5EE':avColor==='r'?'#FCE8E7':'#E8F1F8';
-  const avCol=avColor==='g'?'#2F6048':avColor==='r'?'#D9534F':'#3A7CB8';
-  if(type==='client'){
-    body.innerHTML=`
-      <div class="d-avatar" style="background:${avBg};color:${avCol};">${name[0]}</div>
-      <div class="d-name">${name}</div>
-      <div class="d-sub">年齡 ${data.age} 歲 · ${data.status}</div>
-      <div class="d-section">聯絡資訊</div>
-      <div class="d-row"><span class="d-key">電話</span><span class="d-val">${data.phone}</span></div>
-      <div class="d-row"><span class="d-key">地址</span><span class="d-val">${data.addr}</span></div>
-      <div class="d-row"><span class="d-key">聯絡人</span><span class="d-val">${data.relation}</span></div>
-      <div class="d-section">服務資訊</div>
-      <div class="d-row"><span class="d-key">服務類型</span><span class="d-val">${data.service}</span></div>
-      <div class="d-row"><span class="d-key">頻率</span><span class="d-val">${data.freq}</span></div>
-      <div class="d-row"><span class="d-key">指定順咖</span><span class="d-val">${data.prefer}</span></div>
-      <div class="d-row"><span class="d-key">累計訂單</span><span class="d-val">${data.orders} 筆</span></div>
-      <div class="d-section">備註</div>
-      <div class="note-box">${data.note}</div>
-      <div class="action-strip">
-        <button class="btn-sm"><svg class="icon"><use href="#i-phone"/></svg>電話紀錄</button>
-        <button class="btn-sm"><svg class="icon"><use href="#i-notes"/></svg>家訪紀錄</button>
-        <button class="btn-gold-sm"><svg class="icon"><use href="#i-edit"/></svg>編輯</button>
-      </div>`;
-  } else {
-    body.innerHTML=`
-      <div class="d-avatar" style="background:${avBg};color:${avCol};">${name[0]}</div>
-      <div class="d-name">${name}</div>
-      <div class="d-sub">${data.status} · 評分 ${data.rating?'★ '+data.rating:'未評'}</div>
-      ${data.badges?`<div style="text-align:center;margin-bottom:15px;">${data.badges}</div>`:''}
-      <div class="d-section">聯絡資訊</div>
-      <div class="d-row"><span class="d-key">電話</span><span class="d-val">${data.phone}</span></div>
-      <div class="d-row"><span class="d-key">服務區域</span><span class="d-val">${data.area}</span></div>
-      <div class="d-row"><span class="d-key">可用時段</span><span class="d-val">${data.avail}</span></div>
-      <div class="d-section">資格證照</div>
-      <div class="d-row"><span class="d-key">服務類型</span><span class="d-val">${data.service}</span></div>
-      <div class="d-row"><span class="d-key">證照</span><span class="d-val">${data.cert}</span></div>
-      <div class="d-row"><span class="d-key">證書字號</span><span class="d-val">${data.certNo}</span></div>
-      <div class="d-section">服務紀錄</div>
-      <div class="d-row"><span class="d-key">累計接單</span><span class="d-val">${data.orders} 筆</span></div>
-      <div class="d-section">備註</div>
-      <div class="note-box">${data.note}</div>
-      <div class="action-strip">
-        <button class="btn-sm"><svg class="icon"><use href="#i-phone"/></svg>聯絡</button>
-        <button class="btn-sm" style="color:var(--danger);border-color:var(--danger);">停用</button>
-        <button class="btn-gold-sm"><svg class="icon"><use href="#i-edit"/></svg>編輯</button>
-      </div>`;
-  }
+// 會員明細抽屜:點帳號管理的卡片開啟,撈真資料(訂單數、評分、徽章)顯示。
+// 純讀取;停權動作仍在卡片上的按鈕(setRoleStatus),抽屜不重複放,避免兩處改狀態散落。
+async function openMemberDrawer(uid){
+  var d=document.getElementById('drawer');
+  var body=document.getElementById('d-body');
+  document.getElementById('d-title').textContent='會員資料';
+  var acc=_accounts.filter(function(a){ return a.uid===uid; })[0];
+  if(!acc){ body.innerHTML='<p style="color:var(--ink-light);font-size:13px;">查無資料</p>'; d.classList.add('open'); return; }
+  body.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div>';
   d.classList.add('open');
+  // 撈真資料:案家累計下單、順咖累計接單、順咖評分(評分用現成批次函式,只回彙總不吐留言)
+  var clientOrders = acc.client ? await countMemberOrders('client_id',uid) : null;
+  var suncarOrders = acc.suncar ? await countMemberOrders('suncar_id',uid) : null;
+  var rating=null;
+  if(acc.suncar){
+    var rv=await sb.rpc('get_review_stats_batch',{p_targets:[uid],p_mode:'client_reviews_suncar'});
+    rating=(rv.data&&rv.data[0])||null;
+  }
+  body.innerHTML=memberDrawerHtml(acc,{clientOrders:clientOrders,suncarOrders:suncarOrders,rating:rating});
+}
+
+// 算某人某欄位的訂單筆數(head:true 只回數量、不抓整列資料,最省)
+async function countMemberOrders(col,uid){
+  var r=await sb.from('orders').select('id',{count:'exact',head:true}).eq(col,uid);
+  return r.error ? null : (r.count||0);
+}
+
+// 一顆小徽章
+function badgeMini(cls,icon,txt){
+  return '<span class="badge-mini '+cls+'"><svg class="icon"><use href="#'+icon+'"/></svg>'+esc(txt)+'</span>';
+}
+
+// 順咖固定證件徽章(吃 users 旗標,跟案家端 02 同一個真相來源)
+function memberBadges(acc){
+  var b=[];
+  if(acc.is_realname) b.push(badgeMini('b-verified','i-badge-check','實名'));
+  if(acc.has_good_conduct) b.push(badgeMini('b-safe','i-shield-s','良民'));
+  if(acc.has_cpr) b.push(badgeMini('b-cpr','i-cross-med','急救'));
+  if(acc.has_caregiver_cert) b.push(badgeMini('b-cna','i-star','照服'));
+  return b.length ? '<div class="badge-row">'+b.join('')+'</div>' : '<span style="color:var(--ink-light);font-size:12px;">尚無徽章</span>';
+}
+
+// 一個身分一個區塊(標題 + 狀態 + 該身分的明細列)
+function memberSection(title, statusPill, rowsHtml){
+  return '<div class="d-section">'+title+'</div>'+
+    '<div class="d-row"><span class="d-key">狀態</span><span class="d-val">'+statusPill+'</span></div>'+rowsHtml;
+}
+
+function memberDrawerHtml(acc, x){
+  var html=''+
+    '<div class="d-avatar" style="background:var(--champagne);color:var(--amber-deep);">'+esc((acc.name||'？').charAt(0))+'</div>'+
+    '<div class="d-name">'+esc(acc.name)+'</div>'+
+    '<div class="d-sub">'+(acc.member_no?esc(acc.member_no):'未發編號')+'</div>'+
+    '<div class="d-section">聯絡資訊</div>'+
+    '<div class="d-row"><span class="d-key">電話</span><span class="d-val">'+(acc.phone?esc(acc.phone):'—')+'</span></div>';
+  if(acc.client){
+    html+=memberSection('案家身分', acctStatusPill(acc.client),
+      '<div class="d-row"><span class="d-key">累計下單</span><span class="d-val">'+(x.clientOrders==null?'—':x.clientOrders+' 筆')+'</span></div>');
+  }
+  if(acc.suncar){
+    var pool=acc.has_caregiver_cert ? '照服員池（可接身體照顧 B）' : '一般池（A）';
+    var ratingTxt=(x.rating && x.rating.enough) ? '★ '+Number(x.rating.overall_avg).toFixed(1)+'（'+x.rating.cnt+' 則）' : '尚無足夠評價';
+    html+=memberSection('順咖身分', acctStatusPill(acc.suncar),
+      '<div class="d-row"><span class="d-key">徽章</span><span class="d-val">'+memberBadges(acc)+'</span></div>'+
+      '<div class="d-row"><span class="d-key">池別</span><span class="d-val">'+pool+'</span></div>'+
+      '<div class="d-row"><span class="d-key">評分</span><span class="d-val">'+ratingTxt+'</span></div>'+
+      '<div class="d-row"><span class="d-key">累計接單</span><span class="d-val">'+(x.suncarOrders==null?'—':x.suncarOrders+' 筆')+'</span></div>');
+  }
+  return html;
 }
 
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');}
 
-function filterTable(tableId,val){
-  const rows=document.querySelectorAll('#'+tableId+' tbody tr');
-  rows.forEach(r=>{r.style.display=r.textContent.includes(val)?'':'none';});
-}
-
-function filterStatus(tableId,status,btn){
-  document.querySelectorAll('.filter-btn').forEach(b=>{if(b.closest('.search-bar')===btn.closest('.search-bar'))b.classList.remove('on');});
-  btn.classList.add('on');
-  const rows=document.querySelectorAll('#'+tableId+' tbody tr');
-  rows.forEach(r=>{r.style.display=(!status||r.textContent.includes(status))?'':'none';});
-}
+// filterTable / filterStatus 已隨舊「案家資料／順咖資料」兩頁一起移除(帳號管理改用 setAccountRoleFilter)
 
 function filterRisk(risk,btn){
   document.querySelectorAll('.filter-btn').forEach(b=>{if(b.closest('.search-bar')===btn.closest('.search-bar'))b.classList.remove('on');});
@@ -1389,7 +1282,7 @@ async function loadAccounts(){
   if(!rows.length){ _accounts=[]; renderAccounts(); return; }
   // 撈這些人的基本資料(admin_read_all_users 政策允許)
   var ids=rows.map(function(r){ return r.user_id; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
-  var ur=await sb.from('users').select('id,display_name,phone,member_no,role_detail').in('id',ids);
+  var ur=await sb.from('users').select('id,display_name,phone,member_no,role_detail,is_realname,has_caregiver_cert,has_good_conduct,has_cpr').in('id',ids);
   if(ur.error){ box.innerHTML=acctErrBox(ur.error.message); return; }
   var umap={}; (ur.data||[]).forEach(function(u){ umap[u.id]=u; });
   // 每人合併成一筆,兩種身分各記狀態
@@ -1397,7 +1290,7 @@ async function loadAccounts(){
   rows.forEach(function(r){
     if(!amap[r.user_id]){
       var u=umap[r.user_id]||{};
-      amap[r.user_id]={ uid:r.user_id, name:(u.role_detail&&u.role_detail.real_name)||u.display_name||'未填姓名', phone:u.phone||'', member_no:u.member_no||'', client:null, suncar:null };
+      amap[r.user_id]={ uid:r.user_id, name:(u.role_detail&&u.role_detail.real_name)||u.display_name||'未填姓名', phone:u.phone||'', member_no:u.member_no||'', is_realname:!!u.is_realname, has_caregiver_cert:!!u.has_caregiver_cert, has_good_conduct:!!u.has_good_conduct, has_cpr:!!u.has_cpr, client:null, suncar:null };
     }
     if(r.role==='client') amap[r.user_id].client=r.status;
     if(r.role==='suncar') amap[r.user_id].suncar=r.status;
@@ -1420,9 +1313,9 @@ function acctRoleRow(acc, role){
   var roleText=role==='client'?'案家':'順咖';
   var btn='';
   if(status==='active'){
-    btn='<button class="btn-reject" onclick="setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'suspended\',this)">停權</button>';
+    btn='<button class="btn-reject" onclick="event.stopPropagation();setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'suspended\',this)">停權</button>';
   } else if(status==='suspended'){
-    btn='<button class="btn-approve" onclick="setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'active\',this)">復權</button>';
+    btn='<button class="btn-approve" onclick="event.stopPropagation();setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'active\',this)">復權</button>';
   }
   return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">'+
     '<span style="font-size:13px;color:var(--ink-soft);min-width:34px;">'+roleText+'</span>'+
@@ -1449,7 +1342,7 @@ function renderAccounts(){
   if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">沒有符合的會員</div>'; return; }
   box.innerHTML=list.map(function(a){
     var sub=[]; if(a.member_no) sub.push(esc(a.member_no)); if(a.phone) sub.push(esc(a.phone));
-    return '<div class="applicant-card" style="align-items:flex-start;">'+
+    return '<div class="applicant-card" style="align-items:flex-start;cursor:pointer;" onclick="openMemberDrawer(\''+esc(a.uid)+'\')">'+
       '<div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">'+esc(a.name.charAt(0))+'</div>'+
       '<div style="flex:1;">'+
         '<div style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(a.name)+'</div>'+
