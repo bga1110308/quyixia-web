@@ -911,17 +911,15 @@ async function openMemberDrawer(uid){
   document.getElementById('d-title').textContent='會員資料';
   var acc=_accounts.filter(function(a){ return a.uid===uid; })[0];
   if(!acc){ body.innerHTML='<p style="color:var(--ink-light);font-size:13px;">查無資料</p>'; d.classList.add('open'); return; }
-  body.innerHTML='<div style="padding:24px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div>';
   d.classList.add('open');
-  // 撈真資料:案家累計下單、順咖累計接單、順咖評分(評分用現成批次函式,只回彙總不吐留言)
-  var clientOrders = acc.client ? await countMemberOrders('client_id',uid) : null;
-  var suncarOrders = acc.suncar ? await countMemberOrders('suncar_id',uid) : null;
-  var rating=null;
-  if(acc.suncar){
-    var rv=await sb.rpc('get_review_stats_batch',{p_targets:[uid],p_mode:'client_reviews_suncar'});
-    rating=(rv.data&&rv.data[0])||null;
-  }
-  body.innerHTML=memberDrawerHtml(acc,{clientOrders:clientOrders,suncarOrders:suncarOrders,rating:rating});
+  // 先用已撈到的基本資料(姓名/電話/狀態/徽章/池別/服務區域/類型)立即畫出來,不等附屬查詢→絕不會卡在「載入中」
+  var extra={clientOrders:null,suncarOrders:null,rating:null};
+  body.innerHTML=memberDrawerHtml(acc,extra);
+  // 訂單數、評分各自獨立補撈,任一失敗只影響該欄(顯示「—」),不會讓整個抽屜停住
+  try{ if(acc.client) extra.clientOrders=await countMemberOrders('client_id',uid); }catch(e){ console.error('clientOrders',e); }
+  try{ if(acc.suncar) extra.suncarOrders=await countMemberOrders('suncar_id',uid); }catch(e){ console.error('suncarOrders',e); }
+  try{ if(acc.suncar){ var rv=await sb.rpc('get_review_stats_batch',{p_targets:[uid],p_mode:'client_reviews_suncar'}); extra.rating=(rv&&rv.data&&rv.data[0])||null; } }catch(e){ console.error('rating',e); }
+  body.innerHTML=memberDrawerHtml(acc,extra);
 }
 
 // 算某人某欄位的訂單筆數(head:true 只回數量、不抓整列資料,最省)
@@ -945,6 +943,18 @@ function memberBadges(acc){
   return b.length ? '<div class="badge-row">'+b.join('')+'</div>' : '<span style="color:var(--ink-light);font-size:12px;">尚無徽章</span>';
 }
 
+// 服務區域:用順咖申請填的住址縣市+行政區(role_data.address)。順咖沒有獨立的「服務區域」多選,這是最接近的真資料
+function memberArea(sd){
+  if(!sd||!sd.address) return '—';
+  var t=(sd.address.city||'')+(sd.address.district||'');
+  return t ? esc(t) : '—';
+}
+// 服務類型:順咖申請勾的項目(role_data.categories,存的就是中文,直接顯示)
+function memberCats(sd){
+  if(!sd||!Array.isArray(sd.categories)||!sd.categories.length) return '—';
+  return esc(sd.categories.join('、'));
+}
+
 // 一個身分一個區塊(標題 + 狀態 + 該身分的明細列)
 function memberSection(title, statusPill, rowsHtml){
   return '<div class="d-section">'+title+'</div>'+
@@ -966,6 +976,8 @@ function memberDrawerHtml(acc, x){
     var pool=acc.has_caregiver_cert ? '照服員池（可接身體照顧 B）' : '一般池（A）';
     var ratingTxt=(x.rating && x.rating.enough) ? '★ '+Number(x.rating.overall_avg).toFixed(1)+'（'+x.rating.cnt+' 則）' : '尚無足夠評價';
     html+=memberSection('順咖身分', acctStatusPill(acc.suncar),
+      '<div class="d-row"><span class="d-key">服務區域</span><span class="d-val">'+memberArea(acc.suncar_data)+'</span></div>'+
+      '<div class="d-row"><span class="d-key">服務類型</span><span class="d-val">'+memberCats(acc.suncar_data)+'</span></div>'+
       '<div class="d-row"><span class="d-key">徽章</span><span class="d-val">'+memberBadges(acc)+'</span></div>'+
       '<div class="d-row"><span class="d-key">池別</span><span class="d-val">'+pool+'</span></div>'+
       '<div class="d-row"><span class="d-key">評分</span><span class="d-val">'+ratingTxt+'</span></div>'+
@@ -1276,7 +1288,7 @@ async function loadAccounts(){
   var box=document.getElementById('account-list');
   if(!box) return;
   // 撈所有案家/順咖角色列(admin_read_all_roles 政策允許管理員讀全部)
-  var rr=await sb.from('user_roles').select('user_id,role,status').in('role',['client','suncar']);
+  var rr=await sb.from('user_roles').select('user_id,role,status,role_data').in('role',['client','suncar']);
   if(rr.error){ box.innerHTML=acctErrBox(rr.error.message); return; }
   var rows=rr.data||[];
   if(!rows.length){ _accounts=[]; renderAccounts(); return; }
@@ -1290,10 +1302,10 @@ async function loadAccounts(){
   rows.forEach(function(r){
     if(!amap[r.user_id]){
       var u=umap[r.user_id]||{};
-      amap[r.user_id]={ uid:r.user_id, name:(u.role_detail&&u.role_detail.real_name)||u.display_name||'未填姓名', phone:u.phone||'', member_no:u.member_no||'', is_realname:!!u.is_realname, has_caregiver_cert:!!u.has_caregiver_cert, has_good_conduct:!!u.has_good_conduct, has_cpr:!!u.has_cpr, client:null, suncar:null };
+      amap[r.user_id]={ uid:r.user_id, name:(u.role_detail&&u.role_detail.real_name)||u.display_name||'未填姓名', phone:u.phone||'', member_no:u.member_no||'', is_realname:!!u.is_realname, has_caregiver_cert:!!u.has_caregiver_cert, has_good_conduct:!!u.has_good_conduct, has_cpr:!!u.has_cpr, client:null, suncar:null, suncar_data:null };
     }
     if(r.role==='client') amap[r.user_id].client=r.status;
-    if(r.role==='suncar') amap[r.user_id].suncar=r.status;
+    if(r.role==='suncar'){ amap[r.user_id].suncar=r.status; amap[r.user_id].suncar_data=r.role_data||{}; }
   });
   _accounts=Object.keys(amap).map(function(k){ return amap[k]; });
   renderAccounts();
