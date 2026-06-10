@@ -222,6 +222,7 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
 <script src="qyx-load-guard.js"></script>
+<script src="qyx-notify.js"></script>
 </head>
 <body>
 
@@ -392,39 +393,10 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
     </div>
   </div>
 
-  <!-- 即時通知 -->
+  <!-- 即時通知:由 qyx-notify.js 依這張單的真通知填入,沒有就整區隱藏 -->
   <div class="section-card" id="feed-section" style="display:none;">
     <div class="sec-title"><svg><use href="#i-bell"/></svg>即時通知</div>
-    <div class="live-feed">
-      <div class="feed-item new">
-        <div class="feed-icon"><svg><use href="#i-radio"/></svg></div>
-        <div class="feed-body">
-          <div class="feed-text"><strong>10:32 更新</strong>　已協助掛號完成,正陪同就診中</div>
-          <div class="feed-time">3 分鐘前</div>
-        </div>
-      </div>
-      <div class="feed-item">
-        <div class="feed-icon"><svg><use href="#i-pin"/></svg></div>
-        <div class="feed-body">
-          <div class="feed-text">小芳已抵達<strong>台大醫院門口</strong></div>
-          <div class="feed-time">今日 09:42</div>
-        </div>
-      </div>
-      <div class="feed-item">
-        <div class="feed-icon"><svg><use href="#i-user"/></svg></div>
-        <div class="feed-body">
-          <div class="feed-text">小芳已抵達您家中接送長輩</div>
-          <div class="feed-time">今日 08:55</div>
-        </div>
-      </div>
-      <div class="feed-item">
-        <div class="feed-icon"><svg><use href="#i-check"/></svg></div>
-        <div class="feed-body">
-          <div class="feed-text">小芳已接單,將準時到府</div>
-          <div class="feed-time">昨日 15:08</div>
-        </div>
-      </div>
-    </div>
+    <div class="live-feed" id="feed-list"></div>
   </div>
 
   <!-- 訂單資訊 -->
@@ -990,6 +962,13 @@ window.reportIssue = function(){
 
 /* 用共用小工具包一層載入逾時保護:8 秒沒載完或出錯就顯示重試。案家端用金色重試鈕。 */
 qyxGuard(init, { color: '#EF9F27' });
+
+/* 站內通知:依網址 ?id= 這張單,把該單的真通知填進 #feed-list(沒有就隱藏整區)。
+   訂單 id 跟頁面用同一個來源(params.get('id')),不依賴 init 跑到哪。 */
+(function(){
+  var oid = new URLSearchParams(window.location.search).get('id');
+  if(oid && window.QYXNotify) QYXNotify.mountFeed('feed-list', oid);
+})();
 </script>
 </body>
 </html>

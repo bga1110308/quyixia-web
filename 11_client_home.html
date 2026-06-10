@@ -241,6 +241,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <script src="supabase-init.js"></script>
 <script src="qyx-load-guard.js"></script>
 <script src="qyx-consent-guard.js"></script>
+<script src="qyx-notify.js"></script>
 </head>
 <body>
 
@@ -273,6 +274,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <span class="role-label">案家服務台 · 找順咖幫忙</span>
   <span id="role-status" style="font-size:0.7rem;color:var(--forest);background:var(--mint-pale);padding:3px 9px;border-radius:99px;border:1px solid rgba(95,181,142,0.25);font-weight:500;"></span>
   <span class="strip-actions">
+    <span id="qyx-notify-bell" data-qyx-notify data-color="#EF9F27"></span>
     <a href="12_staff_home.html" class="role-switch-link" id="role-switch-link" style="display:none;">切到順咖端</a>
     <button type="button" class="logout-link" title="登出" onclick="if(confirm('確定要登出嗎?')){window.sb.auth.signOut().finally(function(){location.href='index.html';});}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>登出</button>
   </span>
