@@ -527,6 +527,28 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     location.reload();
   };
 
+  /* 案家被停權:點任何下單入口當場擋下,不讓他進 04 填完整張單才知道。
+     旗標由 load 設(window._clientSuspended),guard 讀旗標即時判斷,預設(沒停權)放行。 */
+  function guardOrderEntry(e){
+    if(window._clientSuspended){
+      if(e&&e.preventDefault) e.preventDefault();
+      alert('你的案家身分已被停權,目前無法下單。如有疑問請聯絡平台。');
+      return false;
+    }
+    return true;
+  }
+  /* 在找順咖卡下方補一條紅字提示,讓案家一進頁就看到(頂部身份條已標「案家·已停用」) */
+  function showClientSuspendedNotice(){
+    var cta = document.querySelector('.find-staff-cta');
+    if(cta){ cta.style.opacity = '0.55'; }
+    if(document.getElementById('client-suspended-notice')) return;
+    var n = document.createElement('div');
+    n.id = 'client-suspended-notice';
+    n.style.cssText = 'background:#FCE8E7;color:#B23B36;border:1px solid #E8B4B0;border-radius:14px;padding:12px 15px;margin-top:12px;font-size:13.5px;font-weight:600;text-align:center;';
+    n.textContent = '你的案家身分已被停權,目前無法下單。如有疑問請聯絡平台。';
+    if(cta && cta.parentNode){ cta.parentNode.insertBefore(n, cta.nextSibling); }
+  }
+
   /* 順咖申請狀態:'none'無角色 | 'incomplete'有角色但沒填服務類別(03沒填完) | 'pending'審核中 | 'active'已通過 | 'suspended'停用 | 'rejected'被退 */
   function suncarState(r){
     if(!r) return 'none';
@@ -591,6 +613,17 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     var suncarRole = rlist.find(function(r){ return r.role==='suncar'; });
     var statusMap = { active:'已啟用', pending:'審核中', suspended:'已停用', rejected:'未通過' };
     if(clientRole){ $('role-status').textContent = '案家 · '+(statusMap[clientRole.status]||clientRole.status); }
+    /* 案家被停權:設旗標→下單入口的 guard 會擋,並在找順咖卡下方顯示提示。
+       為什麼在這裡:load 本來就撈了角色狀態,不另外多查一次 */
+    window._clientSuspended = !!(clientRole && clientRole.status === 'suspended');
+    if(window._clientSuspended){ showClientSuspendedNotice(); }
+    /* 三個下單入口一律掛 guard(用 addEventListener,因 11 腳本在 IIFE 內,inline onclick 抓不到內部函式)。
+       guard 讀旗標即時判斷,沒停權就放行;_guarded 防 load 多次重複綁 */
+    ['.find-staff-cta','.empty-cta','.qa-btn'].forEach(function(sel){
+      document.querySelectorAll(sel).forEach(function(a){
+        if(a.getAttribute('href')==='04_order_form.html' && !a._guarded){ a.addEventListener('click', guardOrderEntry); a._guarded=true; }
+      });
+    });
     /* 依順咖申請狀態決定首頁顯示。active=已是順咖→給「切到順咖端」並收掉招募卡;
        其餘(沒申請/資料不完整/審核中/被退)→招募卡文字與按鈕動作隨狀態換,按鈕一律呼叫 applySuncar */
     var sState = suncarState(suncarRole);

@@ -809,6 +809,30 @@ function applyLastForm() {
   if (d.phone) document.getElementById('contact-phone').value = d.phone;
 }
 
+/* 案家被停權:進頁就擋,不讓他填完整張單才在送出時被打回(治本,也防直接打 04 網址繞過 11 的擋)。
+   後台 place_order 仍有最終防線,這裡是前端先把畫面鎖住、講清楚原因。 */
+async function checkClientSuspended() {
+  try {
+    var sres = await sb.auth.getSession();
+    var u = sres.data && sres.data.session ? sres.data.session.user : null;
+    if (!u) return;  // 沒登入:交給原本送出流程處理,不在這裡攔
+    var rr = await sb.from('user_roles').select('status').eq('user_id', u.id).eq('role', 'client').maybeSingle();
+    if (rr.data && rr.data.status === 'suspended') { blockSuspendedClient(); }
+  } catch (e) { console.error('checkClientSuspended:', e); }
+}
+function blockSuspendedClient() {
+  var wrap = document.querySelector('.form-wrap') || document.body;
+  if (!document.getElementById('suspended-banner')) {
+    var b = document.createElement('div');
+    b.id = 'suspended-banner';
+    b.style.cssText = 'background:#FCE8E7;color:#B23B36;border:1px solid #E8B4B0;border-radius:14px;padding:14px 16px;margin:14px 0;font-size:14px;font-weight:600;text-align:center;';
+    b.textContent = '你的案家身分已被停權,目前無法下單。如有疑問請聯絡平台。';
+    wrap.insertBefore(b, wrap.firstChild);
+  }
+  var btn = document.querySelector('.submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '已停權,無法下單'; btn.style.opacity = '0.6'; btn.style.cursor = 'not-allowed'; }
+}
+
 /* 已登入者進頁:用主檔資料預填聯絡人/電話(空才帶,不蓋掉上次表單或使用者已改的),
    並在帶推薦連結時顯示鎖定推薦碼。給「順咖點我要找順咖→下單」這條路用,對一般案家無害。 */
 async function initOrderPrefill() {
@@ -1439,6 +1463,8 @@ function handleRegAgreeChange(cb) {
 
   // 已登入者:用主檔資料預填聯絡人/電話、顯示鎖定推薦碼。背景跑,不擋其他初始化
   initOrderPrefill();
+  // 進頁即檢查案家是否被停權,停權就鎖住整張單(治本,不讓他填完才在送出時被擋)
+  checkClientSuspended();
 
   /* 從 02 帶來的指定順咖參數 */
   var staffName = params.get('staff');
