@@ -1240,17 +1240,44 @@ async function loadFlagReports(){
   if(!box) return;
   var res=await sb.rpc('get_flag_reports');
   if(res.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(res.error.message)+'</div>'; return; }
-  renderFlagCards(res.data||[]);
+  // 撈已處理清單(flag_handled 表),前端標記哪些紅旗已處理。提醒數只算未處理的
+  var handled={};
+  try{
+    var hr=await sb.from('flag_handled').select('review_id');
+    if(!hr.error) (hr.data||[]).forEach(function(h){ handled[h.review_id]=true; });
+  }catch(e){ console.error('flag_handled',e); }
+  renderFlagCards(res.data||[], handled);
 }
 
-function renderFlagCards(list){
+// 標記某筆紅旗為已處理(寫進 flag_handled),提醒數隨即減少
+async function markFlagHandled(reviewId, btn){
+  if(btn) btn.disabled=true;
+  var r=await sb.from('flag_handled').insert({review_id:reviewId, handled_by:window._adminId||null});
+  if(r.error){ alert('標記失敗:'+r.error.message); if(btn) btn.disabled=false; return; }
+  loadFlagReports();
+}
+// 復原:把已處理改回未處理(刪掉 flag_handled 那筆)
+async function unmarkFlagHandled(reviewId, btn){
+  if(btn) btn.disabled=true;
+  var r=await sb.from('flag_handled').delete().eq('review_id',reviewId);
+  if(r.error){ alert('復原失敗:'+r.error.message); if(btn) btn.disabled=false; return; }
+  loadFlagReports();
+}
+
+function renderFlagCards(list, handled){
+  handled=handled||{};
   var box=document.getElementById('flag-list');
   var badge=document.getElementById('flag-count');
   var navCnt=document.getElementById('nav-flag-count');
-  if(badge) badge.textContent=list.length;
-  if(navCnt) navCnt.textContent=list.length;
+  // 提醒數(badge 與左選單)只算未處理的紅旗
+  var pendingCount=list.filter(function(r){ return !handled[r.review_id]; }).length;
+  if(badge) badge.textContent=pendingCount;
+  if(navCnt) navCnt.textContent=pendingCount;
   if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有紅旗回報</div>'; return; }
-  box.innerHTML=list.map(function(r){
+  // 未處理排前面、已處理沉底
+  var ordered=list.slice().sort(function(a,b){ return (handled[a.review_id]?1:0)-(handled[b.review_id]?1:0); });
+  box.innerHTML=ordered.map(function(r){
+    var isH=!!handled[r.review_id];
     var flags=r.flags||{};
     var notes=r.flag_notes||{};
     // 勾起來的每一項列一條:嚴重項紅底、其餘香檳底;順咖有寫描述就接在下面
@@ -1264,15 +1291,21 @@ function renderFlagCards(list){
     var hasSevere=keys.some(function(k){ return SEVERE_FLAGS.indexOf(k)>=0; });
     var orderLine=r.order_no?'單號 '+r.order_no:'';
     if(r.service_district) orderLine+=(orderLine?' · ':'')+r.service_district;
-    return '<div class="applicant-card" style="align-items:flex-start;'+(hasSevere?'border-left:4px solid #E5484D;':'')+'">'+
+    var rid=esc(r.review_id);
+    var actionBtn=isH
+      ? '<button class="btn-reject" onclick="unmarkFlagHandled(\''+rid+'\',this)">復原</button>'
+      : '<button class="btn-approve" onclick="markFlagHandled(\''+rid+'\',this)">標記已處理</button>';
+    return '<div class="applicant-card" style="align-items:flex-start;'+(hasSevere&&!isH?'border-left:4px solid #E5484D;':'')+(isH?'opacity:0.55;':'')+'">'+
       '<div style="flex:1;">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">'+
           '<span style="font-size:14.5px;font-weight:600;color:var(--ink);">案家:'+esc(r.subject_name||'未填姓名')+'</span>'+
           (hasSevere?'<span class="badge-mini" style="background:#FCE8E7;color:#D9534F;">嚴重</span>':'')+
+          (isH?'<span class="badge-mini" style="background:var(--mint-pale);color:var(--forest);">已處理</span>':'')+
         '</div>'+
         '<div class="card-meta"><span>回報順咖:'+esc(r.reporter_name||'未填姓名')+'</span><span>'+esc(fmtDate(r.created_at))+'</span>'+(orderLine?'<span>'+esc(orderLine)+'</span>':'')+'</div>'+
         '<div style="margin-top:9px;">'+rows+'</div>'+
       '</div>'+
+      '<div style="display:flex;align-items:flex-start;">'+actionBtn+'</div>'+
     '</div>';
   }).join('');
 }
