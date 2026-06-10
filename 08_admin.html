@@ -1353,68 +1353,84 @@ function acctStatusPill(status){
 }
 
 // 一個身分一區塊:身分名 + 狀態 + 停權/復權鈕,下方列出該身分的明細欄位
-function acctRoleRow(acc, role){
+// 操作鈕:啟用→停權 / 停權→復權;pending、rejected 不給按鈕(還沒啟用,走審核流程)
+function acctOpsBtn(acc, role){
   var status=acc[role];
-  if(!status) return '';   // 沒這個身分就不顯示
-  var roleText=role==='client'?'案家':'順咖';
-  var btn='';
-  if(status==='active'){
-    btn='<button class="btn-reject" onclick="event.stopPropagation();setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'suspended\',this)">停權</button>';
-  } else if(status==='suspended'){
-    btn='<button class="btn-approve" onclick="event.stopPropagation();setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'active\',this)">復權</button>';
-  }
-  var head='<div style="display:flex;align-items:center;gap:8px;margin-top:8px;">'+
-    '<span style="font-size:13px;color:var(--ink-soft);min-width:34px;font-weight:600;">'+roleText+'</span>'+
-    acctStatusPill(status)+'<span style="flex:1;"></span>'+btn+'</div>';
-  return head+(role==='client'?acctClientDetail(acc):acctSuncarDetail(acc));
+  if(status==='active') return '<button class="btn-reject" onclick="event.stopPropagation();setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'suspended\',this)">停權</button>';
+  if(status==='suspended') return '<button class="btn-approve" onclick="event.stopPropagation();setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'active\',this)">復權</button>';
+  return '<span style="color:var(--ink-light);font-size:11px;">—</span>';
 }
 
-// 案家明細:訂單數(狀態已在上面那行顯示)
-function acctClientDetail(acc){
-  var n=acc.clientOrders==null?'—':acc.clientOrders;
-  return '<div style="font-size:12.5px;color:var(--ink-soft);margin:3px 0 2px 42px;">訂單數 '+n+'</div>';
+// 姓名格(頭像+姓名);案家頭像藍 av-c、順咖綠 av-g
+function acctNameCell(acc, role){
+  return '<div class="cell-flex"><div class="avatar '+(role==='client'?'av-c':'av-g')+'">'+esc(acc.name.charAt(0))+'</div>'+esc(acc.name)+'</div>';
 }
 
-// 順咖明細:服務區域、服務類型、徽章、池別、評分、接單數(全真資料,沿用抽屜那套 helper memberArea/memberCats/memberBadges)
-function acctSuncarDetail(acc){
-  var sd=acc.suncar_data;
-  var pool=acc.has_caregiver_cert?'照服員池':'一般池';
-  var rt=(acc.rating&&acc.rating.enough)?'★'+Number(acc.rating.overall_avg).toFixed(1)+'（'+acc.rating.cnt+'則）':'尚無評價';
-  var n=acc.suncarOrders==null?'—':acc.suncarOrders;
-  return '<div style="font-size:12.5px;color:var(--ink-soft);margin:3px 0 0 42px;">區域 '+memberArea(sd)+' ｜ 類型 '+memberCats(sd)+'</div>'+
-    '<div style="margin:4px 0 2px 42px;">'+memberBadges(acc)+'</div>'+
-    '<div style="font-size:12.5px;color:var(--ink-soft);margin:2px 0 2px 42px;">'+pool+' ｜ 評分 '+rt+' ｜ 接單 '+n+'</div>';
+// 案家一列:姓名 電話 訂單數 狀態 操作
+function clientRowHtml(acc){
+  return '<tr onclick="openMemberDrawer(\''+esc(acc.uid)+'\')">'+
+    '<td>'+acctNameCell(acc,'client')+'</td>'+
+    '<td>'+(acc.phone?esc(acc.phone):'—')+'</td>'+
+    '<td>'+(acc.clientOrders==null?'—':acc.clientOrders)+'</td>'+
+    '<td>'+acctStatusPill(acc.client)+'</td>'+
+    '<td>'+acctOpsBtn(acc,'client')+'</td>'+
+  '</tr>';
+}
+
+// 順咖一列:姓名 電話 服務區域 服務類型 徽章 池別 評分 接單數 狀態 操作
+function suncarRowHtml(acc){
+  var pool=acc.has_caregiver_cert?'<span class="pill p-poolB">照服員池</span>':'<span class="pill p-poolA">一般池</span>';
+  var rt=(acc.rating&&acc.rating.enough)?'<span class="star">★</span> '+Number(acc.rating.overall_avg).toFixed(1):'—';
+  return '<tr onclick="openMemberDrawer(\''+esc(acc.uid)+'\')">'+
+    '<td>'+acctNameCell(acc,'suncar')+'</td>'+
+    '<td>'+(acc.phone?esc(acc.phone):'—')+'</td>'+
+    '<td>'+memberArea(acc.suncar_data)+'</td>'+
+    '<td>'+memberCats(acc.suncar_data)+'</td>'+
+    '<td>'+memberBadges(acc)+'</td>'+
+    '<td>'+pool+'</td>'+
+    '<td>'+rt+'</td>'+
+    '<td>'+(acc.suncarOrders==null?'—':acc.suncarOrders)+'</td>'+
+    '<td>'+acctStatusPill(acc.suncar)+'</td>'+
+    '<td>'+acctOpsBtn(acc,'suncar')+'</td>'+
+  '</tr>';
+}
+
+// 一個表格區塊(小標題 + 可橫向捲動的 data-table)
+function acctTableBlock(title, count, headHtml, rowsHtml){
+  return '<div style="margin-bottom:26px;">'+
+    '<div class="sec-title" style="font-size:15px;margin:0 0 10px;">'+title+' <span style="color:var(--ink-light);font-weight:600;font-size:12px;">('+count+')</span></div>'+
+    '<div style="overflow-x:auto;"><table class="data-table">'+headHtml+'<tbody>'+rowsHtml+'</tbody></table></div>'+
+  '</div>';
 }
 
 function renderAccounts(){
   var box=document.getElementById('account-list');
   if(!box) return;
   var navCnt=document.getElementById('nav-account-count');
-  var badge=document.getElementById('account-count');
   if(navCnt) navCnt.textContent=_accounts.length;
-  // 套用搜尋關鍵字 + 角色篩選
+  // 搜尋關鍵字過濾(姓名/電話/會員編號)
   var kwEl=document.getElementById('account-search');
   var kw=(kwEl&&kwEl.value?kwEl.value:'').trim().toLowerCase();
-  var list=_accounts.filter(function(a){
-    if(kw && (a.name+' '+a.phone+' '+a.member_no).toLowerCase().indexOf(kw)<0) return false;
-    if(_accountFilter==='client') return !!a.client;
-    if(_accountFilter==='suncar') return !!a.suncar;
-    if(_accountFilter==='suspended') return a.client==='suspended'||a.suncar==='suspended';
-    return true;
+  var base=_accounts.filter(function(a){
+    return !kw || (a.name+' '+a.phone+' '+a.member_no).toLowerCase().indexOf(kw)>=0;
   });
-  if(badge) badge.textContent=list.length;
-  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">沒有符合的會員</div>'; return; }
-  box.innerHTML=list.map(function(a){
-    var sub=[]; if(a.member_no) sub.push(esc(a.member_no)); if(a.phone) sub.push(esc(a.phone));
-    return '<div class="applicant-card" style="align-items:flex-start;cursor:pointer;" onclick="openMemberDrawer(\''+esc(a.uid)+'\')">'+
-      '<div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">'+esc(a.name.charAt(0))+'</div>'+
-      '<div style="flex:1;">'+
-        '<div style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(a.name)+'</div>'+
-        (sub.length?'<div class="card-meta"><span>'+sub.join('</span><span>')+'</span></div>':'')+
-        acctRoleRow(a,'client')+acctRoleRow(a,'suncar')+
-      '</div>'+
-    '</div>';
-  }).join('');
+  // 篩選:除「只看順咖」外都顯示案家表,除「只看案家」外都顯示順咖表;「已停權」兩表都顯示但只列被停權的
+  var f=_accountFilter;
+  var showClient=(f!=='suncar'), showSuncar=(f!=='client'), onlySusp=(f==='suspended');
+  var clients=base.filter(function(a){ return a.client && (!onlySusp||a.client==='suspended'); });
+  var suncars=base.filter(function(a){ return a.suncar && (!onlySusp||a.suncar==='suspended'); });
+  var badge=document.getElementById('account-count');
+  if(badge) badge.textContent=(showClient?clients.length:0)+(showSuncar?suncars.length:0);
+  var html='';
+  if(showClient){
+    var ch='<thead><tr><th>姓名</th><th>電話</th><th>訂單數</th><th>狀態</th><th>操作</th></tr></thead>';
+    html+=acctTableBlock('案家', clients.length, ch, clients.length?clients.map(clientRowHtml).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--ink-light);padding:18px;">沒有符合的案家</td></tr>');
+  }
+  if(showSuncar){
+    var sh='<thead><tr><th>姓名</th><th>電話</th><th>服務區域</th><th>服務類型</th><th>徽章</th><th>池別</th><th>評分</th><th>接單數</th><th>狀態</th><th>操作</th></tr></thead>';
+    html+=acctTableBlock('順咖', suncars.length, sh, suncars.length?suncars.map(suncarRowHtml).join(''):'<tr><td colspan="10" style="text-align:center;color:var(--ink-light);padding:18px;">沒有符合的順咖</td></tr>');
+  }
+  box.innerHTML=html||'<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">沒有符合的會員</div>';
 }
 
 function setAccountRoleFilter(f, el){
