@@ -1308,6 +1308,32 @@ async function loadAccounts(){
     if(r.role==='suncar'){ amap[r.user_id].suncar=r.status; amap[r.user_id].suncar_data=r.role_data||{}; }
   });
   _accounts=Object.keys(amap).map(function(k){ return amap[k]; });
+  renderAccounts();          // 先畫基本資料(姓名/電話/狀態/區域/類型/徽章/池別),不等附屬查詢
+  enrichAccounts();          // 背景補訂單數與評分,完成後自動重畫
+}
+
+// 批次補訂單數與評分:一次撈全部,不要每張卡各自查(慢)。各自 try,失敗只讓該欄顯示「—」
+async function enrichAccounts(){
+  // 訂單數:撈全部訂單的 client_id/suncar_id 在前端各自累計。需 admin_read_all_orders 政策才看得到別人的單
+  try{
+    var os=await sb.from('orders').select('client_id,suncar_id');
+    if(!os.error && os.data){
+      var cc={}, sc={};
+      os.data.forEach(function(o){ if(o.client_id) cc[o.client_id]=(cc[o.client_id]||0)+1; if(o.suncar_id) sc[o.suncar_id]=(sc[o.suncar_id]||0)+1; });
+      _accounts.forEach(function(a){ a.clientOrders=a.client?(cc[a.uid]||0):null; a.suncarOrders=a.suncar?(sc[a.uid]||0):null; });
+    }
+  }catch(e){ console.error('enrich orders',e); }
+  // 評分:批次撈所有順咖(現成函式,只回彙總不吐留言)
+  try{
+    var sids=_accounts.filter(function(a){ return a.suncar; }).map(function(a){ return a.uid; });
+    if(sids.length){
+      var rv=await sb.rpc('get_review_stats_batch',{p_targets:sids,p_mode:'client_reviews_suncar'});
+      if(!rv.error && rv.data){
+        var rm={}; rv.data.forEach(function(r){ rm[r.reviewee_id]=r; });
+        _accounts.forEach(function(a){ if(a.suncar) a.rating=rm[a.uid]||null; });
+      }
+    }
+  }catch(e){ console.error('enrich rating',e); }
   renderAccounts();
 }
 
@@ -1318,10 +1344,10 @@ function acctStatusPill(status){
   return '<span class="pill '+m[1]+'">'+esc(m[0])+'</span>';
 }
 
-// 一個身分一列:身分名 + 狀態徽章 +(啟用→停權鈕 / 停權→復權鈕)。pending/rejected 不給按鈕(還沒啟用,走審核流程)
+// 一個身分一區塊:身分名 + 狀態 + 停權/復權鈕,下方列出該身分的明細欄位
 function acctRoleRow(acc, role){
   var status=acc[role];
-  if(!status) return '';   // 沒這個身分就不顯示這列
+  if(!status) return '';   // 沒這個身分就不顯示
   var roleText=role==='client'?'案家':'順咖';
   var btn='';
   if(status==='active'){
@@ -1329,9 +1355,27 @@ function acctRoleRow(acc, role){
   } else if(status==='suspended'){
     btn='<button class="btn-approve" onclick="event.stopPropagation();setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'active\',this)">復權</button>';
   }
-  return '<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">'+
-    '<span style="font-size:13px;color:var(--ink-soft);min-width:34px;">'+roleText+'</span>'+
+  var head='<div style="display:flex;align-items:center;gap:8px;margin-top:8px;">'+
+    '<span style="font-size:13px;color:var(--ink-soft);min-width:34px;font-weight:600;">'+roleText+'</span>'+
     acctStatusPill(status)+'<span style="flex:1;"></span>'+btn+'</div>';
+  return head+(role==='client'?acctClientDetail(acc):acctSuncarDetail(acc));
+}
+
+// 案家明細:訂單數(狀態已在上面那行顯示)
+function acctClientDetail(acc){
+  var n=acc.clientOrders==null?'—':acc.clientOrders;
+  return '<div style="font-size:12.5px;color:var(--ink-soft);margin:3px 0 2px 42px;">訂單數 '+n+'</div>';
+}
+
+// 順咖明細:服務區域、服務類型、徽章、池別、評分、接單數(全真資料,沿用抽屜那套 helper memberArea/memberCats/memberBadges)
+function acctSuncarDetail(acc){
+  var sd=acc.suncar_data;
+  var pool=acc.has_caregiver_cert?'照服員池':'一般池';
+  var rt=(acc.rating&&acc.rating.enough)?'★'+Number(acc.rating.overall_avg).toFixed(1)+'（'+acc.rating.cnt+'則）':'尚無評價';
+  var n=acc.suncarOrders==null?'—':acc.suncarOrders;
+  return '<div style="font-size:12.5px;color:var(--ink-soft);margin:3px 0 0 42px;">區域 '+memberArea(sd)+' ｜ 類型 '+memberCats(sd)+'</div>'+
+    '<div style="margin:4px 0 2px 42px;">'+memberBadges(acc)+'</div>'+
+    '<div style="font-size:12.5px;color:var(--ink-soft);margin:2px 0 2px 42px;">'+pool+' ｜ 評分 '+rt+' ｜ 接單 '+n+'</div>';
 }
 
 function renderAccounts(){
