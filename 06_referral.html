@@ -410,16 +410,13 @@ async function loadReferral() {
   if (!user) { document.getElementById('ref-code').textContent = '請先登入'; return; }
   myId = user.id;
 
-  // 1. 我的推薦碼 + 金幣餘額
-  var me = await sb.from('users').select('ref_code,suncar_coins,client_coins').eq('id', user.id).maybeSingle();
-  if (me.data) {
-    myRefCode = me.data.ref_code || '';
-    staffPts = me.data.suncar_coins || 0;
-    clientPts = me.data.client_coins || 0;
-  }
+  // 1. 我的推薦碼(仍從 users 撈) + 金幣餘額(改讀 coin_balance 函式)
+  // 為什麼:餘額改成「一批批含到期日的禮券帳」後,只有 coin_balance 會排除已過期批次,
+  // 直接讀 users.suncar_coins/client_coins 是同步用的舊欄位,設了有效期也不會自動隨過期下降。
+  var me = await sb.from('users').select('ref_code').eq('id', user.id).maybeSingle();
+  if (me.data) { myRefCode = me.data.ref_code || ''; }
   document.getElementById('ref-code').textContent = myRefCode || '—';
-  document.getElementById('staff-pts').textContent = staffPts;
-  document.getElementById('client-pts').textContent = clientPts;
+  await refreshCoinBalances();   // 填 staffPts/clientPts 並寫進畫面
   // 把三段話術裡的推薦碼與連結換成真碼
   if (myRefCode) {
     document.querySelectorAll('.script-text[data-tpl]').forEach(function(el){
@@ -534,27 +531,45 @@ function shareRef() {
   }
 }
 
+// 金幣餘額一律走後台 coin_balance(只加總沒過期的批次),設了有效期才會準。
+// 順咖金幣 pool='suncar'、案家金幣 pool='client'(畫面上的 staff 對應後台 suncar)。
+async function refreshCoinBalances() {
+  if (!myId) return;
+  var s = await sb.rpc('coin_balance', { p_user: myId, p_pool: 'suncar' });
+  var c = await sb.rpc('coin_balance', { p_user: myId, p_pool: 'client' });
+  staffPts  = s.error ? 0 : (s.data || 0);
+  clientPts = c.error ? 0 : (c.data || 0);
+  document.getElementById('staff-pts').textContent = staffPts;
+  document.getElementById('client-pts').textContent = clientPts;
+}
+
 async function redeem(btn, pool, cost, name) {
   if (!myId) { alert('請先登入'); return; }
-  var bal = pool === 'staff' ? staffPts : clientPts;
-  var col = pool === 'staff' ? 'suncar_coins' : 'client_coins';
-  var elId = pool === 'staff' ? 'staff-pts' : 'client-pts';
-  var label = pool === 'staff' ? '順咖' : '案家';
-  if (bal < cost) { alert(label + '金幣不足,目前只有 ' + bal + ' 金幣'); return; }
+  var dbPool = pool === 'staff' ? 'suncar' : 'client';   // 畫面 staff = 後台 suncar
+  var label  = pool === 'staff' ? '順咖' : '案家';
   btn.disabled = true;
-  var upd = {};
-  upd[col] = bal - cost;
-  // 樂觀更新:只在餘額沒被別處改動時才扣(避免重複扣)
-  var q = sb.from('users').update(upd).eq('id', myId);
-  q = pool === 'staff' ? q.eq('suncar_coins', bal) : q.eq('client_coins', bal);
-  var res = await q.select(col).maybeSingle();
-  if (res.error || !res.data) {
+  // 先用後台真餘額確認夠不夠(不拿頁面上可能過時的數字判斷)
+  var balRes = await sb.rpc('coin_balance', { p_user: myId, p_pool: dbPool });
+  var bal = balRes.error ? 0 : (balRes.data || 0);
+  if (bal < cost) {
     btn.disabled = false;
+    await refreshCoinBalances();
+    alert(label + '金幣不足,目前只有 ' + bal + ' 金幣');
+    return;
+  }
+  // 走後台 spend_coins:先扣最快到期的批次(先進先出),不再前端直接改 users 數字
+  var res = await sb.rpc('spend_coins', {
+    p_user: myId, p_pool: dbPool, p_amount: cost, p_reason: name, p_ref: null
+  });
+  var spent = res.error ? 0 : (res.data || 0);
+  if (res.error || spent < cost) {
+    // spent<cost 代表中間餘額剛被別處扣動(極少見),沒扣滿不算兌換成功
+    btn.disabled = false;
+    await refreshCoinBalances();
     alert('兌換失敗,請重新整理後再試');
     return;
   }
-  if (pool === 'staff') staffPts = res.data[col]; else clientPts = res.data[col];
-  document.getElementById(elId).textContent = res.data[col];
+  await refreshCoinBalances();   // 用後台真餘額重畫(已排除過期批次)
   btn.textContent = '已兌換 ✓';
   alert('「' + name + '」兌換成功!');
 }
