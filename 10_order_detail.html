@@ -479,13 +479,8 @@ function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=
 function fmtDT(v){ if(!v) return '—'; var d=new Date(v); if(isNaN(d)) return '—'; var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'/'+p(d.getMonth()+1)+'/'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); }
 function durText(m){ if(m==null) return '時數待討論'; if(m>=60){ var h=Math.floor(m/60); var mm=m%60; return '預計 '+h+' 小時'+(mm?(' '+mm+' 分'):''); } return '預計 '+m+' 分鐘'; }
 
-/* 媒合前(順咖還沒接單)遮蔽備註裡的「聯絡人:姓名 電話」那段,接單後才開放。
-   備註是用「；」串起來的,只要濾掉含「聯絡人」的那段即可 */
-function maskContact(note){
-  if(!note) return note;
-  var parts = String(note).split('；').filter(function(p){ return p.indexOf('聯絡人') === -1; });
-  return parts.join('；') || '無';
-}
+/* (已移除 maskContact:聯絡人姓名電話改存 order_contacts 表,由資料庫權限把關,
+   媒合中的順咖在資料庫層就撈不到,不再靠前端遮蔽備註——前端遮蔽擋不住開發者工具。) */
 
 /* 狀態對應顯示 */
 var STATUS_UI = {
@@ -727,9 +722,17 @@ async function init(){
   document.getElementById('oi-service').innerHTML = esc(o.service_type || '—') + poolChip;
   document.getElementById('oi-place').textContent = (o.service_district || '') + (o.service_address ? (' · ' + o.service_address) : '') || '—';
   document.getElementById('oi-time').textContent = fmtDT(o.service_time) + ' · ' + durText(o.duration_minutes);
-  var noteText = o.address_note || '無';
-  if(isPreview){ noteText = maskContact(noteText); }  // 媒合前遮蔽聯絡電話,接單後才開放
-  document.getElementById('oi-note').textContent = noteText;
+  /* 備註本體(其他需求/補充說明/縣市/時數等)。聯絡人姓名電話已不在 address_note,改從 order_contacts 撈。 */
+  var noteText = o.address_note || '';
+  /* order_contacts 由資料庫權限把關:案家本人與已接單順咖才撈得到;
+     媒合中的順咖(preview)撈到的是空,所以接單前看不到電話(治本,取代原本前端 maskContact)。 */
+  var ocRes = await sb.from('order_contacts').select('contact_name,contact_phone').eq('order_id', orderId).maybeSingle();
+  var oc = (ocRes && ocRes.data) ? ocRes.data : null;
+  if(oc && (oc.contact_name || oc.contact_phone)){
+    var contactLine = '聯絡人:' + (oc.contact_name || '') + (oc.contact_phone ? (' ' + oc.contact_phone) : '');
+    noteText = noteText ? (noteText + '；' + contactLine) : contactLine;
+  }
+  document.getElementById('oi-note').textContent = noteText || '無';
 
   /* 費用 */
   document.getElementById('fee-amount').textContent = (o.amount != null ? ('$ ' + o.amount) : '$ —');
