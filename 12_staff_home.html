@@ -429,6 +429,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <span>點數餘額</span>
       <strong id="acct-points">0 點</strong>
     </div>
+    <div class="income-row">
+      <span>順咖金幣</span>
+      <strong id="acct-coins">0</strong>
+    </div>
     <div class="income-row income-paid">
       <span>信用分</span>
       <strong id="acct-credit">100 / 100</strong>
@@ -804,6 +808,9 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     $('h-nametext').textContent = name;
     var av = $('h-avatar'); if(u.has_caregiver_cert){ av.classList.add('cna'); } var avurl = u.role_detail && u.role_detail.avatar_url; if(avurl){ av.innerHTML = '<img src="'+esc(avurl)+'" alt="頭像" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'; } else { av.textContent = firstChar(name); }
     $('acct-points').textContent = (u.suncar_points||0) + ' 點';
+    // 順咖金幣餘額走後台 coin_balance(只算沒過期的批次),不直接讀 users 舊欄位
+    var cb = await sb.rpc('coin_balance', { p_user: user.id, p_pool: 'suncar' });
+    $('acct-coins').textContent = (cb.error ? 0 : (cb.data || 0));
     $('acct-credit').textContent = (u.credit_score==null?100:u.credit_score) + ' / 100';
     if(u.expected_rate){ $('rate-display').innerHTML = '$ ' + u.expected_rate + '<span class="unit">/時</span>'; }
 
