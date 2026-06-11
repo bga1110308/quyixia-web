@@ -522,6 +522,22 @@ textarea.form-input{min-height:80px;resize:vertical;}
             <label class="toggle"><input type="checkbox" id="cfg-cert" onchange="updateChip(this,'chip-cert','收費','免費')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
 
+          <!-- ★ 推薦金幣防刷:每月上限＋有效天數,連同一列 app_config,按下面同一顆儲存鈕生效 -->
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">推薦金幣 · 每位推薦人每月上限</div>
+              <div class="sr-desc">同一個人每月最多發幾枚推薦金幣,防止有人狂拉人頭灌金幣稀釋價值。<strong>留空或填 0 = 不限</strong>。改完按下面的儲存鈕,下一筆發金幣立刻照新上限。</div>
+              <div class="price-input-row"><input class="price-input" id="cfg-refcap" type="number" min="0" placeholder="不限"><span class="price-unit">枚 / 月(空或0=不限)</span></div>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">推薦金幣 · 有效天數</div>
+              <div class="sr-desc">金幣發出後幾天失效。<strong>留空或填 0 = 永久</strong>。<strong style="color:var(--danger);">註:這個數字先存著就好,真正「到期自動扣掉」的功能下一輪才做,現在填多少都不會動到任何人的金幣。</strong></div>
+              <div class="price-input-row"><input class="price-input" id="cfg-refttl" type="number" min="0" placeholder="永久"><span class="price-unit">天(空或0=永久)</span></div>
+            </div>
+          </div>
+
           <div class="setting-row" style="border:none;">
             <div class="sr-left" style="width:100%;">
               <button type="button" onclick="savePricing()" style="padding:10px 20px;border:1.5px solid var(--forest);background:var(--forest);color:#fff;border-radius:10px;font-family:inherit;font-weight:700;cursor:pointer;">儲存收費設定</button>
@@ -1789,6 +1805,9 @@ async function loadPricing(){
   var cert=document.getElementById('cfg-cert'); cert.checked=!!c.cert_charge_on; updateChip(cert,'chip-cert','收費','免費');
   document.getElementById('cfg-certprice').value=(c.price_cert==null?'':c.price_cert);
   document.getElementById('cfg-certfree').value=(c.custom_cert_free_quota==null?'':c.custom_cert_free_quota);
+  /* 推薦金幣:每月上限與有效天數,讀同一列 app_config */
+  document.getElementById('cfg-refcap').value=(c.referral_monthly_cap==null?'':c.referral_monthly_cap);
+  document.getElementById('cfg-refttl').value=(c.referral_coin_ttl_days==null?'':c.referral_coin_ttl_days);
 }
 
 /* 數字欄轉存:空字串→null(讓「單次永久」可存),其餘轉整數 */
@@ -1809,7 +1828,10 @@ async function savePricing(){
     cert_charge_on: document.getElementById('cfg-cert').checked,
     price_cert: numOrNull('cfg-certprice'),
     /* 免費額度欄位不可為 null(資料庫 NOT NULL),清空就回預設 1 */
-    custom_cert_free_quota: (numOrNull('cfg-certfree')==null ? 1 : numOrNull('cfg-certfree'))
+    custom_cert_free_quota: (numOrNull('cfg-certfree')==null ? 1 : numOrNull('cfg-certfree')),
+    /* 推薦金幣:空或 null 一律存 0(=不限/永久),對齊後台 coalesce(...,0) 判斷 */
+    referral_monthly_cap: (numOrNull('cfg-refcap')==null ? 0 : numOrNull('cfg-refcap')),
+    referral_coin_ttl_days: (numOrNull('cfg-refttl')==null ? 0 : numOrNull('cfg-refttl'))
   };
   var up=await sb.from('app_config').update(payload).eq('id',1);
   if(up.error){ r.textContent='儲存失敗(可能缺 app_config_admin_write 政策,要先跑 SQL):'+up.error.message; return; }
