@@ -907,18 +907,23 @@ window.takeThisOrder = async function(){
    條件帶 client_id=本人 且 status 在 媒合中/待服務,服務中/已完成不給取消。
    取消後回案家首頁,因為已被濾掉所以不再出現。 */
 window.cancelMyOrder = async function(orderId, clientId, status){
-  // 待服務(已有順咖接單)後取消會被記錄,影響取消率;媒合中取消不計次
+  // 待服務後取消:記一次取消、影響取消率,服務費不退;媒合中取消:不計次,退回點數(金幣不退)
   var msg = (status === 'accepted')
-    ? '這筆已有順咖接單。\n取消會被記錄為一次取消,影響你的取消率。\n確定要取消嗎?'
-    : '確定要取消這筆訂單嗎?\n取消後你和順咖都不會再看到這筆。';
+    ? '這筆已有順咖接單。\n取消會記一次取消、影響你的取消率,且服務費(含折抵用掉的金幣)不退。\n確定要取消嗎?'
+    : '確定要取消這筆訂單嗎?\n取消後你和順咖都不會再看到這筆。\n點數會退回,折抵用掉的金幣不退。';
   if(!confirm(msg)) return;
-  var res = await sb.from('orders')
-    .update({ status: 'cancelled' })
-    .eq('id', orderId).eq('client_id', clientId).in('status', ['matching','accepted'])
-    .select('id');
+  // 取消走後台 cancel_order(退款金流紅線,前端不自己改點數)。媒合中退點數、待服務不退,金幣一律不退。
+  var res = await sb.rpc('cancel_order', { p_order_id: orderId });
   if(res.error){ alert('取消失敗:' + res.error.message); return; }
-  if(!res.data || !res.data.length){ alert('這筆狀態已改變,無法取消,請重新整理。'); location.reload(); return; }
-  alert('已取消這筆訂單。');
+  var r = res.data || {};
+  if(!r.ok){
+    if(r.reason === 'bad_status'){ alert('這筆狀態已改變,無法取消,請重新整理。'); location.reload(); return; }
+    if(r.reason === 'not_owner'){ alert('這不是你的訂單,無法取消。'); return; }
+    alert('取消失敗,請稍後再試。'); return;
+  }
+  alert(r.was_status === 'matching'
+    ? ('已取消這筆訂單。' + (r.refunded_points > 0 ? '退回 ' + r.refunded_points + ' 點(折抵用掉的金幣不退)。' : ''))
+    : '已取消這筆訂單。此單服務費不退、已記一次取消。');
   window.location.href = '11_client_home.html';
 };
 
