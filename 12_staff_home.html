@@ -669,10 +669,15 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div>'+reviewRow(o)+'</div>';
   }
   function openCard(o, perks){
-    // perks=這張單的案家目前有效的兌換加值;有 priority_badge 就在狀態標籤旁加「優先」徽章
+    // perks=這張單的案家目前有效的兌換加值。
+    // order_pin(置頂):整張卡換成綠色(沿用既有 .preferred 綠左框＋淡綠漸層),跟一般可接單(琥珀色)明顯區隔,並加「置頂」綠標籤。
+    // priority_badge(優先):狀態標籤旁加金色「優先」徽章。兩種加值可同時存在。
     perks = perks || {};
+    var pinned = !!perks.order_pin;
+    var cls = pinned ? 'order-card preferred' : 'order-card open-order';
+    var pinTag = pinned ? '<span style="display:inline-block;background:#5FB58E;color:#fff;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-right:6px;vertical-align:middle;">置頂</span>' : '';
     var prio = perks.priority_badge ? '<span style="display:inline-block;background:#EF9F27;color:#fff;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;">優先</span>' : '';
-    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">可接單</span>'+prio)+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button></div>'+price(o)+'</div></div>';
+    return '<div class="'+cls+'" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o, pinTag+'<span class="status-tag s-open">可接單</span>'+prio)+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button></div>'+price(o)+'</div></div>';
   }
   /* 我的加值:讀自己 user_perks(RLS 本人可讀自己),把沒過期的列成「名稱 剩X」。
      為什麼寫死代碼對照:四種加值代碼固定、後台極少改名;要改名就改這一行。 */
