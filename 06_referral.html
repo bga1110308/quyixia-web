@@ -351,7 +351,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="redeem-cost">5 金幣</div>
     </div>
     <div class="redeem-desc">順咖卡片顯示醒目皇冠頭框,提升被選中機率。每次兌換 +5 天,上限 30 天,可累積。</div>
-    <button class="redeem-btn" onclick="redeem(this,'staff',5,'皇冠頭框 5 天')">兌換</button>
+    <button class="redeem-btn" onclick="redeem(this,'crown_frame')">兌換</button>
   </div>
 
   <div class="redeem-card staff-card">
@@ -361,7 +361,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="redeem-cost">3 金幣</div>
     </div>
     <div class="redeem-desc">頭像旁顯示推薦達人標章,讓案家知道你是活躍且受信任的順咖。</div>
-    <button class="redeem-btn" onclick="redeem(this,'staff',3,'推薦達人標章 7 天')">兌換</button>
+    <button class="redeem-btn" onclick="redeem(this,'referral_badge')">兌換</button>
   </div>
 
   <div class="section-label" style="color:var(--forest);margin-top:0.85rem;">
@@ -375,7 +375,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="redeem-cost">5 金幣</div>
     </div>
     <div class="redeem-desc">你的任務單置頂顯示 1 小時,讓更多順咖優先看到,加速接單。最多累積至 72 小時。</div>
-    <button class="redeem-btn" onclick="redeem(this,'client',5,'任務置頂 1 小時')">兌換</button>
+    <button class="redeem-btn" onclick="redeem(this,'order_pin')">兌換</button>
   </div>
 
   <div class="redeem-card client-card">
@@ -385,7 +385,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="redeem-cost">3 金幣</div>
     </div>
     <div class="redeem-desc">案家頭像旁顯示優先標章,讓順咖知道你是活躍案家,優先考慮接你的案子。</div>
-    <button class="redeem-btn" onclick="redeem(this,'client',3,'優先顯示標章 3 天')">兌換</button>
+    <button class="redeem-btn" onclick="redeem(this,'priority_badge')">兌換</button>
   </div>
 
   <div style="font-size:0.78rem;color:var(--ink-light);text-align:center;margin-top:0.85rem;line-height:1.75;">
@@ -543,35 +543,33 @@ async function refreshCoinBalances() {
   document.getElementById('client-pts').textContent = clientPts;
 }
 
-async function redeem(btn, pool, cost, name) {
+// 兌換加值:走後台 redeem_perk(同一筆交易扣金幣＋記下加值效期)。
+// 為什麼不在前端自己扣餘額/自己算效期:扣金幣與記效期要綁在一起,中途失敗整筆回滾;
+// 效期是「真效果」的依據(02 等頁要讀),不能讓前端任意塞。perk = 加值代碼(對應 perk_items 表)。
+async function redeem(btn, perk) {
   if (!myId) { alert('請先登入'); return; }
-  var dbPool = pool === 'staff' ? 'suncar' : 'client';   // 畫面 staff = 後台 suncar
-  var label  = pool === 'staff' ? '順咖' : '案家';
   btn.disabled = true;
-  // 先用後台真餘額確認夠不夠(不拿頁面上可能過時的數字判斷)
-  var balRes = await sb.rpc('coin_balance', { p_user: myId, p_pool: dbPool });
-  var bal = balRes.error ? 0 : (balRes.data || 0);
-  if (bal < cost) {
+  var res = await sb.rpc('redeem_perk', { p_perk: perk });
+  if (res.error) { btn.disabled = false; alert('兌換失敗,請稍後再試'); return; }
+  var r = res.data || {};
+  if (!r.ok) {
     btn.disabled = false;
-    await refreshCoinBalances();
-    alert(label + '金幣不足,目前只有 ' + bal + ' 金幣');
-    return;
-  }
-  // 走後台 spend_coins:先扣最快到期的批次(先進先出),不再前端直接改 users 數字
-  var res = await sb.rpc('spend_coins', {
-    p_user: myId, p_pool: dbPool, p_amount: cost, p_reason: name, p_ref: null
-  });
-  var spent = res.error ? 0 : (res.data || 0);
-  if (res.error || spent < cost) {
-    // spent<cost 代表中間餘額剛被別處扣動(極少見),沒扣滿不算兌換成功
-    btn.disabled = false;
-    await refreshCoinBalances();
-    alert('兌換失敗,請重新整理後再試');
-    return;
+    if (r.reason === 'insufficient') { await refreshCoinBalances(); alert('金幣不足,目前 ' + (r.balance || 0) + ' 金幣,這項需要 ' + (r.cost || 0) + ' 金幣'); return; }
+    if (r.reason === 'capped')   { alert('這個加值已達累積上限,到期前不用再兌換。'); return; }
+    if (r.reason === 'disabled') { alert('這個加值目前未開放兌換。'); return; }
+    alert('兌換失敗,請稍後再試'); return;
   }
   await refreshCoinBalances();   // 用後台真餘額重畫(已排除過期批次)
   btn.textContent = '已兌換 ✓';
-  alert('「' + name + '」兌換成功!');
+  alert('「' + (r.label || '加值') + '」兌換成功!效期到 ' + fmtExpiry(r.expires_at) + '。');
+}
+
+// 把後台回的到期時間格式化成「年/月/日 時:分」給提示用
+function fmtExpiry(s) {
+  if (!s) return '';
+  var d = new Date(s);
+  if (isNaN(d)) return '';
+  return d.getFullYear() + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + ('0'+d.getDate()).slice(-2) + ' ' + ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
 }
 
 function copyScript(btn, type) {

@@ -108,6 +108,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 /* 頭像 C 風格(白底金字 + 米金細邊) */
 .avatar{position:relative;width:64px;height:64px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:1.4rem;color:var(--amber-deep);margin:0 auto 0.85rem;box-shadow:0 4px 14px rgba(186,117,23,0.18),inset 0 0 0 1.5px var(--border);z-index:1;}
+/* 兌換「皇冠頭框」加值有效時:頭像加金框＋頂上小皇冠(純視覺,效期由後台 user_perks 決定) */
+.avatar.crowned{box-shadow:0 6px 18px rgba(239,159,39,0.45),inset 0 0 0 2.5px var(--amber);}
+.avatar .crown-topper{position:absolute;top:-13px;left:50%;transform:translateX(-50%);width:24px;height:24px;color:var(--amber);filter:drop-shadow(0 1px 2px rgba(186,117,23,0.45));z-index:2;}
+.avatar .crown-topper svg{width:100%;height:100%;fill:currentColor;}
 
 .staff-name{position:relative;font-weight:600;font-size:1rem;color:var(--ink);z-index:1;}
 .staff-name .new{color:var(--forest);font-size:0.7rem;font-weight:600;margin-left:3px;background:var(--mint-pale);padding:1px 6px;border-radius:99px;}
@@ -132,6 +136,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .b-cna{background:var(--warn-pale);color:var(--warn);}
 .b-senior{background:#FCE4F2;color:#A8367C;}
 .b-custom{background:var(--champagne-soft);color:var(--ink-soft);border:1px solid var(--border-soft);}
+.b-ref{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;}
 
 .mini-tags{position:relative;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:10px;z-index:1;}
 .mtag{font-size:0.68rem;background:var(--champagne-soft);color:var(--ink-soft);padding:3px 9px;border-radius:99px;border:1px solid var(--border-soft);}
@@ -294,6 +299,7 @@ var selectedBadges = [];
 /* 精確信用分改由後台授權函式 get_suncar_credits 決定誰能看(管理員/推廣期/會員/已解鎖/本人)。
    creditMap = {順咖id: 精確信用分},只有授權看得到的才會在這個對照表裡;不在表裡就上鎖。 */
 var creditMap = {};
+var perkMap = {};   /* {順咖id: {crown_frame:true, referral_badge:true}} 目前有效的兌換加值,卡片用來畫皇冠頭框/推薦達人標章 */
 /* 評價統計:reviewMap = {順咖id: {avg 平均星等, cnt 則數, enough 是否達3則門檻}}。
    一律走後台 get_review_stats_batch,只回彙總(平均+則數),不吐個別留言或誰寫的;不足3則 enough=false。
    評價是公開資訊(挑順咖看得到),不像信用分要付費解鎖。 */
@@ -401,6 +407,14 @@ async function loadStaff() {
     if (cr && cr.data) cr.data.forEach(function(row){ creditMap[row.id] = row.credit_score; });
   }
 
+  /* 兌換加值(皇冠頭框/推薦達人標章):批次查哪些順咖目前有效。
+     走後台 get_active_suncar_perks(只回沒過期的、只回這兩種公開加值),前端不直接讀 user_perks。 */
+  perkMap = {};
+  if (ids.length) {
+    var pr = await sb.rpc('get_active_suncar_perks', { p_targets: ids });
+    if (pr && pr.data) pr.data.forEach(function(row){ (perkMap[row.user_id] = perkMap[row.user_id] || {})[row.perk] = true; });
+  }
+
   /* 評價星等:一次批次拿全部順咖的平均星等與則數(案家評順咖 = client_reviews_suncar)。
      滿3則門檻在後台函式內擋,前端只負責顯示;不必逐位查,省掉幾十次後台往返。 */
   reviewMap = {};
@@ -464,6 +478,10 @@ function renderStaff() {
     /* 自訂證件名稱徽章:過審才會在這裡(後台把關),純文字、無固定圖示 */
     var customNames = customBadgeMap[s.id] || [];
     badges += customNames.map(function(nm){ return '<span class="badge b-custom">'+esc(nm)+'</span>'; }).join('');
+    /* 兌換加值:有效的「推薦達人標章」加進徽章列、「皇冠頭框」給頭像加金框。過期的後台不會回,自然消失 */
+    var myPerks = perkMap[s.id] || {};
+    var hasCrown = !!myPerks.crown_frame;
+    if (myPerks.referral_badge) badges += '<span class="badge b-ref"><svg><use href="#i-star"/></svg>推薦達人</span>';
     var tags = s.tags.map(function(t){ return '<span class="mtag">'+esc(t)+'</span>'; }).join('');
     var onlineMark = s.online
       ? '<span class="online-mark"><span class="dot"></span>接單中</span>'
@@ -493,7 +511,7 @@ function renderStaff() {
     var ctaLabel = isMe ? '這是你的名片' : '指定他下單';
     return '<div class="staff-card" onclick="'+cardClick+'">' +
       onlineMark +
-      '<div class="avatar">'+avatarInner+'</div>' +
+      '<div class="avatar'+(hasCrown?' crowned':'')+'">'+(hasCrown?'<span class="crown-topper"><svg><use href="#i-crown"/></svg></span>':'')+avatarInner+'</div>' +
       '<div class="staff-name">'+esc(s.name)+'</div>' +
       ratingHtml +
       creditHtml +
