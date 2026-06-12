@@ -433,6 +433,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <span>順咖金幣</span>
       <strong id="acct-coins">0</strong>
     </div>
+    <div class="income-row">
+      <span>我的加值</span>
+      <strong id="acct-perks">—</strong>
+    </div>
     <div class="income-row income-paid">
       <span>信用分</span>
       <strong id="acct-credit">100 / 100</strong>
@@ -664,8 +668,29 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   function doneCard(o){
     return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div>'+reviewRow(o)+'</div>';
   }
-  function openCard(o){
-    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">可接單</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button></div>'+price(o)+'</div></div>';
+  function openCard(o, perks){
+    // perks=這張單的案家目前有效的兌換加值;有 priority_badge 就在狀態標籤旁加「優先」徽章
+    perks = perks || {};
+    var prio = perks.priority_badge ? '<span style="display:inline-block;background:#EF9F27;color:#fff;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;">優先</span>' : '';
+    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">可接單</span>'+prio)+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button></div>'+price(o)+'</div></div>';
+  }
+  /* 我的加值:讀自己 user_perks(RLS 本人可讀自己),把沒過期的列成「名稱 剩X」。
+     為什麼寫死代碼對照:四種加值代碼固定、後台極少改名;要改名就改這一行。 */
+  var PERK_LABEL = { crown_frame:'皇冠頭框', referral_badge:'推薦達人', order_pin:'任務置頂', priority_badge:'優先標章' };
+  function perkRemain(iso){
+    var ms = new Date(iso).getTime() - Date.now();
+    if(ms <= 0) return '已到期';
+    var d = Math.floor(ms/86400000); if(d >= 1) return '剩 '+d+' 天';
+    var h = Math.floor(ms/3600000); if(h >= 1) return '剩 '+h+' 小時';
+    return '剩不到 1 小時';
+  }
+  async function fillMyPerks(elId, uid){
+    try{
+      var r = await sb.from('user_perks').select('perk,expires_at').eq('user_id', uid).gt('expires_at', new Date().toISOString());
+      var rows = (r && r.data) ? r.data : [];
+      if(!rows.length){ $(elId).textContent = '尚無加值'; return; }
+      $(elId).innerHTML = rows.map(function(p){ return esc(PERK_LABEL[p.perk]||p.perk)+' '+perkRemain(p.expires_at); }).join('、');
+    }catch(e){ $(elId).textContent = '—'; }
   }
   /* 等待案家確認的卡:順咖已標記完成,球在案家那邊,順咖只能等,故不放操作按鈕 */
   function awaitCard(o){
@@ -811,6 +836,8 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     // 順咖金幣餘額走後台 coin_balance(只算沒過期的批次),不直接讀 users 舊欄位
     var cb = await sb.rpc('coin_balance', { p_user: user.id, p_pool: 'suncar' });
     $('acct-coins').textContent = (cb.error ? 0 : (cb.data || 0));
+    // 我的加值:本人讀自己 user_perks,顯示皇冠頭框/推薦達人還剩多久(沒兌換就顯示「尚無加值」)
+    await fillMyPerks('acct-perks', user.id);
     $('acct-credit').textContent = (u.credit_score==null?100:u.credit_score) + ' / 100';
     if(u.expected_rate){ $('rate-display').innerHTML = '$ ' + u.expected_rate + '<span class="unit">/時</span>'; }
 
@@ -915,10 +942,24 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       // neq client_id:排除自己下的單,順咖不能接到自己當案家下的單(第一層,清單就不列出)
       var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id,address_note').eq('status','matching').is('suncar_id', null).neq('client_id', user.id).order('service_time',{ascending:true});
       var openOrders = (open.data || []).filter(function(o){ return o.pool==='A' || (o.pool==='B' && u.has_caregiver_cert); });
+      // 兌換加值效果:有效 order_pin 的案家單置頂、有效 priority_badge 顯示「優先」徽章。
+      // 走後台 get_active_client_perks(只回沒過期的這兩種),前端不直接讀 user_perks(它的 RLS 只放行本人讀自己,順咖讀不到案家的)。
+      var clientPerks = {};
+      var cids = openOrders.map(function(o){ return o.client_id; }).filter(Boolean);
+      if(cids.length){
+        var pr = await sb.rpc('get_active_client_perks', { p_targets: cids });
+        if(pr && pr.data){ pr.data.forEach(function(row){ (clientPerks[row.user_id] = clientPerks[row.user_id] || {})[row.perk] = true; }); }
+      }
+      // order_pin 的案家排到最前。穩定排序:原查詢已按 service_time 升冪,有無置頂只決定組別,組內維持原順序。
+      openOrders.sort(function(a,b){
+        var pa = (clientPerks[a.client_id]||{}).order_pin ? 0 : 1;
+        var pb = (clientPerks[b.client_id]||{}).order_pin ? 0 : 1;
+        return pa - pb;
+      });
       $('stat-open').textContent = openOrders.length;
       $('open-badge').textContent = openOrders.length + ' 筆';
       if(openOrders.length){
-        $('open-list').innerHTML = openOrders.map(openCard).join('');
+        $('open-list').innerHTML = openOrders.map(function(o){ return openCard(o, clientPerks[o.client_id]); }).join('');
       } else {
         $('open-empty').style.display = '';
       }
