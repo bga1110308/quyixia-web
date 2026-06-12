@@ -1042,9 +1042,9 @@ async function loadReviewList(){
   if(rolesRes.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(rolesRes.error.message)+'</div>'; return; }
   var roles=rolesRes.data||[];
   if(!roles.length){ renderReviewCards([]); return; }
-  // 第二步:用這些人的編號去撈姓名電話
+  // 第二步:用這些人的編號去撈姓名電話 + 身分證(實名)狀態(順咖通過要先過身分證)
   var ids=roles.map(function(r){ return r.user_id; });
-  var usersRes=await sb.from('users').select('id,display_name,phone,role_detail').in('id',ids);
+  var usersRes=await sb.from('users').select('id,display_name,phone,role_detail,is_realname').in('id',ids);
   if(usersRes.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(usersRes.error.message)+'</div>'; return; }
   // 第三步:把姓名電話接回每一筆申請
   var umap={};
@@ -1062,6 +1062,11 @@ function renderReviewCards(list){
     var u=r.users||{};
     var rd=r.role_data||{};
     var name=(u.role_detail && u.role_detail.real_name) || u.display_name || '未填姓名';
+    /* 身分證(實名)是否已審核通過。沒過就不讓按「通過」,因為身分證沒過順咖不該通過(源頭擋,不靠人記得) */
+    var idok=!!u.is_realname;
+    var idChip=idok
+      ? '<span style="font-size:11px;font-weight:600;color:#2F6048;background:#E8F5EE;padding:2px 9px;border-radius:99px;">身分證已過</span>'
+      : '<span style="font-size:11px;font-weight:600;color:#C0392B;background:#FCE8E7;padding:2px 9px;border-radius:99px;">身分證未過</span>';
     var addr=rd.address||{};
     var area=[addr.city,addr.district].filter(Boolean).join(' ');
     var idtext=IDENTITY_TEXT[rd.identity]||rd.identity||'';
@@ -1072,15 +1077,17 @@ function renderReviewCards(list){
     var meta=metaParts.map(function(t){return '<span>'+esc(t)+'</span>';}).join('');
     var bio=rd.bio?'<div class="ai-reason">'+esc(rd.bio)+'</div>':'';
     return '<div class="applicant-card" data-uid="'+esc(r.user_id)+'">'+
-      '<input type="checkbox" class="rev-chk" data-uid="'+esc(r.user_id)+'" style="margin-top:14px;width:17px;height:17px;cursor:pointer;flex-shrink:0;">'+
+      '<input type="checkbox" class="rev-chk" data-uid="'+esc(r.user_id)+'" data-realname="'+(idok?'1':'0')+'" style="margin-top:14px;width:17px;height:17px;cursor:pointer;flex-shrink:0;">'+
       '<div class="avatar" style="width:40px;height:40px;font-size:14px;background:var(--champagne);color:var(--amber-deep);">'+esc(name.charAt(0))+'</div>'+
       '<div style="flex:1;">'+
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(name)+'</span></div>'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><span style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(name)+'</span>'+idChip+'</div>'+
         bio+
         '<div class="card-meta">'+meta+'</div>'+
       '</div>'+
       '<div class="card-actions">'+
-        '<button class="btn-approve" onclick="reviewAct(\''+esc(r.user_id)+'\',\'active\',this)">通過</button>'+
+        (idok
+          ? '<button class="btn-approve" onclick="reviewAct(\''+esc(r.user_id)+'\',\'active\',this)">通過</button>'
+          : '<button class="btn-approve" disabled title="身分證尚未審核通過,請先到證件審核通過身分證" style="opacity:0.45;cursor:not-allowed;box-shadow:none;">通過</button>')+
         '<button class="btn-reject" onclick="reviewAct(\''+esc(r.user_id)+'\',\'rejected\',this)">拒絕</button>'+
       '</div>'+
     '</div>';
@@ -1091,12 +1098,18 @@ function renderReviewCards(list){
 async function reviewAct(userId, decision, btnEl){
   var word=decision==='active'?'通過':'拒絕';
   if(!confirm('確定要「'+word+'」這位順咖嗎?')) return;
+  // 通過順咖前先確認身分證已過(身分證沒過順咖不能過)。重查一次後台,擋掉畫面可能過時的情況
+  if(decision==='active'){
+    var chk=await sb.from('users').select('is_realname').eq('id',userId).maybeSingle();
+    if(chk.error || !chk.data || !chk.data.is_realname){ alert('這位順咖的身分證尚未審核通過,要先到「證件審核」通過身分證,才能通過順咖資格。'); return; }
+  }
   var card=btnEl.closest('.applicant-card');
   card.style.pointerEvents='none'; card.style.opacity='0.6';
   var res=await sb.from('user_roles').update({status:decision})
     .eq('user_id',userId).eq('role','suncar');
   if(res.error){
-    alert('更新失敗:'+res.error.message);
+    var m=res.error.message||'';
+    alert(m.indexOf('身分證')>=0 ? '這位順咖的身分證尚未審核通過,無法通過順咖資格。' : ('更新失敗:'+m));
     card.style.pointerEvents=''; card.style.opacity='';
     return;
   }
@@ -1511,10 +1524,11 @@ async function batchApprove(listId){
   var boxes = Array.prototype.slice.call(document.querySelectorAll('#'+listId+' .rev-chk:checked'));
   if(!boxes.length){ alert('請先勾選要通過的項目'); return; }
   if(!confirm('確定一次通過勾選的 '+boxes.length+' 筆嗎?\n(請確認都已經看過內容)')) return;
-  var ok=0, fail=0;
+  var ok=0, fail=0, skipped=0;
   for(var i=0;i<boxes.length;i++){
     var b=boxes[i]; var card=b.closest('.applicant-card'); var e=null;
     if(listId==='review-list'){
+      if(b.dataset.realname!=='1'){ skipped++; continue; }   // 身分證沒過的不批次通過(順咖通過要先過身分證)
       var res=await sb.from('user_roles').update({status:'active'}).eq('user_id',b.dataset.uid).eq('role','suncar'); e=res.error;
     } else if(listId==='cert-review-list'){
       var upd=await sb.from('cert_submissions').update({status:'approved',reviewed_at:new Date().toISOString(),reviewed_by:window._adminId||null}).eq('id',b.dataset.sub);
@@ -1535,7 +1549,7 @@ async function batchApprove(listId){
     if(!document.querySelectorAll('#custom-cert-review-list .applicant-card').length) document.getElementById('custom-cert-review-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有待審核的自訂證件</div>';
   }
   var master=document.getElementById('batchall-'+listId); if(master) master.checked=false;
-  alert('完成:通過 '+ok+' 筆'+(fail?'、失敗 '+fail+' 筆':''));
+  alert('完成:通過 '+ok+' 筆'+(fail?'、失敗 '+fail+' 筆':'')+(skipped?'、跳過 '+skipped+' 筆(身分證未過,要先過身分證)':''));
 }
 
 async function viewCert(path){
