@@ -527,6 +527,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
         <span>本次下單將扣除</span>
         <strong>50 點</strong>
       </div>
+      <!-- 金幣折抵預覽:有金幣才顯示,由 initOrderPrefill 讀 coin_balance 後填入。下單時先用金幣折抵服務費、不夠才扣點數 -->
+      <div id="coin-deduct-note" style="display:none;margin-top:8px;font-size:0.82rem;color:#2F6048;background:#fff;border-radius:8px;padding:8px 12px;line-height:1.6;"></div>
       <div class="notes">
         ⓘ 服務費含建立訂單、媒合順咖、自動建立 LINE 聯絡群<br>
         ⓘ 24 小時內若無順咖接單,自動全額退還 50 點<br>
@@ -855,6 +857,20 @@ async function initOrderPrefill() {
     }
   } catch(e){ console.error('initOrderPrefill:', e); }
 
+  /* 金幣折抵預覽:下單服務費 50 點先用案家金幣(client_coins)折抵、不夠才扣點數。
+     有金幣才把預覽顯示出來,讓案家知道這次會用掉多少金幣。 */
+  try {
+    var cbRes = await sb.rpc('coin_balance', { p_user: user.id, p_pool: 'client' });
+    var coins = (cbRes && cbRes.data != null) ? cbRes.data : 0;
+    var noteEl = document.getElementById('coin-deduct-note');
+    if (noteEl && coins > 0) {
+      var useCoin = Math.min(50, coins);
+      var payPt = 50 - useCoin;
+      noteEl.innerHTML = '你目前有 <strong>' + coins + '</strong> 金幣,下單會優先折抵服務費:本次用 <strong>' + useCoin + '</strong> 金幣' + (payPt > 0 ? ('、再扣 <strong>' + payPt + '</strong> 點') : '(不扣點數)') + '。';
+      noteEl.style.display = 'block';
+    }
+  } catch(e){ console.error('coin preview:', e); }
+
   if (window._linkRef) showLockedRef(window._linkRef);
 }
 
@@ -1152,11 +1168,14 @@ async function submitOrder(payload, rateCheck) {
       return;
     }
 
-    /* 點數不足先帶去加值(UX 順手;真正的餘額檢查在後台 place_order,前端擋不算數) */
+    /* 餘額預檢(UX 順手;真正的扣抵在後台 place_order,前端擋不算數)。
+       下單服務費 50 點先用案家金幣折抵、不夠才扣點數,所以這裡看「金幣+點數」合計夠不夠 50。 */
     var pr = await sb.from('users').select('client_points').eq('id', user.id).maybeSingle();
     var pts = (pr.data && pr.data.client_points != null) ? pr.data.client_points : 0;
-    if (pts < 50) {
-      alert('點數不足 50 點,先帶你去加值。目前點數:' + pts + ' 點');
+    var cbRes = await sb.rpc('coin_balance', { p_user: user.id, p_pool: 'client' });
+    var coins = (cbRes && cbRes.data != null) ? cbRes.data : 0;
+    if (pts + coins < 50) {
+      alert('餘額不足:服務費 50 點(可用金幣折抵)。目前金幣 ' + coins + '、點數 ' + pts + ',先帶你去加值。');
       try {
         sessionStorage.setItem('pending_order', JSON.stringify(payload));
         sessionStorage.setItem('credits_returnTo', '04_order_form.html?resume=1');
@@ -1178,7 +1197,7 @@ async function submitOrder(payload, rateCheck) {
     var r = res.data || {};
     if (!r.ok) {
       if (r.reason === 'insufficient') {
-        alert('點數不足 50 點,先帶你去加值。目前點數:' + (r.balance != null ? r.balance : 0) + ' 點');
+        alert('餘額不足:服務費 ' + (r.cost != null ? r.cost : 50) + ' 點(可用金幣折抵)。目前金幣 ' + (r.coins != null ? r.coins : 0) + '、點數 ' + (r.balance != null ? r.balance : 0) + ',先帶你去加值。');
         try {
           sessionStorage.setItem('pending_order', JSON.stringify(payload));
           sessionStorage.setItem('credits_returnTo', '04_order_form.html?resume=1');
@@ -1194,6 +1213,9 @@ async function submitOrder(payload, rateCheck) {
     }
     var newId = r.order_id;
     var remain = r.remain;
+    var coinUsed = (r.coin_used != null) ? r.coin_used : 0;
+    var ptUsed = (r.points_used != null) ? r.points_used : 50;
+    var coinRemain = (r.coin_remain != null) ? r.coin_remain : 0;
 
     /* 把聯絡人姓名電話寫進 order_contacts(資料庫權限只給案家本人與已接單順咖)。
        用 payload 裡的值,確保「加值後回來重送」那條路(payload 來自 sessionStorage)也寫得到。
@@ -1213,7 +1235,10 @@ async function submitOrder(payload, rateCheck) {
     if (rateCheck) recordOrder(rateCheck);
 
     try { sessionStorage.removeItem('pending_order'); } catch(e){}
-    alert('下單成功!已扣 50 點,目前剩餘 ' + remain + ' 點');
+    var doneMsg = coinUsed > 0
+      ? ('下單成功!本次用 ' + coinUsed + ' 金幣折抵' + (ptUsed > 0 ? ('、扣 ' + ptUsed + ' 點') : '(不扣點數)') + ',剩餘 ' + remain + ' 點、金幣 ' + coinRemain + '。')
+      : ('下單成功!已扣 ' + ptUsed + ' 點,目前剩餘 ' + remain + ' 點。');
+    alert(doneMsg);
 
     window.location.href = '10_order_detail.html?id=' + newId;
   } catch (e) {
