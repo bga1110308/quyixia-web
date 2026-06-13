@@ -828,8 +828,9 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     var cfg = await sb.from('app_config').select('promo_free_info,price_suncar_single,price_suncar_month,suncar_apply_open').eq('id', 1).maybeSingle();
     var cfgd = (cfg && cfg.data) ? cfg.data : {};
     var promoFree = !!cfgd.promo_free_info;
-    // 順咖申請總開關(後台 app_config.suncar_apply_open,預設開)。關閉時申請卡按鈕擋新申請。
-    window._suncarApplyOpen = !(cfgd.suncar_apply_open === false);
+    // 順咖申請總開關:走後台函式 suncar_apply_open(),登入狀態異常也讀得到真值(同 03)。關閉時申請卡按鈕擋新申請。
+    var _aoq = await sb.rpc('suncar_apply_open');
+    window._suncarApplyOpen = !(_aoq && _aoq.data === false);
     // 能不能看資訊只認這一條:後台 / 推廣期全免費 / 資訊會員未過期(首月免費也寫進 info_member_until)。10 詳情頁同一套
     staffIsPrivileged = !!(u.is_admin || promoFree || (u.info_member_until && new Date(u.info_member_until) > new Date()));
     // 我已單次解鎖且未過期的案家(會員全開時這個用不到,但先撈好,讓未解鎖的單張卡可單獨解鎖)

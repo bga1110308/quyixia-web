@@ -678,8 +678,10 @@ window.addEventListener('DOMContentLoaded', async function () {
     }
     /* 順咖申請總開關(後台 app_config.suncar_apply_open,預設開)。為什麼擋在這:這是不管從哪個按鈕/網址進來的唯一關卡。
        關閉時只擋「全新申請(沒角色)」與「被退重新申請(rejected)」;已開始填(incomplete)或審核中(pending)的人不擋,讓他們把資料補完。 */
-    var applyOpenRes = await sb.from('app_config').select('suncar_apply_open').eq('id', 1).maybeSingle();
-    var applyOpen = !(applyOpenRes && applyOpenRes.data && applyOpenRes.data.suncar_apply_open === false);
+    // 走後台函式判斷開不開放:函式用管理員權限讀 app_config,登入狀態異常(例:帳號剛被刪、憑證半死)也讀得到真值,
+    // 不像直接讀 app_config 沒登入會回空值被當成「開放」放行。只有明確 false 才當關閉。
+    var applyOpenRes = await sb.rpc('suncar_apply_open');
+    var applyOpen = !(applyOpenRes && applyOpenRes.data === false);
     if (!applyOpen && (!gRow || gRow.status === 'rejected')) {
       alert('順咖申請目前暫停開放,請稍後再來。如有疑問請聯絡平台。');
       window.location.href = 'index.html';

@@ -725,8 +725,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     /* 依順咖申請狀態決定首頁顯示。active=已是順咖→給「切到順咖端」並收掉招募卡;
        其餘(沒申請/資料不完整/審核中/被退)→招募卡文字與按鈕動作隨狀態換,按鈕一律呼叫 applySuncar */
     /* 順咖申請總開關(後台 app_config.suncar_apply_open,預設開)。關閉時招募卡顯示暫停、按鈕擋新申請。 */
-    var _ao = await sb.from('app_config').select('suncar_apply_open').eq('id', 1).maybeSingle();
-    window._suncarApplyOpen = !(_ao && _ao.data && _ao.data.suncar_apply_open === false);
+    var _ao = await sb.rpc('suncar_apply_open'); // 走後台函式,登入狀態異常也讀得到真值(同 03)
+    window._suncarApplyOpen = !(_ao && _ao.data === false);
     var sState = suncarState(suncarRole);
     if(sState === 'active'){
       $('role-switch-link').style.display = '';
