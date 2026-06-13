@@ -510,6 +510,39 @@ var STATUS_UI_STAFF = {
 /* 信用分換算等級:高(80↑)、中(50到79)、低(50↓),跟取消率同一種摘要風格 */
 function creditBand(s){ s = (s == null ? 100 : s); return s >= 80 ? '高' : (s >= 50 ? '中' : '低'); }
 
+/* 公開評價留言(匿名):走後台 get_public_reviews(滿3則＋08 開關開才回,不吐誰寫的)。
+   公開資訊、不受付費限制;開關關或不足3則時回空,這裡就不顯示留言區。 */
+function avgOfRatings(ratings){
+  if(!ratings || typeof ratings !== 'object') return null;
+  var vals = Object.keys(ratings).map(function(k){ return Number(ratings[k]); }).filter(function(n){ return !isNaN(n); });
+  if(!vals.length) return null;
+  return Math.round((vals.reduce(function(s,n){ return s+n; }, 0) / vals.length) * 10) / 10;
+}
+async function renderPublicReviews(revieweeId, mode){
+  if(!revieweeId) return;
+  var anchor = document.getElementById('review-stats');
+  if(!anchor) return;
+  var box = document.getElementById('public-reviews');
+  if(!box){
+    box = document.createElement('div');
+    box.id = 'public-reviews';
+    box.style.cssText = 'margin-top:12px;';
+    anchor.parentNode.insertBefore(box, anchor.nextSibling);
+  }
+  var r = await sb.rpc('get_public_reviews', { p_reviewee: revieweeId, p_mode: mode });
+  if(r.error || !r.data || !r.data.length){ box.innerHTML = ''; return; }
+  var html = '<div style="font-size:0.92rem;font-weight:600;color:var(--ink);margin-bottom:8px;">評價留言（匿名）</div>';
+  r.data.forEach(function(rv){
+    var avg = avgOfRatings(rv.ratings);
+    var d = rv.created_at ? String(rv.created_at).slice(0,10) : '';
+    html += '<div style="background:var(--champagne-soft);border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
+      '<div style="font-size:0.85rem;color:var(--amber-deep);font-weight:600;">' + (avg != null ? ('★ ' + avg) : '') + ' <span style="color:var(--ink-light);font-weight:400;font-size:0.75rem;">' + d + '</span></div>' +
+      (rv.comment ? '<div style="font-size:0.88rem;color:var(--ink);line-height:1.7;margin-top:4px;">' + esc(rv.comment) + '</div>' : '') +
+      '</div>';
+  });
+  box.innerHTML = html;
+}
+
 /* 對方評價統計:用後端函式 get_review_stats 算平均。
    為什麼後端算:reviews 開了雙盲(只能讀自己寫的),前端無法直接算別人的;
    函式以高權限只回統計數字,不吐個別評價、不吐是誰評的。
@@ -517,6 +550,7 @@ function creditBand(s){ s = (s == null ? 100 : s); return s >= 80 ? '高' : (s >
    revieweeId=被評的人;mode:案家看順咖→client_reviews_suncar、順咖看案家→suncar_reviews_client */
 async function renderReviewStats(revieweeId, mode, isPrivileged, label){
   if(!revieweeId) return;
+  renderPublicReviews(revieweeId, mode);  // 公開評價留言(匿名、滿3則、受08開關),獨立於付費,是公開資訊
   document.getElementById('review-stats-title').textContent = label;
   var body = document.getElementById('review-stats-body');
   document.getElementById('review-stats').style.display = '';
