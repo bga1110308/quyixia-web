@@ -1002,7 +1002,29 @@ function memberDrawerHtml(acc, x){
       '<div class="d-row"><span class="d-key">評分</span><span class="d-val">'+ratingTxt+'</span></div>'+
       '<div class="d-row"><span class="d-key">累計接單</span><span class="d-val">'+(x.suncarOrders==null?'—':x.suncarOrders+' 筆')+'</span></div>');
   }
+  html+=acctDangerZone(acc);
   return html;
+}
+
+// 抽屜底部帳號層操作區:停用/啟用整個帳號、軟刪除(去識別化)。管理員帳號不給操作(後端函式也會再擋一次)。
+// 帳號層停用(is_active)跟卡片上的角色層停權(user_roles.status)是不同層級:停用=連登入都進不來。
+function acctDangerZone(acc){
+  if(acc.is_super_admin || acc.is_admin){
+    return '<div class="d-section">帳號管理</div><div class="d-row"><span class="d-key">說明</span><span class="d-val" style="color:var(--ink-soft);">管理員帳號，不可在此停用或刪除</span></div>';
+  }
+  if(acc.deleted_at){
+    return '<div class="d-section">帳號管理</div><div class="d-row"><span class="d-key">帳號狀態</span><span class="d-val" style="color:var(--danger);font-weight:700;">已刪除（個資已清除，紀錄保留）</span></div>';
+  }
+  var loginTxt=(acc.is_active===false)?'已停用（不能登入）':'使用中';
+  var toggleBtn=(acc.is_active===false)
+    ? '<button class="btn-approve" onclick="setAccountActive(\''+esc(acc.uid)+'\',true,this)">啟用帳號</button>'
+    : '<button class="btn-reject" onclick="setAccountActive(\''+esc(acc.uid)+'\',false,this)">停用帳號</button>';
+  return '<div class="d-section">帳號管理</div>'+
+    '<div class="d-row"><span class="d-key">登入狀態</span><span class="d-val">'+loginTxt+'</span></div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">'+toggleBtn+
+      '<button class="btn-reject" style="background:var(--danger);color:#fff;border-color:var(--danger);" onclick="softDeleteAccount(\''+esc(acc.uid)+'\',this)">刪除帳號</button>'+
+    '</div>'+
+    '<div style="font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.65;">停用=暫時不能登入、可再啟用、資料保留。刪除=清掉姓名電話等個資、永久不能登入，但保留訂單與金流紀錄供對帳，不可復原。</div>';
 }
 
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');}
@@ -1370,7 +1392,7 @@ async function loadAccounts(){
   if(!rows.length){ _accounts=[]; renderAccounts(); return; }
   // 撈這些人的基本資料(admin_read_all_users 政策允許)
   var ids=rows.map(function(r){ return r.user_id; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
-  var ur=await sb.from('users').select('id,display_name,phone,member_no,role_detail,is_realname,has_caregiver_cert,has_good_conduct,has_cpr').in('id',ids);
+  var ur=await sb.from('users').select('id,display_name,phone,member_no,role_detail,is_realname,has_caregiver_cert,has_good_conduct,has_cpr,is_active,deleted_at,is_admin,is_super_admin').in('id',ids);
   if(ur.error){ box.innerHTML=acctErrBox(ur.error.message); return; }
   var umap={}; (ur.data||[]).forEach(function(u){ umap[u.id]=u; });
   // 每人合併成一筆,兩種身分各記狀態
@@ -1378,7 +1400,7 @@ async function loadAccounts(){
   rows.forEach(function(r){
     if(!amap[r.user_id]){
       var u=umap[r.user_id]||{};
-      amap[r.user_id]={ uid:r.user_id, name:(u.role_detail&&u.role_detail.real_name)||u.display_name||'未填姓名', phone:u.phone||'', member_no:u.member_no||'', is_realname:!!u.is_realname, has_caregiver_cert:!!u.has_caregiver_cert, has_good_conduct:!!u.has_good_conduct, has_cpr:!!u.has_cpr, client:null, suncar:null, suncar_data:null };
+      amap[r.user_id]={ uid:r.user_id, name:(u.role_detail&&u.role_detail.real_name)||u.display_name||'未填姓名', phone:u.phone||'', member_no:u.member_no||'', is_realname:!!u.is_realname, has_caregiver_cert:!!u.has_caregiver_cert, has_good_conduct:!!u.has_good_conduct, has_cpr:!!u.has_cpr, is_active:(u.is_active!==false), deleted_at:u.deleted_at||null, is_admin:!!u.is_admin, is_super_admin:!!u.is_super_admin, client:null, suncar:null, suncar_data:null };
     }
     if(r.role==='client') amap[r.user_id].client=r.status;
     if(r.role==='suncar'){ amap[r.user_id].suncar=r.status; amap[r.user_id].suncar_data=r.role_data||{}; }
@@ -1525,6 +1547,30 @@ async function setRoleStatus(uid, role, newStatus, btnEl){
   var acc=_accounts.filter(function(a){ return a.uid===uid; })[0];
   if(acc) acc[role]=newStatus;
   renderAccounts();
+}
+
+// 帳號層停用/啟用:整個帳號能不能登入(is_active),跟角色層停權(user_roles.status)不同層級。走後台函式擋主帳號。
+async function setAccountActive(uid, active, btn){
+  var txt=active?'啟用':'停用';
+  var warn=active?'\n啟用後該會員可正常登入使用。':'\n停用後該會員無法登入,但資料保留,可再啟用。';
+  if(!confirm('確定要「'+txt+'」這個帳號嗎?'+warn)) return;
+  if(btn){ btn.disabled=true; btn.textContent='處理中…'; }
+  var r=await sb.rpc('admin_set_user_active',{ p_user_id:uid, p_active:active });
+  if(r.error || (r.data && r.data.ok===false)){ alert('操作失敗:'+(r.error?r.error.message:((r.data&&r.data.reason)||'未知'))); if(btn){ btn.disabled=false; btn.textContent=txt+'帳號'; } return; }
+  var acc=_accounts.filter(function(a){ return a.uid===uid; })[0]; if(acc) acc.is_active=active;
+  openMemberDrawer(uid);
+}
+
+// 軟刪除帳號:去識別化(清姓名/電話/個資)+永久停用,但保留訂單/金流/評價關聯供對帳。走後台函式,擋主帳號,不可復原。
+async function softDeleteAccount(uid, btn){
+  if(!confirm('確定要「刪除」這個帳號嗎?\n會清除姓名、電話等個資,永久不能登入。訂單與金流紀錄保留供對帳。')) return;
+  if(!confirm('再次確認:刪除後無法復原,確定刪除?')) return;
+  if(btn){ btn.disabled=true; btn.textContent='刪除中…'; }
+  var r=await sb.rpc('admin_soft_delete_user',{ p_user_id:uid });
+  if(r.error || (r.data && r.data.ok===false)){ alert('刪除失敗:'+(r.error?r.error.message:((r.data&&r.data.reason)||'未知'))); if(btn){ btn.disabled=false; btn.textContent='刪除帳號'; } return; }
+  alert('已刪除此帳號(個資已清除,紀錄保留)。');
+  closeDrawer();
+  loadAccounts();
 }
 
 /* ===== 批次審核:勾選已看過的多筆,一次通過。三個清單共用一支,依 listId 走對應的通過邏輯。 ===== */

@@ -819,6 +819,11 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       user = (ures && ures.data) ? ures.data.user : null;
     }
     if(!user){ window.location.href = '13_login.html'; return; }
+    // 帳號狀態守門:被刪除(deleted_at 有值)或停用(is_active=false)的帳號擋在站外,不放進來
+    var _acc = await sb.from('users').select('deleted_at,is_active').eq('id', user.id).maybeSingle();
+    var _ad = _acc && _acc.data ? _acc.data : null;
+    if(_ad && _ad.deleted_at){ await sb.auth.signOut(); alert('此帳號已刪除，無法再使用。'); window.location.href='index.html'; return; }
+    if(_ad && _ad.is_active === false){ await sb.auth.signOut(); alert('此帳號已停用，如有疑問請聯繫平台。'); window.location.href='index.html'; return; }
     currentUserId = user.id;
 
     /* 本人 users */
