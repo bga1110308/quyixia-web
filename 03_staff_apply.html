@@ -676,6 +676,15 @@ window.addEventListener('DOMContentLoaded', async function () {
       if (gRow.status === 'suspended') { alert('你的順咖資格目前已停用,如有疑問請聯絡客服。'); window.location.href = '12_staff_home.html'; return; }
       if (gRow.status === 'pending' && gComplete) { alert('你已提出順咖申請,正在等待審核通過,不用重複申請。'); window.location.href = '12_staff_home.html'; return; }
     }
+    /* 順咖申請總開關(後台 app_config.suncar_apply_open,預設開)。為什麼擋在這:這是不管從哪個按鈕/網址進來的唯一關卡。
+       關閉時只擋「全新申請(沒角色)」與「被退重新申請(rejected)」;已開始填(incomplete)或審核中(pending)的人不擋,讓他們把資料補完。 */
+    var applyOpenRes = await sb.from('app_config').select('suncar_apply_open').eq('id', 1).maybeSingle();
+    var applyOpen = !(applyOpenRes && applyOpenRes.data && applyOpenRes.data.suncar_apply_open === false);
+    if (!applyOpen && (!gRow || gRow.status === 'rejected')) {
+      alert('順咖申請目前暫停開放,請稍後再來。如有疑問請聯絡平台。');
+      window.location.href = 'index.html';
+      return;
+    }
   }
 
   if (user) {

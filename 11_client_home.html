@@ -656,6 +656,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   function applySuncar(state){
     if(state === 'pending'){ alert('你已提出順咖申請,正在等待審核通過。\n通過後就能開始接單,請耐心等候。'); return; }
     if(state === 'incomplete'){ alert('你的順咖申請資料還沒填完,先把資料補齊才能送審。'); window.location.href='03_staff_apply.html'; return; }
+    // 後台暫停申請時,擋掉全新申請與被退重新申請(已開始填的 incomplete 不擋,讓他補完)
+    if(window._suncarApplyOpen === false && (state === 'none' || state === 'rejected')){ alert('順咖申請目前暫停開放,請稍後再來。'); return; }
     if(state === 'rejected'){ alert('你之前的順咖申請未通過,可以重新提出申請。'); window.location.href='03_staff_apply.html'; return; }
     if(state === 'suspended'){ alert('你的順咖資格目前已停用,如有疑問請聯絡客服。'); return; }
     window.location.href='03_staff_apply.html';
@@ -722,6 +724,9 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     });
     /* 依順咖申請狀態決定首頁顯示。active=已是順咖→給「切到順咖端」並收掉招募卡;
        其餘(沒申請/資料不完整/審核中/被退)→招募卡文字與按鈕動作隨狀態換,按鈕一律呼叫 applySuncar */
+    /* 順咖申請總開關(後台 app_config.suncar_apply_open,預設開)。關閉時招募卡顯示暫停、按鈕擋新申請。 */
+    var _ao = await sb.from('app_config').select('suncar_apply_open').eq('id', 1).maybeSingle();
+    window._suncarApplyOpen = !(_ao && _ao.data && _ao.data.suncar_apply_open === false);
     var sState = suncarState(suncarRole);
     if(sState === 'active'){
       $('role-switch-link').style.display = '';
@@ -736,6 +741,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
         rejected:   { t:'順咖申請未通過',     d:'你之前的申請沒有通過,可以重新提出申請',         b:'重新申請' }
       }[sState];
       if(T){ $('rc-title').textContent = T.t; $('rc-desc').textContent = T.d; $('recruit-btn').textContent = T.b; }
+      // 暫停申請時,把全新/被退者的招募卡改成暫停文案,別讓他點了才知道
+      if(window._suncarApplyOpen === false && (sState === 'none' || sState === 'rejected')){
+        $('rc-title').textContent = '順咖申請暫停開放中';
+        $('rc-desc').textContent = '目前暫停受理新申請,開放後就能加入,敬請期待。';
+        $('recruit-btn').textContent = '暫停開放中';
+      }
       var rb = $('recruit-btn'); if(rb){ rb.onclick = function(e){ e.preventDefault(); applySuncar(sState); }; }
     }
 

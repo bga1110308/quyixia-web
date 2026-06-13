@@ -798,6 +798,8 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   function applySuncar(state){
     if(state === 'pending'){ alert('你已提出順咖申請,正在等待審核通過。\n通過後就能開始接單,請耐心等候。'); return; }
     if(state === 'incomplete'){ alert('你的順咖申請資料還沒填完,先把資料補齊才能送審。'); window.location.href='03_staff_apply.html'; return; }
+    // 後台暫停申請時,擋掉全新申請與被退重新申請(已開始填的 incomplete 不擋,讓他補完)
+    if(window._suncarApplyOpen === false && (state === 'none' || state === 'rejected')){ alert('順咖申請目前暫停開放,請稍後再來。'); return; }
     if(state === 'rejected'){ alert('你之前的順咖申請未通過,可以重新提出申請。'); window.location.href='03_staff_apply.html'; return; }
     if(state === 'suspended'){ alert('你的順咖資格目前已停用,如有疑問請聯絡客服。'); return; }
     window.location.href='03_staff_apply.html';
@@ -822,9 +824,11 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score,role_detail,is_admin,info_member_until').eq('id', user.id).maybeSingle();
     var u = prof.data || {};
     // 全域推廣期開關＋價目:都讀 app_config 同一列(後台可改)
-    var cfg = await sb.from('app_config').select('promo_free_info,price_suncar_single,price_suncar_month').eq('id', 1).maybeSingle();
+    var cfg = await sb.from('app_config').select('promo_free_info,price_suncar_single,price_suncar_month,suncar_apply_open').eq('id', 1).maybeSingle();
     var cfgd = (cfg && cfg.data) ? cfg.data : {};
     var promoFree = !!cfgd.promo_free_info;
+    // 順咖申請總開關(後台 app_config.suncar_apply_open,預設開)。關閉時申請卡按鈕擋新申請。
+    window._suncarApplyOpen = !(cfgd.suncar_apply_open === false);
     // 能不能看資訊只認這一條:後台 / 推廣期全免費 / 資訊會員未過期(首月免費也寫進 info_member_until)。10 詳情頁同一套
     staffIsPrivileged = !!(u.is_admin || promoFree || (u.info_member_until && new Date(u.info_member_until) > new Date()));
     // 我已單次解鎖且未過期的案家(會員全開時這個用不到,但先撈好,讓未解鎖的單張卡可單獨解鎖)
@@ -868,7 +872,11 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       var pb = $('suncar-pending-banner'); if(pb){ pb.style.display = 'flex'; }
     } else if(sState === 'none' || sState === 'incomplete' || sState === 'rejected'){
       var ac = $('suncar-apply-cta'); if(ac){ ac.style.display = ''; }
-      var ab = $('suncar-apply-btn'); if(ab){ ab.onclick = function(e){ e.preventDefault(); applySuncar(sState); }; }
+      var ab = $('suncar-apply-btn'); if(ab){
+        // 暫停申請時,全新/被退者的按鈕改成暫停文字,別讓他點了才知道
+        if(window._suncarApplyOpen === false && (sState === 'none' || sState === 'rejected')){ ab.textContent = '順咖申請暫停開放中'; }
+        ab.onclick = function(e){ e.preventDefault(); applySuncar(sState); };
+      }
     }
 
     /* 資訊會員狀態:單一來源 info_member_until(首月免費與付費月票都寫這個欄位)。
