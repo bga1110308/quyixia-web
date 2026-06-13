@@ -1442,10 +1442,20 @@ function acctStatusPill(status){
   return '<span class="pill '+m[1]+'">'+esc(m[0])+'</span>';
 }
 
+// 列表狀態欄:帳號層(已刪除/已停用)優先於角色層(啟用中/已停權)。
+// 帳號被停用或刪除時,角色層的 active/suspended 已沒意義,列表要直接顯示帳號層狀態,才不會「停用了還寫啟用中」。
+function acctStatusCell(acc, role){
+  if(acc.deleted_at) return '<span class="pill p-inactive">已刪除</span>';
+  if(acc.is_active===false) return '<span class="pill p-inactive">已停用</span>';
+  return acctStatusPill(acc[role]);
+}
+
 // 一個身分一區塊:身分名 + 狀態 + 停權/復權鈕,下方列出該身分的明細欄位
 // 操作鈕:啟用→停權 / 停權→復權;pending、rejected 不給按鈕(還沒啟用,走審核流程)
 function acctOpsBtn(acc, role){
   var status=acc[role];
+  // 帳號已停用/已刪除時,不給角色層停權/復權鈕(操作集中在抽屜的帳號管理區),避免兩層混淆
+  if(acc.deleted_at || acc.is_active===false) return '<span style="color:var(--ink-light);font-size:11px;">—</span>';
   if(status==='active') return '<button class="btn-reject" onclick="event.stopPropagation();setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'suspended\',this)">停權</button>';
   if(status==='suspended') return '<button class="btn-approve" onclick="event.stopPropagation();setRoleStatus(\''+esc(acc.uid)+'\',\''+role+'\',\'active\',this)">復權</button>';
   return '<span style="color:var(--ink-light);font-size:11px;">—</span>';
@@ -1462,7 +1472,7 @@ function clientRowHtml(acc){
     '<td>'+acctNameCell(acc,'client')+'</td>'+
     '<td>'+(acc.phone?esc(acc.phone):'—')+'</td>'+
     '<td>'+(acc.clientOrders==null?'—':acc.clientOrders)+'</td>'+
-    '<td>'+acctStatusPill(acc.client)+'</td>'+
+    '<td>'+acctStatusCell(acc,'client')+'</td>'+
     '<td>'+acctOpsBtn(acc,'client')+'</td>'+
   '</tr>';
 }
@@ -1480,7 +1490,7 @@ function suncarRowHtml(acc){
     '<td>'+pool+'</td>'+
     '<td>'+rt+'</td>'+
     '<td>'+(acc.suncarOrders==null?'—':acc.suncarOrders)+'</td>'+
-    '<td>'+acctStatusPill(acc.suncar)+'</td>'+
+    '<td>'+acctStatusCell(acc,'suncar')+'</td>'+
     '<td>'+acctOpsBtn(acc,'suncar')+'</td>'+
   '</tr>';
 }
@@ -1558,6 +1568,7 @@ async function setAccountActive(uid, active, btn){
   var r=await sb.rpc('admin_set_user_active',{ p_user_id:uid, p_active:active });
   if(r.error || (r.data && r.data.ok===false)){ alert('操作失敗:'+(r.error?r.error.message:((r.data&&r.data.reason)||'未知'))); if(btn){ btn.disabled=false; btn.textContent=txt+'帳號'; } return; }
   var acc=_accounts.filter(function(a){ return a.uid===uid; })[0]; if(acc) acc.is_active=active;
+  renderAccounts();    // 重畫列表,讓狀態欄即時反映已停用/已啟用
   openMemberDrawer(uid);
 }
 
