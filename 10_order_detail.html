@@ -537,10 +537,56 @@ async function renderPublicReviews(revieweeId, mode){
     var d = rv.created_at ? String(rv.created_at).slice(0,10) : '';
     html += '<div style="background:var(--champagne-soft);border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
       '<div style="font-size:0.85rem;color:var(--amber-deep);font-weight:600;">' + (avg != null ? ('★ ' + avg) : '') + ' <span style="color:var(--ink-light);font-weight:400;font-size:0.75rem;">' + d + '</span></div>' +
-      (rv.comment ? '<div style="font-size:0.88rem;color:var(--ink);line-height:1.7;margin-top:4px;">' + esc(rv.comment) + (rv.truncated ? '<span style="color:var(--amber-deep);font-size:0.78rem;font-weight:600;">（付費解鎖看完整）</span>' : '') + '</div>' : '') +
+      (rv.comment ? '<div style="font-size:0.88rem;color:var(--ink);line-height:1.7;margin-top:4px;">' + esc(rv.comment) + (rv.truncated ? ' <span onclick="openReviewUnlock()" style="color:var(--amber-deep);font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:underline;">（付費解鎖看完整）</span>' : '') + '</div>' : '') +
       '</div>';
   });
   box.innerHTML = html;
+}
+
+/* 評價解鎖視窗:點「付費解鎖」開,選單次/月票,走後台 redeem_info 扣對的池(看順咖扣 client 點、看案家扣 suncar 點)。
+   target/asRole 由 renderReviewStats 設 window._reviewTarget/_reviewAs。解鎖寫 info_unlocks,reload 後留言與統計一起變完整(同一套判斷)。 */
+async function openReviewUnlock(){
+  var asRole = window._reviewAs || 'client';
+  if(!window._reviewTarget){ alert('請稍候再試'); return; }
+  var cfg = await sb.from('app_config').select('price_client_single,price_client_month,price_suncar_single,price_suncar_month').eq('id',1).maybeSingle();
+  var c = (cfg && cfg.data) ? cfg.data : {};
+  var single = (asRole==='client') ? (c.price_client_single==null?5:c.price_client_single) : (c.price_suncar_single==null?10:c.price_suncar_single);
+  var month  = (asRole==='client') ? (c.price_client_month==null?50:c.price_client_month) : (c.price_suncar_month==null?80:c.price_suncar_month);
+  var pts = 0;
+  var sres = await sb.auth.getSession();
+  var uid = (sres.data && sres.data.session) ? sres.data.session.user.id : null;
+  if(uid){
+    var col = (asRole==='client') ? 'client_points' : 'suncar_points';
+    var pr = await sb.from('users').select(col).eq('id',uid).maybeSingle();
+    pts = (pr && pr.data) ? (pr.data[col]||0) : 0;
+  }
+  document.getElementById('rv-balance').textContent = pts;
+  document.getElementById('rv-cost-single').textContent = single;
+  document.getElementById('rv-cost-month').textContent = month;
+  document.getElementById('rv-unlock').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeReviewUnlock(){ document.getElementById('rv-unlock').style.display='none'; document.body.style.overflow=''; }
+function goBuyForReview(){
+  try{
+    sessionStorage.setItem('credits_pool', (window._reviewAs==='client')?'client':'suncar');
+    var oid = new URLSearchParams(location.search).get('id') || '';
+    sessionStorage.setItem('credits_returnTo', '10_order_detail.html?id='+oid);
+  }catch(e){}
+  window.location.href='16_buy_credits.html';
+}
+async function doReviewRedeem(kind){
+  var asRole = window._reviewAs || 'client';
+  var p_target = (kind==='single') ? window._reviewTarget : null;
+  if(kind==='single' && !p_target){ alert('找不到解鎖對象,請重新整理再試'); return; }
+  var r = await sb.rpc('redeem_info', { p_kind: kind, p_as: asRole, p_target: p_target });
+  if(r.error){
+    var msg = r.error.message || '解鎖失敗';
+    if(msg.indexOf('點數不足')>=0){ if(confirm(msg+'\n\n要去儲值嗎?')) goBuyForReview(); return; }
+    alert('解鎖失敗:'+msg); return;
+  }
+  alert(kind==='month' ? '已開通月票,30 天內可看完整評價與資訊' : '已解鎖,可看這位的完整評價');
+  location.reload();
 }
 
 /* 對方評價統計:用後端函式 get_review_stats 算平均。
@@ -550,6 +596,8 @@ async function renderPublicReviews(revieweeId, mode){
    revieweeId=被評的人;mode:案家看順咖→client_reviews_suncar、順咖看案家→suncar_reviews_client */
 async function renderReviewStats(revieweeId, mode, isPrivileged, label){
   if(!revieweeId) return;
+  window._reviewTarget = revieweeId;                                           // 解鎖對象(被評的人)
+  window._reviewAs = (mode === 'client_reviews_suncar') ? 'client' : 'suncar'; // 我的付費身分:看順咖用 client 池、看案家用 suncar 池
   renderPublicReviews(revieweeId, mode);  // 公開評價留言(匿名、滿3則、受08開關),獨立於付費,是公開資訊
   document.getElementById('review-stats-title').textContent = label;
   var body = document.getElementById('review-stats-body');
@@ -567,7 +615,7 @@ async function renderReviewStats(revieweeId, mode, isPrivileged, label){
   h += ' <span style="font-size:0.78rem;color:var(--ink-light);font-weight:400;">／5　共 ' + sb0.cnt + ' 則</span></div>';
   if(!isPrivileged){
     // 未付費:只露平均星等＋則數(跟留言一致:平常露一點),分項評分與注意事項要付費解鎖
-    h += '<div style="color:var(--amber-deep);font-size:0.82rem;font-weight:600;margin-top:4px;">付費解鎖看完整評價（分項評分與注意事項）</div>';
+    h += '<div style="margin-top:6px;"><button type="button" onclick="openReviewUnlock()" style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;border-radius:99px;padding:7px 18px;font-size:0.82rem;font-weight:600;cursor:pointer;font-family:inherit;">付費解鎖看完整評價（分項評分與注意事項）</button></div>';
     body.innerHTML = h;
     return;
   }
@@ -1023,5 +1071,23 @@ qyxGuard(init, { color: '#EF9F27' });
   if(oid && window.QYXNotify) QYXNotify.mountFeed('feed-list', oid);
 })();
 </script>
+<!-- 評價解鎖視窗:單次/月票,走後台 redeem_info 扣點 -->
+<div id="rv-unlock" style="display:none;position:fixed;inset:0;background:rgba(61,41,20,0.55);z-index:1000;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeReviewUnlock()">
+  <div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:500px;padding:1.65rem 1.5rem 2rem;box-shadow:0 -10px 40px rgba(0,0,0,0.25);">
+    <div style="width:46px;height:5px;background:var(--border);border-radius:99px;margin:0 auto 1.1rem;"></div>
+    <div style="font-size:1.1rem;font-weight:600;text-align:center;margin-bottom:5px;color:var(--ink);">解鎖<strong style="color:var(--forest);">完整評價</strong></div>
+    <div style="font-size:0.82rem;color:var(--ink-soft);text-align:center;margin-bottom:1.35rem;line-height:1.65;">看分項評分、注意事項與完整留言<br>你目前點數:<strong id="rv-balance">0</strong> 點</div>
+    <button type="button" onclick="doReviewRedeem('single')" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:0.95rem 1.1rem;margin-bottom:0.7rem;cursor:pointer;font-family:inherit;">
+      <span style="font-size:0.92rem;font-weight:600;color:var(--ink);">單次解鎖這一位</span>
+      <span style="font-size:0.92rem;color:var(--forest);font-weight:700;"><strong id="rv-cost-single">5</strong> 點</span>
+    </button>
+    <button type="button" onclick="doReviewRedeem('month')" style="display:flex;align-items:center;justify-content:space-between;width:100%;background:#fff;border:1.5px solid rgba(95,181,142,0.5);border-radius:12px;padding:0.95rem 1.1rem;margin-bottom:0.7rem;cursor:pointer;font-family:inherit;">
+      <span style="font-size:0.92rem;font-weight:600;color:var(--ink);">買月票 · 30 天看全部</span>
+      <span style="font-size:0.92rem;color:var(--forest);font-weight:700;"><strong id="rv-cost-month">50</strong> 點</span>
+    </button>
+    <a onclick="goBuyForReview()" style="display:block;text-align:center;font-size:0.8rem;color:var(--amber-deep);margin:0.5rem 0 0.2rem;cursor:pointer;text-decoration:underline;">點數不足?去儲值</a>
+    <button type="button" onclick="closeReviewUnlock()" style="width:100%;background:#fff;border:1.5px solid var(--border);color:var(--ink-soft);padding:0.85rem;border-radius:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:0.5rem;">取消</button>
+  </div>
+</div>
 </body>
 </html>
