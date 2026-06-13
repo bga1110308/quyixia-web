@@ -1045,7 +1045,7 @@ async function loadReviewList(){
   if(!roles.length){ renderReviewCards([]); return; }
   // 第二步:用這些人的編號去撈姓名電話 + 身分證(實名)狀態(順咖通過要先過身分證)
   var ids=roles.map(function(r){ return r.user_id; });
-  var usersRes=await sb.from('users').select('id,display_name,phone,role_detail,is_realname').in('id',ids);
+  var usersRes=await sb.from('users').select('id,display_name,phone,role_detail,is_realname,member_no').in('id',ids);
   if(usersRes.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(usersRes.error.message)+'</div>'; return; }
   // 第三步:把姓名電話接回每一筆申請
   var umap={};
@@ -1072,6 +1072,7 @@ function renderReviewCards(list){
     var area=[addr.city,addr.district].filter(Boolean).join(' ');
     var idtext=IDENTITY_TEXT[rd.identity]||rd.identity||'';
     var metaParts=['申請 '+fmtDate(r.created_at)];
+    if(u.member_no) metaParts.push('編號 '+u.member_no); // 撞名時靠會員編號辨認是哪一位
     if(idtext) metaParts.push(idtext);
     if(area) metaParts.push(area);
     if(u.phone) metaParts.push(u.phone);
@@ -1276,7 +1277,15 @@ async function loadFlagReports(){
     var hr=await sb.from('flag_handled').select('review_id');
     if(!hr.error) (hr.data||[]).forEach(function(h){ handled[h.review_id]=true; });
   }catch(e){ console.error('flag_handled',e); }
-  renderFlagCards(res.data||[], handled);
+  // 撈回報順咖/被回報案家的會員編號(管理員可讀全部 users),撞名時辨認用
+  var memberMap={};
+  var fids=[]; (res.data||[]).forEach(function(r){ if(r.subject_id)fids.push(r.subject_id); if(r.reporter_id)fids.push(r.reporter_id); });
+  fids=fids.filter(function(v,i,a){ return v&&a.indexOf(v)===i; });
+  if(fids.length){
+    var mr=await sb.from('users').select('id,member_no').in('id',fids);
+    if(!mr.error) (mr.data||[]).forEach(function(u){ memberMap[u.id]=u.member_no||''; });
+  }
+  renderFlagCards(res.data||[], handled, memberMap);
 }
 
 // 標記某筆紅旗為已處理(寫進 flag_handled),提醒數隨即減少
@@ -1294,8 +1303,10 @@ async function unmarkFlagHandled(reviewId, btn){
   loadFlagReports();
 }
 
-function renderFlagCards(list, handled){
+function renderFlagCards(list, handled, memberMap){
   handled=handled||{};
+  memberMap=memberMap||{};
+  function noText(id){ var no=memberMap[id]; return no?(' ('+esc(no)+')'):''; } // 名字後面接編號,撞名辨認用
   var box=document.getElementById('flag-list');
   var badge=document.getElementById('flag-count');
   var navCnt=document.getElementById('nav-flag-count');
@@ -1328,11 +1339,11 @@ function renderFlagCards(list, handled){
     return '<div class="applicant-card" style="align-items:flex-start;'+(hasSevere&&!isH?'border-left:4px solid #E5484D;':'')+(isH?'opacity:0.55;':'')+'">'+
       '<div style="flex:1;">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">'+
-          '<span style="font-size:14.5px;font-weight:600;color:var(--ink);">案家:'+esc(r.subject_name||'未填姓名')+'</span>'+
+          '<span style="font-size:14.5px;font-weight:600;color:var(--ink);">案家:'+esc(r.subject_name||'未填姓名')+noText(r.subject_id)+'</span>'+
           (hasSevere?'<span class="badge-mini" style="background:#FCE8E7;color:#D9534F;">嚴重</span>':'')+
           (isH?'<span class="badge-mini" style="background:var(--mint-pale);color:var(--forest);">已處理</span>':'')+
         '</div>'+
-        '<div class="card-meta"><span>回報順咖:'+esc(r.reporter_name||'未填姓名')+'</span><span>'+esc(fmtDate(r.created_at))+'</span>'+(orderLine?'<span>'+esc(orderLine)+'</span>':'')+'</div>'+
+        '<div class="card-meta"><span>回報順咖:'+esc(r.reporter_name||'未填姓名')+noText(r.reporter_id)+'</span><span>'+esc(fmtDate(r.created_at))+'</span>'+(orderLine?'<span>'+esc(orderLine)+'</span>':'')+'</div>'+
         '<div style="margin-top:9px;">'+rows+'</div>'+
       '</div>'+
       '<div style="display:flex;align-items:flex-start;">'+actionBtn+'</div>'+
@@ -1637,10 +1648,10 @@ async function loadOrders(){
   // orders 只存 id,撈案家/順咖姓名(admin_read_all_users 政策允許管理員讀)
   var ids=[]; orders.forEach(function(o){ if(o.client_id)ids.push(o.client_id); if(o.suncar_id)ids.push(o.suncar_id); });
   ids=ids.filter(function(v,i,a){ return v&&a.indexOf(v)===i; });
-  var nameMap={};
+  var nameMap={}, memberMap={};
   if(ids.length){
-    var us=await sb.from('users').select('id,display_name,role_detail').in('id',ids);
-    (us.data||[]).forEach(function(u){ nameMap[u.id]=(u.role_detail&&u.role_detail.real_name)||u.display_name||'未命名'; });
+    var us=await sb.from('users').select('id,display_name,role_detail,member_no').in('id',ids);
+    (us.data||[]).forEach(function(u){ nameMap[u.id]=(u.role_detail&&u.role_detail.real_name)||u.display_name||'未命名'; memberMap[u.id]=u.member_no||''; });
   }
   // 算統計 + 渲染。本月/上月用 created_at 比對
   var cnt={all:orders.length,match:0,run:0,done:0,cancel:0};
@@ -1650,7 +1661,7 @@ async function loadOrders(){
   var rows=orders.map(function(o){
     var b=orderBucket(o.status); cnt[b]=(cnt[b]||0)+1;
     if(o.created_at){ var d=new Date(o.created_at); var k=d.getFullYear()+'-'+d.getMonth(); if(k===ym){ thisM++; if(b==='done')doneThisM++; } if(k===lym)lastM++; }
-    return orderRowHtml(o,b,nameMap);
+    return orderRowHtml(o,b,nameMap,memberMap);
   });
   tb.innerHTML=rows.length?rows.join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-light);padding:24px;">目前沒有訂單</td></tr>';
   setText('stat-new',thisM); setText('stat-match',cnt.match); setText('stat-run',cnt.run); setText('stat-done',doneThisM);
@@ -1695,10 +1706,13 @@ function orderStatusPill(b){
 function fmtMD(iso){ var d=new Date(iso); return ('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2); }
 
 // 訂單一列:編號 案家 服務類型(+池別標籤) 順咖 時長 進度 狀態 日期
-function orderRowHtml(o,b,nameMap){
+function orderRowHtml(o,b,nameMap,memberMap){
+  memberMap=memberMap||{};
+  // 名字下面補一行小灰字會員編號,撞名時辨認用;沒編號(半成品)就不顯示那行
+  function withNo(id,fallback){ var nm=esc(nameMap[id]||fallback); var no=memberMap[id]; return no?(nm+'<div style="font-size:10px;color:var(--ink-light);">'+esc(no)+'</div>'):nm; }
   var pool=o.pool==='B'?'<span class="pill p-poolB" style="font-size:10px;margin-left:3px;">照服員</span>':'<span class="pill p-poolA" style="font-size:10px;margin-left:3px;">一般</span>';
-  var client=o.client_id?esc(nameMap[o.client_id]||'未命名'):'—';
-  var suncar=o.suncar_id?esc(nameMap[o.suncar_id]||'未命名'):(b==='cancel'?'(取消)':'(待指派)');
+  var client=o.client_id?withNo(o.client_id,'未命名'):'—';
+  var suncar=o.suncar_id?withNo(o.suncar_id,'未命名'):(b==='cancel'?'(取消)':'(待指派)');
   var dur=o.duration_minutes?orderHours(o.duration_minutes)+' 小時':'—';
   var date=o.created_at?fmtMD(o.created_at):'—';
   return '<tr data-status="'+b+'">'+

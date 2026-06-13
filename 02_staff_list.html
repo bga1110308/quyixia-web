@@ -307,6 +307,9 @@ var reviewMap = {};
 /* 自訂證件徽章:customBadgeMap = {順咖id: [證件名稱,...]}。後台 get_suncar_custom_badges 只回
    已過審＋順咖選擇顯示的名稱,不吐檔案或其他個資。一位順咖可有多張,故存陣列。公開資訊不上鎖。 */
 var customBadgeMap = {};
+/* 會員編號:memberMap = {順咖id: 'U-...'}。撞名辨認用。public_suncars 不吐編號,案家又跟多數順咖沒訂單關係讀不到,
+   所以走後台 get_suncar_member_nos(只回 active 順咖的編號)批次拿,前端不直接讀 users。 */
+var memberMap = {};
 var myId = null; /* 登入者自己的 id:用來擋「點自己卡片變成指定自己下單」 */
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -432,6 +435,13 @@ async function loadStaff() {
     });
   }
 
+  /* 會員編號:批次拿(撞名辨認用)。函式沒建好或報錯時 memberMap 留空＝卡片不顯示編號,頁面照常。 */
+  memberMap = {};
+  if (ids.length) {
+    var mn = await sb.rpc('get_suncar_member_nos', { p_targets: ids });
+    if (mn && mn.data) mn.data.forEach(function(row){ memberMap[row.user_id] = row.member_no; });
+  }
+
   renderStaff();
 }
 
@@ -513,6 +523,7 @@ function renderStaff() {
       onlineMark +
       '<div class="avatar'+(hasCrown?' crowned':'')+'">'+(hasCrown?'<span class="crown-topper"><svg><use href="#i-crown"/></svg></span>':'')+avatarInner+'</div>' +
       '<div class="staff-name">'+esc(s.name)+'</div>' +
+      (memberMap[s.id]?'<div style="font-size:0.66rem;color:var(--ink-light);margin-top:1px;letter-spacing:0.3px;">'+esc(memberMap[s.id])+'</div>':'') +
       ratingHtml +
       creditHtml +
       '<div class="staff-rate" title="順咖填的期望時薪,實際金額由案家出價">'+rateHtml+'</div>' +

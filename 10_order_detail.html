@@ -762,13 +762,14 @@ async function init(){
     var secT = document.querySelector('#staff-section .sec-title'); if(secT) secT.textContent = '案家';
     var lineBtn = document.querySelector('#staff-contact-actions .contact-btn.line');
     if(lineBtn) lineBtn.style.display = 'none'; // LINE 尚未串接,先只開放電話
-    var cres = await sb.from('users').select('display_name,phone').eq('id', o.client_id).maybeSingle();
+    var cres = await sb.from('users').select('display_name,phone,member_no').eq('id', o.client_id).maybeSingle();
     var c = (cres && cres.data) ? cres.data : {};
     var cname = c.display_name || '案家';
     var cav = document.getElementById('staff-avatar');
     cav.classList.remove('cna');
     cav.textContent = firstChar(cname);
-    document.getElementById('staff-name').textContent = cname;
+    // 名字後接會員編號,撞名時辨認用;沒編號就只顯示名字
+    document.getElementById('staff-name').textContent = cname + (c.member_no ? '（' + c.member_no + '）' : '');
     document.getElementById('staff-rating').textContent = c.phone ? ('電話 ' + c.phone) : '';
     document.getElementById('staff-badges').innerHTML = '';
     if(c.phone && (o.status === 'accepted' || o.status === 'active')){
@@ -793,7 +794,10 @@ async function init(){
       } else {
         av.textContent = firstChar(sname);
       }
-      document.getElementById('staff-name').textContent = sname;
+      // 順咖會員編號:public_suncars 不吐編號,但案家對這張單的順咖有訂單關係,可直接讀 users.member_no(client_read_my_suncars 政策放行)。撞名辨認用
+      var snoRes = await sb.from('users').select('member_no').eq('id', o.suncar_id).maybeSingle();
+      var sno = (snoRes && snoRes.data) ? snoRes.data.member_no : '';
+      document.getElementById('staff-name').textContent = sname + (sno ? '（' + sno + '）' : '');
       // 精確信用分改由後台授權函式取得:有回傳值＝可看(本人/管理員/會員/已解鎖),顯示分數+等級;沒有就上鎖。
       // 數字不再隨 public_suncars 整包送到前端,非授權者連封包都拿不到(治本,堵免費外洩)。
       var credRes = await sb.rpc('get_suncar_credits', { p_targets: [o.suncar_id] });

@@ -546,7 +546,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     return '';
   }
 
-  function buildCard(o, staffName){
+  function buildCard(o, staffName, staffNo){
     var st = STATUS[o.status] || STATUS.matching;
     // 只有「媒合中、待服務」可由案家取消;服務中/已完成不給取消,要走後台
     var canCancel = (o.status === 'matching' || o.status === 'accepted');
@@ -570,7 +570,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
         (otherNeed ? '<div class="oc-need" style="font-size:0.8rem;color:#6b5e4d;background:rgba(239,159,39,0.08);border-radius:8px;padding:6px 10px;margin-top:2px;line-height:1.55;word-break:break-word;">需求：'+esc(otherNeed)+'</div>' : '')+
         '<div class="oc-bottom">'+
           (staffName
-            ? '<div class="oc-staff"><div class="oc-staff-avatar">'+esc(firstChar(staffName))+'</div><span>'+esc(staffName)+'</span></div>'
+            ? '<div class="oc-staff"><div class="oc-staff-avatar">'+esc(firstChar(staffName))+'</div><span>'+esc(staffName)+(staffNo?'<span style="font-size:0.66rem;color:var(--ink-light);margin-left:4px;">'+esc(staffNo)+'</span>':'')+'</span></div>'
             : '<div style="font-size:0.74rem;color:var(--ink-light);">'+(st.group==='matching'?'媒合中,等待順咖接單':'')+'</div>')+
           '<div><span class="oc-price-label">'+priceLabel+'</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'+
         '</div>'+
@@ -756,10 +756,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     var orders = (ores.data || []).filter(function(o){ return o.status !== 'cancelled'; });
 
     var suncarIds = orders.map(function(o){ return o.suncar_id; }).filter(Boolean);
-    var nameById = {};
+    var nameById = {}, noById = {};
     if(suncarIds.length){
-      var sres = await sb.from('users').select('id,display_name').in('id', suncarIds);
-      (sres.data||[]).forEach(function(s){ nameById[s.id] = s.display_name; });
+      // 接單後案家對這位順咖有訂單關係,可讀 member_no(client_read_my_suncars 政策放行),撞名辨認用
+      var sres = await sb.from('users').select('id,display_name,member_no').in('id', suncarIds);
+      (sres.data||[]).forEach(function(s){ nameById[s.id] = s.display_name; noById[s.id] = s.member_no||''; });
     }
 
     var cnt = { matching:0, active:0, done:0 };
@@ -799,20 +800,20 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       (opr.data||[]).forEach(function(row){ (orderPerksMap[row.order_id] = orderPerksMap[row.order_id]||{})[row.perk] = row.expires_at; });
     }
     if(matchingOrders.length){
-      $('matching-list').innerHTML = matchingOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id]); }).join('');
+      $('matching-list').innerHTML = matchingOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id], noById[o.suncar_id]); }).join('');
       $('matching-section').style.display = '';
     }
 
     // 進行中:順咖已接單之後的單(待服務/服務中/等待確認),媒合成功才會進這區
     var activeOrders = orders.filter(function(o){ return (STATUS[o.status]||{}).group === 'active'; });
     if(activeOrders.length){
-      $('active-list').innerHTML = activeOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id]); }).join('');
+      $('active-list').innerHTML = activeOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id], noById[o.suncar_id]); }).join('');
       $('active-section').style.display = '';
     }
 
     var listEl = $('history-list');
     if(orders.length){
-      listEl.innerHTML = orders.map(function(o){ return buildCard(o, nameById[o.suncar_id]); }).join('');
+      listEl.innerHTML = orders.map(function(o){ return buildCard(o, nameById[o.suncar_id], noById[o.suncar_id]); }).join('');
       $('empty-state').style.display = 'none';
     } else {
       listEl.innerHTML = '';

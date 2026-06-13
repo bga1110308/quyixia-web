@@ -648,12 +648,12 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   function head(o, tag){ return '<div class="oc-top"><div style="flex:1;min-width:0;"><div class="oc-id-row"><span class="oc-id">'+esc(shortNo(o.order_no))+'</span> · '+esc(fmtDate(o.service_time))+'</div><div class="oc-title">'+esc(o.service_type||'服務')+poolChip(o.pool)+'</div></div>'+tag+'</div>'; }
   function price(o){ return '<div class="oc-price-block"><span class="oc-price-label">報酬</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'; }
 
-  function activeCard(o, clientName, clientPhone){
-    var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
+  function activeCard(o, clientName, clientPhone, clientNo){
+    var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\','+JSON.stringify(clientNo||'')+')">聯絡</button>' : '';
     return '<div class="order-card active-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-active"><svg><use href="#i-radio"/></svg>服務中</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-green" onclick="event.stopPropagation(); window.markComplete(\''+esc(o.id)+'\', this)">標記完成</button></div>'+price(o)+'</div></div>';
   }
-  function pendingCard(o, clientName, clientPhone){
-    var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\')">聯絡</button>' : '';
+  function pendingCard(o, clientName, clientPhone, clientNo){
+    var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\','+JSON.stringify(clientNo||'')+')">聯絡</button>' : '';
     return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">待服務</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-red" onclick="event.stopPropagation(); window.releaseOrder(\''+esc(o.id)+'\', this)">取消接單</button><button class="btn btn-green" onclick="event.stopPropagation(); window.startService(\''+esc(o.id)+'\', this, \''+esc(o.service_time||'')+'\')">開始服務</button></div>'+price(o)+'</div></div>';
   }
   /* 已完成卡的評價狀態列:我評過這位案家就顯示「已評價」,沒評就給「去評價」按鈕(帶訂單 id 進 05) */
@@ -910,17 +910,17 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     var clientById = {};
     var clientIds = pendingOrders.concat(activeOrders).map(function(o){ return o.client_id; }).filter(Boolean);
     if(clientIds.length){
-      var cres = await sb.from('users').select('id,display_name,phone').in('id', clientIds);
+      var cres = await sb.from('users').select('id,display_name,phone,member_no').in('id', clientIds);
       (cres.data||[]).forEach(function(c){ clientById[c.id]=c; });
     }
 
     if(pendingOrders.length){
-      $('pending-list').innerHTML = pendingOrders.map(function(o){ var c=clientById[o.client_id]||{}; return pendingCard(o, c.display_name, c.phone); }).join('');
+      $('pending-list').innerHTML = pendingOrders.map(function(o){ var c=clientById[o.client_id]||{}; return pendingCard(o, c.display_name, c.phone, c.member_no); }).join('');
       $('pending-section').style.display = '';
     }
 
     if(activeOrders.length){
-      $('active-list').innerHTML = activeOrders.map(function(o){ var c=clientById[o.client_id]||{}; return activeCard(o, c.display_name, c.phone); }).join('');
+      $('active-list').innerHTML = activeOrders.map(function(o){ var c=clientById[o.client_id]||{}; return activeCard(o, c.display_name, c.phone, c.member_no); }).join('');
       $('active-section').style.display = '';
     }
 
@@ -1104,8 +1104,9 @@ function filterToggle(el) {
 }
 
 /* 聯絡彈窗 */
-function openContactModal(name, phone, lineId) {
-  document.getElementById('cm-name').textContent = name;
+function openContactModal(name, phone, lineId, memberNo) {
+  // 名字後面接會員編號(撞名辨認用);沒編號就只顯示名字
+  document.getElementById('cm-name').textContent = name + (memberNo ? '（' + memberNo + '）' : '');
   document.getElementById('cm-call').href = 'tel:' + phone;
   document.getElementById('cm-line').href = 'https://line.me/R/ti/p/~' + lineId;
   document.getElementById('contact-modal').classList.add('show');
