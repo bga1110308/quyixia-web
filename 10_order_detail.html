@@ -545,9 +545,11 @@ async function renderPublicReviews(revieweeId, mode){
 
 /* 評價解鎖視窗:點「付費解鎖」開,選單次/月票,走後台 redeem_info 扣對的池(看順咖扣 client 點、看案家扣 suncar 點)。
    target/asRole 由 renderReviewStats 設 window._reviewTarget/_reviewAs。解鎖寫 info_unlocks,reload 後留言與統計一起變完整(同一套判斷)。 */
-async function openReviewUnlock(){
-  var asRole = window._reviewAs || 'client';
-  if(!window._reviewTarget){ alert('請稍候再試'); return; }
+async function openReviewUnlock(target, asRole){
+  target = target || window._reviewTarget;                 // 沒帶就用評價區設好的全域(信用分鎖頭會帶明確對象)
+  asRole = asRole || window._reviewAs || 'client';
+  if(!target){ alert('請稍候再試'); return; }
+  window._reviewTarget = target; window._reviewAs = asRole; // 設回全域,讓 doReviewRedeem 沿用
   var cfg = await sb.from('app_config').select('price_client_single,price_client_month,price_suncar_single,price_suncar_month').eq('id',1).maybeSingle();
   var c = (cfg && cfg.data) ? cfg.data : {};
   var single = (asRole==='client') ? (c.price_client_single==null?5:c.price_client_single) : (c.price_suncar_single==null?10:c.price_suncar_single);
@@ -843,6 +845,9 @@ async function init(){
     if(isPrivileged){
       var ct = await sb.from('public_trust').select('cancel_band').eq('user_id', o.client_id).maybeSingle();
       if(ct && ct.data){ document.getElementById('client-trust-val').textContent = ct.data.cancel_band; }
+    } else {
+      // 未付費:取消率鎖頭改成可點解鎖(對象=這位案家 o.client_id,順咖身分用 suncar 池扣點)
+      document.getElementById('client-trust-val').innerHTML = '<span onclick="openReviewUnlock(\'' + o.client_id + '\',\'suncar\')" style="color:var(--amber-deep);font-weight:600;cursor:pointer;text-decoration:underline;">🔒 付費解鎖看</span>';
     }
     // 順咖預覽未接單:看這位案家被其他順咖評的統計(幫助接單判斷)
     await renderReviewStats(o.client_id, 'suncar_reviews_client', isPrivileged || window._reviewFree, '案家評價');
@@ -895,7 +900,7 @@ async function init(){
         var csv = credRow.credit_score;
         document.getElementById('staff-rating').innerHTML = '<svg><use href="#i-star"/></svg>信用分 ' + csv + '(' + creditBand(csv) + ')';
       } else {
-        document.getElementById('staff-rating').innerHTML = '<svg><use href="#i-star"/></svg>信用分 <span style="color:var(--ink-light);font-weight:400;">🔒 升級後可查看</span>';
+        document.getElementById('staff-rating').innerHTML = '<svg><use href="#i-star"/></svg>信用分 <span onclick="openReviewUnlock(\'' + o.suncar_id + '\',\'client\')" style="color:var(--amber-deep);font-weight:600;cursor:pointer;text-decoration:underline;">🔒 付費解鎖看</span>';
       }
       var badges = '';
       if(st.is_realname) badges += '<span class="bm bm-verified"><svg><use href="#i-check"/></svg>實名</span>';
