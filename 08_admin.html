@@ -1029,6 +1029,16 @@ function acctDangerZone(acc){
 
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');}
 
+// 點抽屜以外的空白處就收起抽屜。點抽屜內不關;點會員列(tr)不關,讓它負責開啟/切換抽屜。
+// 常駐監聽,抽屜沒開時直接略過,不影響其他點擊。
+document.addEventListener('click', function(e){
+  var d=document.getElementById('drawer');
+  if(!d || !d.classList.contains('open')) return;
+  if(d.contains(e.target)) return;
+  if(e.target.closest && e.target.closest('tr')) return;
+  closeDrawer();
+});
+
 // filterTable / filterStatus 已隨舊「案家資料／順咖資料」兩頁一起移除(帳號管理改用 setAccountRoleFilter)
 
 function filterRisk(risk,btn){
