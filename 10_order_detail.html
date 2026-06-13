@@ -639,8 +639,10 @@ async function init(){
   // 看的人是不是「可看精確值/摘要」的特權身分:後台管理員,或推廣期全免費,或資訊會員還沒過期
   // info_member_until 是資訊會員到期日;大於現在就算已付費。月費與輕量包共用這一個欄位。跟 12 同一套判斷
   var meRow = await sb.from('users').select('is_admin,info_member_until').eq('id', user.id).maybeSingle();
-  var cfg = await sb.from('app_config').select('promo_free_info').eq('id', 1).maybeSingle();
+  var cfg = await sb.from('app_config').select('promo_free_info,review_free').eq('id', 1).maybeSingle();
   var promoFree = !!(cfg && cfg.data && cfg.data.promo_free_info);
+  /* 評價完整免費開關:後台開了,評價統計就免費看(不影響信用分,信用分仍要付費/會員) */
+  window._reviewFree = !!(cfg && cfg.data && cfg.data.review_free);
   var paidActive = !!(meRow && meRow.data && meRow.data.info_member_until && new Date(meRow.data.info_member_until) > new Date());
   var isPrivileged = !!(meRow && meRow.data && (meRow.data.is_admin || promoFree || paidActive));
 
@@ -756,7 +758,7 @@ async function init(){
       if(ct && ct.data){ document.getElementById('client-trust-val').textContent = ct.data.cancel_band; }
     }
     // 順咖預覽未接單:看這位案家被其他順咖評的統計(幫助接單判斷)
-    await renderReviewStats(o.client_id, 'suncar_reviews_client', isPrivileged, '案家評價');
+    await renderReviewStats(o.client_id, 'suncar_reviews_client', isPrivileged || window._reviewFree, '案家評價');
   } else if(viewerRole === 'suncar'){
     /* 順咖看案家:顯示案家姓名電話,訂單成立後(待服務/服務中)開放聯絡 */
     var secT = document.querySelector('#staff-section .sec-title'); if(secT) secT.textContent = '案家';
@@ -780,7 +782,7 @@ async function init(){
     }
     staffSection.style.display = '';
     // 順咖看案家:案家被其他順咖評的統計
-    await renderReviewStats(o.client_id, 'suncar_reviews_client', isPrivileged, '案家評價');
+    await renderReviewStats(o.client_id, 'suncar_reviews_client', isPrivileged || window._reviewFree, '案家評價');
   } else if(o.suncar_id){
     var sres = await sb.from('public_suncars')
       .select('id,display_name,avatar_url,is_realname,has_caregiver_cert')
@@ -825,7 +827,7 @@ async function init(){
       }
       staffSection.style.display = '';
       // 案家看順咖:順咖被其他案家評的統計
-      await renderReviewStats(o.suncar_id, 'client_reviews_suncar', isPrivileged, '順咖評價');
+      await renderReviewStats(o.suncar_id, 'client_reviews_suncar', isPrivileged || window._reviewFree, '順咖評價');
     } else {
       staffSection.style.display = 'none';
     }

@@ -296,6 +296,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .footer-name{display:none;}
 .footer-text{font-size:0.78rem;color:var(--ink-light);line-height:1.75;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
 </head>
 <body>
 
@@ -685,6 +687,20 @@ function switchTab(btn, contentId) {
   var target = document.getElementById(contentId);
   if (target) target.style.display = 'block';
 }
+</script>
+<script>
+/* 首頁瀏覽人數開關:後台 app_config.show_view_counts 關閉時,隱藏首頁的在線/瀏覽人數區塊(目前是行銷用的示意數字)。
+   走後台函式 view_counts_on()(anon 可讀),未登入訪客也讀得到真值。預設顯示,只有後台明確關閉才隱藏。 */
+(async function(){
+  try{
+    if(typeof window.sb === 'undefined') return;
+    var r = await sb.rpc('view_counts_on');
+    if(r && r.data === false){
+      var p = document.querySelector('.hero-pill'); if(p) p.style.display = 'none';
+      var s = document.querySelector('.hero-stats'); if(s) s.style.display = 'none';
+    }
+  }catch(e){ console.error('view_counts_on', e); }
+})();
 </script>
 </body>
 </html>

@@ -623,6 +623,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   /* 案家被停權:點任何下單入口當場擋下,不讓他進 04 填完整張單才知道。
      旗標由 load 設(window._clientSuspended),guard 讀旗標即時判斷,預設(沒停權)放行。 */
   function guardOrderEntry(e){
+    if(window._orderOpen === false){
+      if(e&&e.preventDefault) e.preventDefault();
+      alert('平台目前暫停下單,請稍後再來。如有疑問請聯絡平台。');
+      return false;
+    }
     if(window._clientSuspended){
       if(e&&e.preventDefault) e.preventDefault();
       alert('你的案家身分已被停權,目前無法下單。如有疑問請聯絡平台。');
@@ -639,6 +644,17 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     n.id = 'client-suspended-notice';
     n.style.cssText = 'background:#FCE8E7;color:#B23B36;border:1px solid #E8B4B0;border-radius:14px;padding:12px 15px;margin-top:12px;font-size:13.5px;font-weight:600;text-align:center;';
     n.textContent = '你的案家身分已被停權,目前無法下單。如有疑問請聯絡平台。';
+    if(cta && cta.parentNode){ cta.parentNode.insertBefore(n, cta.nextSibling); }
+  }
+  /* 全站暫停下單時,在找順咖卡下方提示(琥珀色,跟停權紅色區隔),並把卡片變淡 */
+  function showOrderClosedNotice(){
+    var cta = document.querySelector('.find-staff-cta');
+    if(cta){ cta.style.opacity = '0.55'; }
+    if(document.getElementById('order-closed-notice')) return;
+    var n = document.createElement('div');
+    n.id = 'order-closed-notice';
+    n.style.cssText = 'background:#FFF1E0;color:#B26B1A;border:1px solid #F0C896;border-radius:14px;padding:12px 15px;margin-top:12px;font-size:13.5px;font-weight:600;text-align:center;';
+    n.textContent = '平台目前暫停下單,請稍後再來。';
     if(cta && cta.parentNode){ cta.parentNode.insertBefore(n, cta.nextSibling); }
   }
 
@@ -720,6 +736,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
        為什麼在這裡:load 本來就撈了角色狀態,不另外多查一次 */
     window._clientSuspended = !!(clientRole && clientRole.status === 'suspended');
     if(window._clientSuspended){ showClientSuspendedNotice(); }
+    /* 全站暫停下單開關(後台 app_config.order_open,預設開)。關閉時下單入口 guard 會擋,並在找順咖卡下方提示。
+       走後台函式 order_open()(登入狀態異常也讀得到真值,同 suncar_apply_open)。 */
+    var _oo = await sb.rpc('order_open');
+    window._orderOpen = !(_oo && _oo.data === false);
+    if(window._orderOpen === false){ showOrderClosedNotice(); }
     /* 三個下單入口一律掛 guard(用 addEventListener,因 11 腳本在 IIFE 內,inline onclick 抓不到內部函式)。
        guard 讀旗標即時判斷,沒停權就放行;_guarded 防 load 多次重複綁 */
     ['.find-staff-cta','.empty-cta','.qa-btn'].forEach(function(sel){

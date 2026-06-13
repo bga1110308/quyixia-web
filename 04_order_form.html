@@ -835,6 +835,27 @@ function blockSuspendedClient() {
   if (btn) { btn.disabled = true; btn.textContent = '已停權,無法下單'; btn.style.opacity = '0.6'; btn.style.cursor = 'not-allowed'; }
 }
 
+/* 全站暫停下單:進頁讀後台 order_open(),關閉就鎖住表單。走函式讀真值(未登入也讀得到,同 11)。
+   後台 place_order 的最終防線待之後補(見交接);這裡前端先擋住、講清楚原因。 */
+async function checkOrderClosed() {
+  try {
+    var r = await sb.rpc('order_open');
+    if (r && r.data === false) { blockOrderClosed(); }
+  } catch (e) { console.error('checkOrderClosed:', e); }
+}
+function blockOrderClosed() {
+  var wrap = document.querySelector('.form-wrap') || document.body;
+  if (!document.getElementById('order-closed-banner')) {
+    var b = document.createElement('div');
+    b.id = 'order-closed-banner';
+    b.style.cssText = 'background:#FFF1E0;color:#B26B1A;border:1px solid #F0C896;border-radius:14px;padding:14px 16px;margin:14px 0;font-size:14px;font-weight:600;text-align:center;';
+    b.textContent = '平台目前暫停下單,請稍後再來。如有疑問請聯絡平台。';
+    wrap.insertBefore(b, wrap.firstChild);
+  }
+  var btn = document.querySelector('.submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '暫停下單中'; btn.style.opacity = '0.6'; btn.style.cursor = 'not-allowed'; }
+}
+
 /* 已登入者進頁:用主檔資料預填聯絡人/電話(空才帶,不蓋掉上次表單或使用者已改的),
    並在帶推薦連結時顯示鎖定推薦碼。給「順咖點我要找順咖→下單」這條路用,對一般案家無害。 */
 async function initOrderPrefill() {
@@ -1507,6 +1528,7 @@ function handleRegAgreeChange(cb) {
   initOrderPrefill();
   // 進頁即檢查案家是否被停權,停權就鎖住整張單(治本,不讓他填完才在送出時被擋)
   checkClientSuspended();
+  checkOrderClosed();
 
   /* 從 02 帶來的指定順咖參數 */
   var staffName = params.get('staff');

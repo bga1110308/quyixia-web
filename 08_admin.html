@@ -637,7 +637,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
               <div class="sr-desc">開啟後,首頁頂部顯示今日瀏覽人數與在線人數</div>
               <span class="status-chip chip-on" id="chip-views">目前:開啟中</span>
             </div>
-            <label class="toggle"><input type="checkbox" checked onchange="updateChip(this,'chip-views','開啟中','關閉中')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+            <label class="toggle"><input type="checkbox" id="cfg-views" checked onchange="saveViewCounts(this)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
           <div class="setting-row">
             <div class="sr-left">
@@ -654,7 +654,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
               <div class="sr-desc">關閉後,下單頁面顯示「系統維護中,請稍後再試」</div>
               <span class="status-chip chip-on" id="chip-order">目前:開放中</span>
             </div>
-            <label class="toggle"><input type="checkbox" checked onchange="updateChip(this,'chip-order','開放中','關閉中')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+            <label class="toggle"><input type="checkbox" id="cfg-order" checked onchange="saveOrderOpen(this)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
           <div class="setting-row">
             <div class="sr-left">
@@ -662,7 +662,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
               <div class="sr-desc">關閉後,非付費用戶只顯示星星評分與評價前 15 字</div>
               <span class="status-chip chip-off" id="chip-review">目前:付費限定</span>
             </div>
-            <label class="toggle"><input type="checkbox" onchange="updateChip(this,'chip-review','完整顯示','付費限定')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+            <label class="toggle"><input type="checkbox" id="cfg-review" onchange="saveReviewFree(this)"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
         </div>
 
@@ -1907,6 +1907,13 @@ async function loadPricing(){
   /* 功能開關:開放新順咖申請(suncar_apply_open,沒值當開放)。在另一個頁籤但同一頁 DOM,進頁一起讀好 */
   var ap=document.getElementById('cfg-apply');
   if(ap){ ap.checked = !(c.suncar_apply_open === false); updateChip(ap,'chip-apply','開放中','關閉中'); }
+  /* 三顆功能開關(沒值當預設:下單開放、顯示人數開、評價付費限定) */
+  var oo=document.getElementById('cfg-order');
+  if(oo){ oo.checked = !(c.order_open === false); updateChip(oo,'chip-order','開放中','關閉中'); }
+  var vc=document.getElementById('cfg-views');
+  if(vc){ vc.checked = !(c.show_view_counts === false); updateChip(vc,'chip-views','開啟中','關閉中'); }
+  var rf=document.getElementById('cfg-review');
+  if(rf){ rf.checked = (c.review_free === true); updateChip(rf,'chip-review','完整顯示','付費限定'); }
 }
 
 /* 數字欄轉存:空字串→null(讓「單次永久」可存),其餘轉整數 */
@@ -1951,6 +1958,24 @@ async function saveApplyOpen(cb){
   }
   if(r) r.textContent = cb.checked ? '已開放新順咖申請。' : '已暫停新順咖申請,全站立刻生效。';
 }
+
+/* 三顆功能開關:一按就寫回 app_config,全站立刻生效。沿用 app_config_admin_write 政策。
+   寫法仿 saveApplyOpen:失敗把開關撥回原狀不騙人(例:欄位還沒建)。 */
+async function saveSwitch(cb, col, chipId, onText, offText){
+  updateChip(cb, chipId, onText, offText);
+  var r=document.getElementById('apply-result');
+  var patch={}; patch[col]=cb.checked;
+  var up=await sb.from('app_config').update(patch).eq('id',1);
+  if(up.error){
+    cb.checked=!cb.checked; updateChip(cb, chipId, onText, offText);
+    if(r) r.textContent='儲存失敗:'+up.error.message+'(若說找不到欄位,代表一次性建欄位的 SQL 還沒跑)';
+    return;
+  }
+  if(r) r.textContent='已儲存,全站立刻生效。';
+}
+function saveOrderOpen(cb){ saveSwitch(cb,'order_open','chip-order','開放中','關閉中'); }
+function saveViewCounts(cb){ saveSwitch(cb,'show_view_counts','chip-views','開啟中','關閉中'); }
+function saveReviewFree(cb){ saveSwitch(cb,'review_free','chip-review','完整顯示','付費限定'); }
 
 const DAYS=['16','17','18','19','20','21','22'];
 const VALS=[2,1,3,4,2,5,1];
