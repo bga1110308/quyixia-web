@@ -345,11 +345,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </div>
   </div>
 
-  <!-- 我的加值:案家本人看自己兌換的加值(任務置頂/優先標章)還剩多久;沒兌換就整塊隱藏 -->
-  <div id="my-perks" style="display:none;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:14px;font-size:0.86rem;color:var(--ink-soft);">
-    我的加值:<b id="my-perks-text" style="color:var(--ink);">—</b>
-  </div>
-
   <!-- 我的取消率(案家本人看精確值;之後別人接單時看到的是「低/中/高」摘要) -->
   <div id="cancel-stat" style="display:none;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:14px;font-size:0.86rem;color:var(--ink-soft);">
     我的取消率:<b id="cancel-rate" style="color:var(--ink);">0%</b> <span style="color:var(--ink-light);">(待服務後取消 <span id="cancel-cnt">0</span> 次)</span>
@@ -449,9 +444,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 (function(){
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-  /* 我的加值:讀自己 user_perks(RLS 本人可讀自己),把沒過期的列成「名稱 剩X」,有才顯示 #my-perks。
-     為什麼寫死代碼對照:四種加值代碼固定、後台極少改名;要改名就改這一行。 */
-  var PERK_LABEL = { crown_frame:'皇冠頭框', referral_badge:'推薦達人', order_pin:'任務置頂', priority_badge:'優先標章' };
   function perkRemain(iso){
     var ms = new Date(iso).getTime() - Date.now();
     if(ms <= 0) return '已到期';
@@ -459,15 +451,76 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     var h = Math.floor(ms/3600000); if(h >= 1) return '剩 '+h+' 小時';
     return '剩不到 1 小時';
   }
-  async function fillMyPerks(uid){
-    try{
-      var r = await sb.from('user_perks').select('perk,expires_at').eq('user_id', uid).gt('expires_at', new Date().toISOString());
-      var rows = (r && r.data) ? r.data : [];
-      if(!rows.length){ return; } // 沒加值就維持隱藏
-      $('my-perks-text').innerHTML = rows.map(function(p){ return esc(PERK_LABEL[p.perk]||p.perk)+' '+perkRemain(p.expires_at); }).join('、');
-      $('my-perks').style.display = '';
-    }catch(e){}
+  /* 把加值設定的「一次加多久」(分鐘)轉成白話天/小時 */
+  function durationText(mins){
+    if(mins % 1440 === 0) return (mins/1440)+' 天';
+    if(mins % 60 === 0) return (mins/60)+' 小時';
+    return mins+' 分鐘';
   }
+  /* 媒合中卡的推廣列:顯示「這張單」目前置頂/優先還剩多久,並給「推廣這張單」鈕。
+     加值綁在這一張單(order_perks),不是綁帳號;效期由 init 批次撈進 orderPerksMap。 */
+  function promoRow11(o){
+    var p = orderPerksMap[o.id] || {};
+    var tags = '';
+    if(p.order_pin) tags += '<span style="display:inline-block;background:#5FB58E;color:#fff;font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:99px;">已置頂 '+perkRemain(p.order_pin)+'</span>';
+    if(p.priority_badge) tags += '<span style="display:inline-block;background:#EF9F27;color:#fff;font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:99px;margin-left:5px;">已優先 '+perkRemain(p.priority_badge)+'</span>';
+    var left = tags || '<span style="font-size:0.74rem;color:var(--ink-light);">想更快被接到？可推廣這張單</span>';
+    return '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">'+
+      '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">'+left+'</div>'+
+      '<button onclick="event.stopPropagation();window.openPromoModal(\''+esc(o.id)+'\')" style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;font-family:inherit;font-size:0.78rem;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;">推廣這張單</button>'+
+      '</div>';
+  }
+  /* 推廣視窗:案家對「這一張單」買置頂/優先。讀 perk_items 顯示花費與目前金幣,
+     確認走後台 redeem_order_perk(扣金幣與記效期同一筆交易,前端不能自己改) */
+  window.openPromoModal = async function(orderId){
+    if(!_clientUserId){ alert('請重新整理頁面後再試'); return; }
+    var items = await sb.from('perk_items').select('perk,label,cost,duration_minutes,cap_minutes').eq('pool','client').eq('enabled',true).order('sort_order');
+    var list = (items.data||[]).filter(function(it){ return it.perk==='order_pin' || it.perk==='priority_badge'; });
+    if(!list.length){ alert('目前沒有可推廣的項目'); return; }
+    var cb = await sb.rpc('coin_balance', { p_user:_clientUserId, p_pool:'client' });
+    showPromoModal(orderId, list, cb.error ? 0 : (cb.data||0));
+  };
+  function closePromoModal(){ var m=$('promo-modal'); if(m) m.remove(); }
+  window.closePromoModal = closePromoModal;
+  function showPromoModal(orderId, list, coins){
+    closePromoModal();
+    var cards = list.map(function(it){
+      var afford = coins >= it.cost;
+      return '<div style="border:1.5px solid var(--border-soft);border-radius:12px;padding:12px 14px;margin-bottom:10px;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">'+
+          '<div style="font-weight:600;color:var(--ink);">'+esc(it.label)+'</div>'+
+          '<div style="font-weight:700;color:var(--amber-deep);">'+it.cost+' 金幣</div>'+
+        '</div>'+
+        '<div style="font-size:0.76rem;color:var(--ink-soft);margin:6px 0 10px;">每次加 '+durationText(it.duration_minutes)+'，最多累積到 '+durationText(it.cap_minutes)+'</div>'+
+        '<button onclick="window.confirmPromo(\''+esc(orderId)+'\',\''+esc(it.perk)+'\',this)" '+(afford?'':'disabled')+' style="width:100%;padding:9px;border-radius:10px;border:none;font-family:inherit;font-size:0.85rem;font-weight:600;cursor:'+(afford?'pointer':'not-allowed')+';color:#fff;background:'+(afford?'linear-gradient(135deg,var(--honey),var(--amber))':'#D8CFB8')+';">'+(afford?'用金幣推廣':'金幣不足')+'</button>'+
+        '</div>';
+    }).join('');
+    var html = '<div id="promo-modal" onclick="if(event.target===this)window.closePromoModal()" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:flex-end;justify-content:center;">'+
+      '<div style="background:#fff;width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:18px 18px 24px;max-height:80vh;overflow:auto;">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'+
+          '<div style="font-size:1.05rem;font-weight:700;color:var(--ink);">推廣這張單</div>'+
+          '<button onclick="window.closePromoModal()" style="background:none;border:none;font-size:1.4rem;color:var(--ink-light);cursor:pointer;line-height:1;">×</button>'+
+        '</div>'+
+        '<div style="font-size:0.78rem;color:var(--ink-soft);margin-bottom:12px;">目前案家金幣 <b style="color:var(--amber-deep);">'+coins+'</b>，加值只套用在這一張單上</div>'+
+        cards+
+      '</div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+  }
+  window.confirmPromo = async function(orderId, perk, btn){
+    btn.disabled = true; var old = btn.textContent; btn.textContent = '處理中…';
+    var res = await sb.rpc('redeem_order_perk', { p_order_id: orderId, p_perk: perk });
+    if(res.error){ alert('推廣失敗:'+res.error.message); btn.disabled=false; btn.textContent=old; return; }
+    var r = res.data || {};
+    if(!r.ok){
+      var msg = { insufficient:'金幣不足，無法推廣。', capped:'這張單的這個加值已達累積上限。', bad_status:'這張單已被接走或狀態已改變，無法再推廣。', disabled:'這個項目目前停售。', not_owner:'這不是你的訂單。', bad_perk:'項目錯誤。' }[r.reason] || '推廣失敗，請稍後再試。';
+      alert(msg); btn.disabled=false; btn.textContent=old;
+      if(r.reason==='bad_status'){ closePromoModal(); location.reload(); }
+      return;
+    }
+    closePromoModal();
+    alert('推廣成功！這張單已套用「'+r.label+'」，'+perkRemain(r.expires_at)+'。剩餘案家金幣 '+r.coin_remain+'。');
+    location.reload();
+  };
   function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var chars=Array.from(name); for(var i=0;i<chars.length;i++){ if(/[\p{L}\p{N}]/u.test(chars[i])) return chars[i]; } return chars[0]; }
   function greeting(){ var h=new Date().getHours(); if(h<5)return '嗨,夜深了'; if(h<11)return '嗨,早安'; if(h<14)return '嗨,午安'; if(h<18)return '嗨,午後好'; return '嗨,晚安'; }
 
@@ -521,6 +574,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
             : '<div style="font-size:0.74rem;color:var(--ink-light);">'+(st.group==='matching'?'媒合中,等待順咖接單':'')+'</div>')+
           '<div><span class="oc-price-label">'+priceLabel+'</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'+
         '</div>'+
+        (o.status==='matching' ? promoRow11(o) : '')+
         (canCancel ? '<div style="margin-top:10px;text-align:right;"><button onclick="event.stopPropagation(); window.cancelClientOrder(\''+esc(o.id)+'\', \''+esc(o.status)+'\')" style="background:#fff;border:1.5px solid var(--danger);color:var(--danger);font-family:inherit;font-size:0.78rem;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;">取消訂單</button></div>' : '')+
         (o.status==='done' ? reviewRow11(o) : '')+
       '</div>';
@@ -539,6 +593,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   var _clientUserId = null;
   var myReviewedSuncarOrders = {}; // init 填:我(案家)已評價過的訂單 id,在已完成卡標「已評價/尚未評價」
+  var orderPerksMap = {}; // init 填:我每張媒合中單目前有效的加值 {order_id:{order_pin:到期, priority_badge:到期}}
 
   /* 案家取消自己的訂單:軟取消,status 改 cancelled(不是真刪除,後台仍查得到)。
      條件帶 client_id=本人 且 status 在 媒合中/待服務,服務中/已完成不給取消。
@@ -632,8 +687,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     // 案家金幣餘額走後台 coin_balance(只算沒過期的批次),不直接讀 users 舊欄位
     var cb = await sb.rpc('coin_balance', { p_user: user.id, p_pool: 'client' });
     $('stat-coins').textContent = (cb.error ? 0 : (cb.data || 0));
-    // 我的加值:本人讀自己 user_perks,有兌換才顯示任務置頂/優先標章還剩多久
-    await fillMyPerks(user.id);
     $('h-member').textContent = u.member_no ? ('會員編號 '+u.member_no) : '';
 
     /* 皇冠等級:人頭數 = referred_by = 我 的帳號數(註冊就算),純裝飾 */
@@ -727,6 +780,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
     // 媒合中:還沒被順咖接的單(等順咖接單),單獨一區,不跟進行中混在一起
     var matchingOrders = orders.filter(function(o){ return (STATUS[o.status]||{}).group === 'matching'; });
+    // 批次撈這些媒合中單目前有效的加值(置頂/優先),案家本人 RLS 可讀自己單的;填進 orderPerksMap 給每張卡顯示效期
+    orderPerksMap = {};
+    var matchingIds = matchingOrders.map(function(o){ return o.id; });
+    if(matchingIds.length){
+      var opr = await sb.from('order_perks').select('order_id,perk,expires_at').in('order_id', matchingIds).gt('expires_at', new Date().toISOString());
+      (opr.data||[]).forEach(function(row){ (orderPerksMap[row.order_id] = orderPerksMap[row.order_id]||{})[row.perk] = row.expires_at; });
+    }
     if(matchingOrders.length){
       $('matching-list').innerHTML = matchingOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id]); }).join('');
       $('matching-section').style.display = '';

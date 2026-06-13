@@ -947,24 +947,25 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       // neq client_id:排除自己下的單,順咖不能接到自己當案家下的單(第一層,清單就不列出)
       var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id,address_note').eq('status','matching').is('suncar_id', null).neq('client_id', user.id).order('service_time',{ascending:true});
       var openOrders = (open.data || []).filter(function(o){ return o.pool==='A' || (o.pool==='B' && u.has_caregiver_cert); });
-      // 兌換加值效果:有效 order_pin 的案家單置頂、有效 priority_badge 顯示「優先」徽章。
-      // 走後台 get_active_client_perks(只回沒過期的這兩種),前端不直接讀 user_perks(它的 RLS 只放行本人讀自己,順咖讀不到案家的)。
-      var clientPerks = {};
-      var cids = openOrders.map(function(o){ return o.client_id; }).filter(Boolean);
-      if(cids.length){
-        var pr = await sb.rpc('get_active_client_perks', { p_targets: cids });
-        if(pr && pr.data){ pr.data.forEach(function(row){ (clientPerks[row.user_id] = clientPerks[row.user_id] || {})[row.perk] = true; }); }
+      // 兌換加值效果(改綁單張):有效 order_pin 的「這張單」置頂、有效 priority_badge 顯示「優先」徽章。
+      // 走後台 get_active_order_perks(只回沒過期的這兩種),用「訂單 id」查,不再用案家 id;
+      // 用 security definer 函式跨人讀(順咖不是案家,RLS 讀不到別人單的加值)。
+      var orderPerks = {};
+      var oids = openOrders.map(function(o){ return o.id; }).filter(Boolean);
+      if(oids.length){
+        var pr = await sb.rpc('get_active_order_perks', { p_orders: oids });
+        if(pr && pr.data){ pr.data.forEach(function(row){ (orderPerks[row.order_id] = orderPerks[row.order_id] || {})[row.perk] = true; }); }
       }
-      // order_pin 的案家排到最前。穩定排序:原查詢已按 service_time 升冪,有無置頂只決定組別,組內維持原順序。
+      // 有 order_pin 的「單」排到最前。穩定排序:原查詢已按 service_time 升冪,有無置頂只決定組別,組內維持原順序。
       openOrders.sort(function(a,b){
-        var pa = (clientPerks[a.client_id]||{}).order_pin ? 0 : 1;
-        var pb = (clientPerks[b.client_id]||{}).order_pin ? 0 : 1;
+        var pa = (orderPerks[a.id]||{}).order_pin ? 0 : 1;
+        var pb = (orderPerks[b.id]||{}).order_pin ? 0 : 1;
         return pa - pb;
       });
       $('stat-open').textContent = openOrders.length;
       $('open-badge').textContent = openOrders.length + ' 筆';
       if(openOrders.length){
-        $('open-list').innerHTML = openOrders.map(function(o){ return openCard(o, clientPerks[o.client_id]); }).join('');
+        $('open-list').innerHTML = openOrders.map(function(o){ return openCard(o, orderPerks[o.id]); }).join('');
       } else {
         $('open-empty').style.display = '';
       }
