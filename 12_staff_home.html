@@ -337,6 +337,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
         <div class="h-greeting">嗨,今天辛苦了</div>
         <div class="h-name" id="h-name"><span id="h-nametext">載入中…</span><span class="h-rating" id="h-rating"></span></div>
         <div class="h-badges" id="h-badges"></div>
+        <div id="h-member" style="font-size:0.66rem;color:var(--ink-soft);margin-top:3px;letter-spacing:0.3px;"></div>
       </div>
       <a href="crown_all_levels.html?count=0" class="crown-btn lv0" id="crown-btn" title="點看完整等級表">
         <svg class="crown-svg" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></svg>
@@ -821,7 +822,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     currentUserId = user.id;
 
     /* 本人 users */
-    var prof = await sb.from('users').select('display_name,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score,role_detail,is_admin,info_member_until').eq('id', user.id).maybeSingle();
+    var prof = await sb.from('users').select('display_name,member_no,suncar_points,expected_rate,has_caregiver_cert,is_realname,is_verified,credit_score,role_detail,is_admin,info_member_until').eq('id', user.id).maybeSingle();
     var u = prof.data || {};
     // 全域推廣期開關＋價目:都讀 app_config 同一列(後台可改)
     var cfg = await sb.from('app_config').select('promo_free_info,price_suncar_single,price_suncar_month,suncar_apply_open').eq('id', 1).maybeSingle();
@@ -856,6 +857,8 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       ? '<span class="bm b-cna"><svg><use href="#i-star"/></svg>照服員</span>'
       : '<span class="bm b-verified"><svg><use href="#i-staff"/></svg>一般順咖</span>';
     $('h-badges').innerHTML = badges;
+    // 順咖也顯示會員編號(跟 11 案家首頁一致),方便本人/後台辨識,不用再切到案家端才看得到
+    $('h-member').textContent = u.member_no ? ('會員編號 ' + u.member_no) : '會員編號 尚未產生';
 
     /* 角色狀態 */
     var roles = await sb.from('user_roles').select('role,status,created_at,role_data').eq('user_id', user.id);
