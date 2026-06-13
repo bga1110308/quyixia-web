@@ -537,7 +537,7 @@ async function renderPublicReviews(revieweeId, mode){
     var d = rv.created_at ? String(rv.created_at).slice(0,10) : '';
     html += '<div style="background:var(--champagne-soft);border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
       '<div style="font-size:0.85rem;color:var(--amber-deep);font-weight:600;">' + (avg != null ? ('★ ' + avg) : '') + ' <span style="color:var(--ink-light);font-weight:400;font-size:0.75rem;">' + d + '</span></div>' +
-      (rv.comment ? '<div style="font-size:0.88rem;color:var(--ink);line-height:1.7;margin-top:4px;">' + esc(rv.comment) + '</div>' : '') +
+      (rv.comment ? '<div style="font-size:0.88rem;color:var(--ink);line-height:1.7;margin-top:4px;">' + esc(rv.comment) + (rv.truncated ? '<span style="color:var(--amber-deep);font-size:0.78rem;font-weight:600;">（付費解鎖看完整）</span>' : '') + '</div>' : '') +
       '</div>';
   });
   box.innerHTML = html;
@@ -554,21 +554,26 @@ async function renderReviewStats(revieweeId, mode, isPrivileged, label){
   document.getElementById('review-stats-title').textContent = label;
   var body = document.getElementById('review-stats-body');
   document.getElementById('review-stats').style.display = '';
-  if(!isPrivileged){
-    body.innerHTML = '<div style="color:var(--ink-light);font-size:0.88rem;">🔒 升級後可查看星等與評價統計</div>';
-    return;
-  }
-  var r = await sb.rpc('get_review_stats', { p_reviewee: revieweeId, p_mode: mode });
-  if(r.error){ body.innerHTML = '<div style="color:var(--ink-light);font-size:0.88rem;">評價載入失敗</div>'; return; }
-  var s = r.data || {};
-  if(!s.enough){
-    body.innerHTML = '<div style="color:var(--ink-light);font-size:0.88rem;">評價太少,暫不評分(目前 ' + (s.count || 0) + ' 則,滿 3 則才顯示)</div>';
+  // 平均星等＋則數:公開資訊(跟 02 一致),用 batch 版(grant anon,非會員也回),平常就露一點
+  var rb = await sb.rpc('get_review_stats_batch', { p_targets: [revieweeId], p_mode: mode });
+  var sb0 = (rb && rb.data && rb.data[0]) ? rb.data[0] : null;
+  if(!sb0 || !sb0.enough){
+    body.innerHTML = '<div style="color:var(--ink-light);font-size:0.88rem;">評價太少,暫不評分(目前 ' + (sb0 ? (sb0.cnt || 0) : 0) + ' 則,滿 3 則才顯示)</div>';
     return;
   }
   var h = '';
   h += '<div style="font-size:1.15rem;font-weight:700;color:var(--amber-deep);margin-bottom:8px;">';
-  h += '<svg class="ico" style="fill:var(--amber);"><use href="#i-star"/></svg> ' + (s.overall_avg != null ? s.overall_avg : '—');
-  h += ' <span style="font-size:0.78rem;color:var(--ink-light);font-weight:400;">／5　共 ' + s.count + ' 則</span></div>';
+  h += '<svg class="ico" style="fill:var(--amber);"><use href="#i-star"/></svg> ' + (sb0.overall_avg != null ? sb0.overall_avg : '—');
+  h += ' <span style="font-size:0.78rem;color:var(--ink-light);font-weight:400;">／5　共 ' + sb0.cnt + ' 則</span></div>';
+  if(!isPrivileged){
+    // 未付費:只露平均星等＋則數(跟留言一致:平常露一點),分項評分與注意事項要付費解鎖
+    h += '<div style="color:var(--amber-deep);font-size:0.82rem;font-weight:600;margin-top:4px;">付費解鎖看完整評價（分項評分與注意事項）</div>';
+    body.innerHTML = h;
+    return;
+  }
+  // 付費/會員/推廣期/評價完整免費:單筆函式取分項 items 與注意事項 flags(完整內容)
+  var r = await sb.rpc('get_review_stats', { p_reviewee: revieweeId, p_mode: mode });
+  var s = (r && r.data) ? r.data : {};
   var items = s.items || {};
   var ik = Object.keys(items);
   if(ik.length){
@@ -584,7 +589,7 @@ async function renderReviewStats(revieweeId, mode, isPrivileged, label){
     h += '<div style="border-top:1px dashed var(--border-soft);padding-top:8px;margin-top:4px;">';
     h += '<div style="font-size:0.76rem;color:var(--ink-soft);margin-bottom:5px;">注意事項回報(帶總單數)</div>';
     for(var j = 0; j < fk.length; j++){
-      h += '<div style="font-size:0.82rem;color:var(--danger);margin-bottom:3px;"><svg class="ico" style="fill:var(--danger);"><use href="#i-flag"/></svg> ' + esc(fk[j]) + '　' + flags[fk[j]] + ' 次／共 ' + s.count + ' 單</div>';
+      h += '<div style="font-size:0.82rem;color:var(--danger);margin-bottom:3px;"><svg class="ico" style="fill:var(--danger);"><use href="#i-flag"/></svg> ' + esc(fk[j]) + '　' + flags[fk[j]] + ' 次／共 ' + (s.count || sb0.cnt) + ' 單</div>';
     }
     h += '</div>';
   }
