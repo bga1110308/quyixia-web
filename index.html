@@ -328,11 +328,32 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </a>
     <div class="nav-links">
       <a href="03_staff_apply.html" class="nav-link">加入順咖</a>
-      <a href="13_login.html" class="nav-link">登入/註冊</a>
+      <a href="13_login.html" class="nav-link" id="nav-login">登入/註冊</a>
+      <a href="11_client_home.html" class="nav-link" id="nav-home" style="display:none;">我的首頁</a>
+      <button type="button" class="nav-link" id="nav-logout" style="display:none;align-items:center;gap:5px;border-color:rgba(239,159,39,0.4);color:var(--amber-deep);">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>登出
+      </button>
       <a href="04_order_form.html" class="nav-link nav-cta">立刻預約</a>
     </div>
   </div>
 </nav>
+<script>
+/* 首頁導覽列:登入後顯示「我的首頁」+「登出」,隱藏「登入/註冊」。沒登入維持原樣。 */
+document.addEventListener('DOMContentLoaded', function(){
+  if(typeof window.sb === 'undefined') return;
+  var out=document.getElementById('nav-logout');
+  sb.auth.getSession().then(function(r){
+    if(r && r.data && r.data.session){
+      var login=document.getElementById('nav-login'); if(login) login.style.display='none';
+      var home=document.getElementById('nav-home'); if(home) home.style.display='inline-flex';
+      if(out) out.style.display='inline-flex';
+    }
+  });
+  if(out) out.addEventListener('click', function(){
+    out.disabled=true; sb.auth.signOut().finally(function(){ location.reload(); });
+  });
+});
+</script>
 
 <!-- Hero -->
 <section class="hero">
