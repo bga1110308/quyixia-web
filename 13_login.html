@@ -203,10 +203,15 @@ async function handlePostLogin() {
   }
   if (user) {
     // 帳號狀態守門:被刪除/停用的帳號擋住,不補資料也不導首頁(同一支 LINE 再登入會回到原帳號,也擋在這)
-    var acc = await sb.from('users').select('deleted_at,is_active').eq('id', user.id).maybeSingle();
+    var acc = await sb.from('users').select('deleted_at,is_active,display_name,phone,is_admin,is_super_admin').eq('id', user.id).maybeSingle();
     var ad = acc && acc.data ? acc.data : null;
     if (ad && ad.deleted_at) { await sb.auth.signOut(); alert('此帳號已刪除，無法再使用。'); window.location.href = 'index.html'; return; }
     if (ad && ad.is_active === false) { await sb.auth.signOut(); alert('此帳號已停用，如有疑問請聯繫平台。'); window.location.href = 'index.html'; return; }
+    // 補資料守門:非管理員若缺暱稱或電話,先導去補資料頁(Google/Email 登入拿不到電話、Email 連暱稱都沒有)
+    var _adm = ad && (ad.is_admin || ad.is_super_admin);
+    if (!_adm && (!ad || !ad.display_name || !String(ad.display_name).trim() || !ad.phone || !String(ad.phone).trim())) {
+      window.location.href = '18_complete_profile.html'; return;
+    }
     var lineId = extractLineId(user);
     if (lineId) {
       // 只在目前為空時補寫，避免覆蓋
