@@ -770,11 +770,11 @@ textarea.form-input{min-height:80px;resize:vertical;}
           </div>
           <div class="setting-row">
             <div class="sr-left">
-              <div class="sr-label">照服員池任務僅限有證者接單 <span style="font-size:10px;background:#d9534f;color:#fff;padding:2px 7px;border-radius:99px;font-weight:600;">法律強制</span></div>
-              <div class="sr-desc">長照法第 18 條:非照服員不可從事身體照顧(罰 6 到 30 萬)。後端永遠擋無照接照服員池,此項鎖定開啟、不可關閉。</div>
-              <span class="status-chip chip-on" id="chip-pool">鎖定:僅限證照</span>
+              <div class="sr-label">照服員池任務僅限有證者接單</div>
+              <div class="sr-desc">開關可切換、會儲存。⚠️ 但後端「無照不可接身體照顧」(長照法18條,罰6到30萬)永遠擋著、不隨此開關放掉;所以關掉後無照者仍接不了照服員池。要真正放行需另做合法的服務分類。</div>
+              <span class="status-chip chip-on" id="chip-pool">目前:僅限證照</span>
             </div>
-            <label class="toggle" style="opacity:.5;pointer-events:none;"><input type="checkbox" checked disabled><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+            <label class="toggle"><input type="checkbox" id="cfg-pool" checked onchange="saveSwitch(this,'b_pool_cert_only','chip-pool','僅限證照','全部可接')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
         </div>
 
@@ -1933,6 +1933,7 @@ async function loadPricing(){
   var pn=document.getElementById('cfg-platform'); if(pn && c.platform_name!=null) pn.value=c.platform_name;
   var ar=document.getElementById('cfg-area'); if(ar && c.service_area) ar.value=c.service_area;
   var fu=document.getElementById('cfg-freeuntil'); if(fu && c.free_until) fu.value=String(c.free_until).slice(0,10);
+  var pl=document.getElementById('cfg-pool'); if(pl){ pl.checked = !(c.b_pool_cert_only === false); updateChip(pl,'chip-pool','僅限證照','全部可接'); }
 }
 
 /* 數字欄轉存:空字串→null(讓「單次永久」可存),其餘轉整數 */

@@ -525,7 +525,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="ti"><svg style="width:1em;height:1em;fill:currentColor;"><use href="#i-coin"/></svg><strong>平台服務費(點數扣抵)</strong></div>
       <div class="deduct">
         <span>本次下單將扣除</span>
-        <strong>50 點</strong>
+        <strong id="fee-points">50 點</strong>
       </div>
       <!-- 金幣折抵預覽:有金幣才顯示,由 initOrderPrefill 讀 coin_balance 後填入。下單時先用金幣折抵服務費、不夠才扣點數 -->
       <div id="coin-deduct-note" style="display:none;margin-top:8px;font-size:0.82rem;color:#2F6048;background:#fff;border-radius:8px;padding:8px 12px;line-height:1.6;"></div>
@@ -739,10 +739,32 @@ function toggleNoAddress(cb) {
   }
 }
 
+/* 下單服務費依池可調(批次二):有選到需證照服務(data-pro=1)＝B 池,否則 A 池。
+   window._feeA/_feeB 由 initOrderPrefill 從 app_config 載入,沒載到用預設 A50/B40。 */
+function orderFeeVal(){
+  var needPro=false;
+  document.querySelectorAll('#service-grid .stag.on').forEach(function(el){ if(el.getAttribute('data-pro')==='1') needPro=true; });
+  return needPro ? (window._feeB!=null?window._feeB:40) : (window._feeA!=null?window._feeA:50);
+}
+function refreshFeeDisplay(){
+  var fee=orderFeeVal();
+  var fp=document.getElementById('fee-points'); if(fp) fp.textContent=fee+' 點';
+  var coins=window._clientCoins||0;
+  var noteEl=document.getElementById('coin-deduct-note');
+  if(noteEl){
+    if(coins>0){
+      var useCoin=Math.min(fee,coins);
+      var payPt=fee-useCoin;
+      noteEl.innerHTML='你目前有 <strong>'+coins+'</strong> 金幣,下單會優先折抵服務費:本次用 <strong>'+useCoin+'</strong> 金幣'+(payPt>0?('、再扣 <strong>'+payPt+'</strong> 點'):'(不扣點數)')+'。';
+      noteEl.style.display='block';
+    } else { noteEl.style.display='none'; }
+  }
+}
 function updateSummary() {
   var base = parseInt(document.getElementById('base-price').value) || 0;
   document.getElementById('s-base').textContent = base > 0 ? '$' + base : '—';
   document.getElementById('s-total').textContent = base > 0 ? '$' + base : '—';
+  refreshFeeDisplay();
 }
 
 /* 自動帶入上次填寫的資料(下單成功或進加值流程時存於 localStorage)。
@@ -878,19 +900,25 @@ async function initOrderPrefill() {
     }
   } catch(e){ console.error('initOrderPrefill:', e); }
 
-  /* 金幣折抵預覽:下單服務費 50 點先用案家金幣(client_coins)折抵、不夠才扣點數。
-     有金幣才把預覽顯示出來,讓案家知道這次會用掉多少金幣。 */
+  /* 下單服務費依池可調(批次二):從 app_config 載入 A/B 池點數,沒載到用預設 A50/B40。 */
+  try {
+    var cfg = await sb.from('app_config').select('price_order_a,price_order_b').eq('id',1).maybeSingle();
+    if (cfg && cfg.data) {
+      if (cfg.data.price_order_a != null) window._feeA = cfg.data.price_order_a;
+      if (cfg.data.price_order_b != null) window._feeB = cfg.data.price_order_b;
+    }
+  } catch(e){ console.error('load fee:', e); }
+
+  /* 金幣餘額(折抵預覽用)。實際折抵金額依目前服務費(可調)算,集中在 refreshFeeDisplay。 */
   try {
     var cbRes = await sb.rpc('coin_balance', { p_user: user.id, p_pool: 'client' });
-    var coins = (cbRes && cbRes.data != null) ? cbRes.data : 0;
-    var noteEl = document.getElementById('coin-deduct-note');
-    if (noteEl && coins > 0) {
-      var useCoin = Math.min(50, coins);
-      var payPt = 50 - useCoin;
-      noteEl.innerHTML = '你目前有 <strong>' + coins + '</strong> 金幣,下單會優先折抵服務費:本次用 <strong>' + useCoin + '</strong> 金幣' + (payPt > 0 ? ('、再扣 <strong>' + payPt + '</strong> 點') : '(不扣點數)') + '。';
-      noteEl.style.display = 'block';
-    }
-  } catch(e){ console.error('coin preview:', e); }
+    window._clientCoins = (cbRes && cbRes.data != null) ? cbRes.data : 0;
+  } catch(e){ console.error('coin preview:', e); window._clientCoins = 0; }
+
+  /* 服務項目改選＝可能切 A/B 池＝服務費變,點服務項目就刷新費用顯示(setTimeout 等 on class 切好) */
+  var sg = document.getElementById('service-grid');
+  if (sg) sg.addEventListener('click', function(){ setTimeout(refreshFeeDisplay, 0); });
+  refreshFeeDisplay();
 
   if (window._linkRef) showLockedRef(window._linkRef);
 }
@@ -1137,7 +1165,7 @@ function handleSubmit() {
     address_note: addrNoteParts.join('；'),
     duration_minutes: durationMinutes,
     amount: price,
-    points_cost: 50,
+    points_cost: orderFeeVal(),
     is_active: true,
     /* 聯絡人姓名電話:place_order 用不到(它只認固定欄位),帶在 payload 是為了
        (1) 點數不足去加值再回來重送時,payload 從 sessionStorage 還原仍保有聯絡資訊
@@ -1195,8 +1223,9 @@ async function submitOrder(payload, rateCheck) {
     var pts = (pr.data && pr.data.client_points != null) ? pr.data.client_points : 0;
     var cbRes = await sb.rpc('coin_balance', { p_user: user.id, p_pool: 'client' });
     var coins = (cbRes && cbRes.data != null) ? cbRes.data : 0;
-    if (pts + coins < 50) {
-      alert('餘額不足:服務費 50 點(可用金幣折抵)。目前金幣 ' + coins + '、點數 ' + pts + ',先帶你去加值。');
+    var feeNeed = orderFeeVal();
+    if (pts + coins < feeNeed) {
+      alert('餘額不足:服務費 ' + feeNeed + ' 點(可用金幣折抵)。目前金幣 ' + coins + '、點數 ' + pts + ',先帶你去加值。');
       try {
         sessionStorage.setItem('pending_order', JSON.stringify(payload));
         sessionStorage.setItem('credits_returnTo', '04_order_form.html?resume=1');
