@@ -296,6 +296,15 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
       </button>
     </div>
 
+    <!-- 點「用 Email 註冊」才展開:輸入信箱→寄魔術連結→點信回來繼續(沒有密碼) -->
+    <div id="su-email-box" style="display:none;margin-top:0.75rem;border-top:1px solid var(--border);padding-top:0.85rem;">
+      <input type="email" id="su-email-input" placeholder="your@email.com"
+        style="width:100%;border:1.5px solid var(--border);border-radius:12px;padding:0.8rem 0.9rem;font-size:0.95rem;font-family:inherit;color:var(--ink);background:#fff;margin-bottom:0.6rem;">
+      <button id="su-email-send" onclick="sendSignupEmailLink()"
+        style="width:100%;padding:0.85rem;border-radius:12px;font-size:0.92rem;font-weight:600;cursor:pointer;font-family:inherit;border:none;background:var(--amber);color:#fff;">寄送註冊連結</button>
+      <div style="font-size:0.72rem;color:var(--ink-light);margin-top:0.5rem;line-height:1.6;">沒有密碼。我們會寄一封登入連結到這個信箱,點信裡的連結回到這頁,就能繼續填資料完成註冊。</div>
+    </div>
+
     <div class="back-link-row">
       <a onclick="goStep(1)">← 改選身份</a>
     </div>
@@ -540,24 +549,58 @@ window.addEventListener('DOMContentLoaded', async function () {
   // 沒登入也留在 step1
 });
 
+/* 三種註冊都通。沒有密碼:LINE/Google 走授權跳轉、Email 走魔術連結(寄信、點連結回來),
+   三種都會跳回本頁(14),由 DOMContentLoaded 看到 session+signup_role 帶進 step3 補資料。
+   為什麼能共用同一條:這套沒密碼,「註冊」與「登入」是同一個動作(第一次來就建帳號)。 */
 async function signupWith(method) {
-  if (method !== 'LINE') {
-    alert(method + ' 註冊尚未開放,目前請先用 LINE 註冊。');
-    return;
-  }
   chosenAuthMethod = method;
   localStorage.setItem('signup_role', chosenRole || 'client');
-  var r = await sb.auth.signInWithOAuth({
-    provider: 'custom:line',
-    options: {
-      redirectTo: window.location.origin + '/14_signup.html',
-      scopes: 'openid profile'
-    }
-  });
-  if (r.error) {
-    alert('LINE 註冊啟動失敗:' + r.error.message);
-    localStorage.removeItem('signup_role');
+
+  if (method === 'LINE') {
+    var r = await sb.auth.signInWithOAuth({
+      provider: 'custom:line',
+      options: { redirectTo: window.location.origin + '/14_signup.html', scopes: 'openid profile' }
+    });
+    if (r.error) { alert('LINE 註冊啟動失敗:' + r.error.message); localStorage.removeItem('signup_role'); }
+    return;
   }
+
+  if (method === 'Google') {
+    var rg = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/14_signup.html' }
+    });
+    if (rg.error) { alert('Google 註冊啟動失敗:' + rg.error.message); localStorage.removeItem('signup_role'); }
+    return;
+  }
+
+  if (method === 'Email') {
+    // 展開信箱輸入框,由 sendSignupEmailLink 寄魔術連結
+    var box = document.getElementById('su-email-box');
+    if (box) { box.style.display = 'block'; }
+    var inp = document.getElementById('su-email-input');
+    if (inp) inp.focus();
+    return;
+  }
+}
+
+/* Email 註冊:寄魔術連結到信箱(沒有密碼)。點信裡連結回到 14,DOMContentLoaded 會帶進 step3 補資料。
+   signup_role 先存好(跳轉/收信會離開頁面,靠 localStorage 撐到回來)。 */
+async function sendSignupEmailLink() {
+  var email = (document.getElementById('su-email-input').value || '').trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return fail(document.getElementById('su-email-input'), '請輸入正確的 Email');
+  }
+  localStorage.setItem('signup_role', chosenRole || 'client');
+  var btn = document.getElementById('su-email-send');
+  if (btn) { btn.disabled = true; btn.textContent = '寄送中…'; }
+  var r = await sb.auth.signInWithOtp({
+    email: email,
+    options: { emailRedirectTo: window.location.origin + '/14_signup.html' }
+  });
+  if (btn) { btn.disabled = false; btn.textContent = '寄送註冊連結'; }
+  if (r.error) { alert('寄送失敗:' + r.error.message); return; }
+  alert('註冊連結已寄到 ' + email + ',請到信箱點連結回來繼續(也檢查垃圾信匣)。');
 }
 
 // 補 line_user_id（跟登入頁同一套邏輯）
@@ -677,17 +720,18 @@ async function completeSignup() {
     role_detail: curRd
   });
   if (up.error) {
-    if (up.error.code === '23505') {
-      var dupMsg = '此手機/信箱/LINE 已被註冊';
-      var m = up.error.message || '';
-      if (m.indexOf('phone') > -1) dupMsg = '此手機已被其他帳號註冊';
-      else if (m.indexOf('email') > -1) dupMsg = '此信箱已被其他帳號註冊';
-      else if (m.indexOf('line') > -1) dupMsg = '此 LINE 已被其他帳號註冊';
-      alert(dupMsg);
-    } else {
-      alert('資料儲存失敗:' + up.error.message);
-    }
     btn.disabled = false;
+    // 撞號:這個人之前八成已用別種方式(LINE/Google/信箱)註冊過,這次又用另一種進來開了新空帳號。
+    // 不只跳「已註冊」就卡在這頁,改成指引他回登入頁用原本方式登入,回到原本帳號。
+    // (新開的空帳號之後會被「每週自動清空殼」排程清掉)
+    if (up.error.code === '23505') {
+      var m = up.error.message || '';
+      var what = m.indexOf('phone') > -1 ? '電話' : (m.indexOf('email') > -1 ? '信箱' : (m.indexOf('line') > -1 ? 'LINE' : '資料'));
+      alert('這個' + what + '已經註冊過帳號了。你可能之前用 LINE、Google 或信箱其中一種註冊過。\n\n幫你回到登入頁,請用你「第一次註冊時用的那種方式」登入,就會回到原本的帳號。');
+      sb.auth.signOut().then(function(){ window.location.href = '13_login.html'; }).catch(function(){ window.location.href = '13_login.html'; });
+      return;
+    }
+    alert('資料儲存失敗:' + up.error.message);
     return;
   }
 
