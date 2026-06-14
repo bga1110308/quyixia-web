@@ -334,14 +334,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
 </nav>
 
-<!-- 平台公告(真資料,announcements 表;沒公告自動隱藏) -->
-<div id="qyx-announce" style="max-width:1200px;margin:14px auto 0;padding:0 1.25rem;display:none;"></div>
-<script>document.addEventListener('DOMContentLoaded',function(){ if(window.qyxAnnounce) qyxAnnounce('qyx-announce',['all']); });</script>
-
 <!-- Hero -->
 <section class="hero">
   <div class="hero-blob-1"></div>
   <div class="hero-blob-2"></div>
+  <!-- 平台公告(真資料,announcements 表;沒公告自動隱藏)。放 hero 內最上方=跟著 hero 的上留白閃開固定導覽列,不會被蓋住 -->
+  <div id="qyx-announce" style="position:relative;z-index:2;max-width:1080px;margin:0 auto 1.5rem;display:none;"></div>
+  <script>document.addEventListener('DOMContentLoaded',function(){ if(window.qyxAnnounce) qyxAnnounce('qyx-announce',['all']); });</script>
   <div class="hero-grid">
     <div>
       <div class="hero-pill">
