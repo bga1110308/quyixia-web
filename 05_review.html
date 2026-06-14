@@ -495,10 +495,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
         <svg><use href="#i-clipboard"/></svg>
         我是順咖 · 看我接的單
       </a>
-      <a href="05_review.html?view=fang" class="guide-btn">
-        <svg><use href="#i-eye"/></svg>
-        範例:查看小芳的評價紀錄
-      </a>
     </div>
     <div class="guide-hint">
       <strong>使用說明</strong>
@@ -509,69 +505,9 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 
 <script>
-var demoTask = {
-  orderId: '20250522',
-  staff: { name: '小芳', avatar: '芳', cna: true },
-  client: { name: '王小姐', avatar: '王', district: '台北市信義區' },
-  service: '就醫陪同',
-  pool: 'B'
-};
-
-// ⚠️ Demo 寫死示範。接 Supabase 後:subRatings 由分項星等平均算出、flags 由紅旗題統計、credit 由完成單數/棄單/準時率計算。
-var staffReviewsData = {
-  fang: {
-    name: '小芳',
-    avatar: '芳',
-    role: 'staff',        // staff=順咖(綠) / client=案家(金)
-    cna: true,
-    rating: 4.9,
-    count: 23,
-    // 分項星等(順咖):準時到達/服務用心/溝通態度/完成度
-    subRatings: [
-      { label: '準時到達', value: 4.9 },
-      { label: '服務用心', value: 4.8 },
-      { label: '溝通態度', value: 5.0 },
-      { label: '完成度', value: 4.9 }
-    ],
-    // 紅旗統計(順咖端只有一題紅旗:未經同意額外收費)
-    flags: [
-      { label: '未經同意的額外收費或索取', count: 0, total: 23, danger: true }
-    ],
-    credit: { score: 98, done: 23, abandon: 0, ontime: 96 },
-    reviews: [
-      { reviewer: '王', name: '王小姐(案家)', date: '2025/05/20', stars: 5, comment: '小芳很細心又準時,陪我媽媽看醫生整個過程都很有耐心。會再找她!', tags: ['準時到場', '細心負責', '會再找她'] },
-      { reviewer: '李', name: '李先生(案家)', date: '2025/05/15', stars: 4, comment: '溝通順暢,服務細心,整體滿意。', tags: ['態度親切', '溝通順暢'] }
-    ]
-  },
-  me: {
-    name: '我',
-    avatar: '我',
-    role: 'client',
-    cna: false,
-    rating: 4.8,
-    count: 12,
-    // 分項星等(案家):尊重順咖/溝通清楚/付款乾脆
-    subRatings: [
-      { label: '尊重順咖', value: 4.9 },
-      { label: '溝通清楚', value: 4.7 },
-      { label: '付款乾脆', value: 4.8 }
-    ],
-    // 紅旗統計(案家端三題紅旗)
-    flags: [
-      { label: '提出訂單外的額外需求', count: 1, total: 12, danger: true },
-      { label: '要求超時服務', count: 0, total: 12, danger: true },
-      { label: '環境讓人不安全或不舒服', count: 0, total: 12, danger: true }
-    ],
-    credit: { score: 92, done: 12, abandon: 1, ontime: 100 },
-    reviews: [
-      { reviewer: '芳', name: '小芳(順咖)', date: '2025/05/20', stars: 5, comment: '客戶很客氣,家裡也很乾淨,溝通清楚。', tags: ['說明清楚', '環境整潔'] },
-      { reviewer: '雯', name: '小雯(順咖)', date: '2025/05/15', stars: 3, comment: '案主臨時改需求,希望能提前說。', tags: ['臨時改需求'] }
-    ]
-  }
-};
-
-// ⚠️ Demo:用網址 ?admin=1 模擬後台帳號。接 Supabase 後改成「登入帳號的後台權限」判斷,不可用網址參數(否則人人可加 ?admin=1 看真名)
-var IS_ADMIN = new URLSearchParams(location.search).get('admin') === '1';
+// 後台可見真名的判斷:只認「真正登入的管理員帳號」(showMyReviews 撈 users.is_admin 後設定)。
+// 為什麼不用網址參數:舊版用 ?admin=1 判斷,任何登入者打這個網址就能掀開真實評價人的名字,破壞雙盲、是隱私漏洞。
+var IS_ADMIN = false;
 
 // 評價人打碼:保留首字+角色,中間用 ○ 遮。例「王小姐(案家)」→「王○○(案家)」
 function maskName(name) {
@@ -593,8 +529,6 @@ function init() {
     loadOrderAndShowForm(orderId);
   } else if (view === 'me') {
     showMyReviews();          // 本人真實評價:查 reviews.reviewee_id = 登入者,本人免解鎖
-  } else if (view) {
-    showView(view);           // 範例/他人:目前仍是 demo 寫死,屬待辦(之後改查指定 user)
   } else if (role === 'staff' || role === 'client') {
     // 舊網址沒帶訂單 id,無法對應真實訂單,導回主頁避免寫到假資料
     alert('請從訂單頁的「留下評價」按鈕進來評價');
@@ -804,131 +738,6 @@ function onFlagToggle(cb) {
   if (warn) warn.style.display = anySevere ? 'block' : 'none';
 }
 
-function showView(key) {
-  document.getElementById('mode-view').style.display = 'block';
-  var data = staffReviewsData[key];
-  if (!data) {
-    document.getElementById('mode-view').innerHTML =
-      '<div class="guide-wrap"><div class="guide-title">找不到這個人的評價</div></div>';
-    return;
-  }
-
-  document.getElementById('view-title').textContent = data.name + ' 的評價紀錄';
-  document.getElementById('view-sub').textContent = '共 ' + data.count + ' 則評價,平均 ' + data.rating.toFixed(1) + ' 星';
-
-  var isStaff = data.role === 'staff';
-  var roleClass = isStaff ? 'view-staff' : 'view-client';
-  var roleLabel = isStaff ? '順咖評價' : '案家評價';
-
-  var badgesHTML = '<span class="badge-mini b-verified"><svg><use href="#i-check"/></svg>實名</span>' +
-                   '<span class="badge-mini b-safe"><svg><use href="#i-shield"/></svg>良民</span>';
-  if (data.cna) badgesHTML += '<span class="badge-mini b-cna"><svg><use href="#i-star-fill"/></svg>照服員</span>';
-  if (data.rating >= 4.8 && data.count >= 20) badgesHTML += '<span class="badge-mini b-senior"><svg><use href="#i-crown"/></svg>資深</span>';
-
-  var fullStars = '';
-  for (var i = 0; i < 5; i++) fullStars += '<svg><use href="#i-star-fill"/></svg>';
-
-  // 身份識別徽章 + 大平均(平均星等開放給所有人看)
-  var headHTML =
-    '<div class="role-tab ' + roleClass + '"><span class="role-dot"></span>' + roleLabel + '</div>' +
-    '<div class="stat-head">' +
-      '<div class="stat-avatar">' + data.avatar + '</div>' +
-      '<div style="flex:1;">' +
-        '<div class="stat-name">' + data.name + '</div>' +
-        '<div class="badge-row">' + badgesHTML + '</div>' +
-      '</div>' +
-      '<div class="big-rating-mini">' +
-        '<div class="big-num ' + roleClass + '">' + data.rating.toFixed(1) + '</div>' +
-        '<div class="big-stars ' + roleClass + '">' + fullStars + '</div>' +
-        '<div class="big-count">' + data.count + ' 則評價</div>' +
-      '</div>' +
-    '</div>';
-  document.getElementById('stat-overview').className = 'stat-overview ' + roleClass;
-  document.getElementById('stat-overview').innerHTML = headHTML;
-
-  // === 鎖區:分項星等 + 紅旗統計 + 信用分(一次解鎖全開) ===
-  // 分項星等
-  var subHTML = data.subRatings.map(function(s){
-    var pct = (s.value / 5 * 100).toFixed(0);
-    return '<div class="sub-row">' +
-      '<span class="sub-label">' + s.label + '</span>' +
-      '<div class="sub-track"><div class="sub-fill ' + roleClass + '" style="width:' + pct + '%;"></div></div>' +
-      '<span class="sub-val">' + s.value.toFixed(1) + '</span>' +
-    '</div>';
-  }).join('');
-
-  // 紅旗統計
-  var flagsHTML = data.flags.map(function(f){
-    var rate = f.total ? Math.round(f.count / f.total * 100) : 0;
-    var hit = f.count > 0;
-    return '<div class="flag-row ' + (hit ? 'flag-hit' : 'flag-clean') + '">' +
-      '<svg class="flag-ico"><use href="#i-flag"/></svg>' +
-      '<span class="flag-label">' + f.label + '</span>' +
-      '<span class="flag-stat">' + f.total + ' 筆中 ' + f.count + ' 筆<span class="flag-pct">(' + rate + '%)</span></span>' +
-    '</div>';
-  }).join('');
-
-  // 信用分
-  var c = data.credit;
-  var creditHTML =
-    '<div class="credit-box">' +
-      '<div class="credit-score ' + roleClass + '">' +
-        '<div class="cs-num">' + c.score + '</div>' +
-        '<div class="cs-unit">信用分</div>' +
-      '</div>' +
-      '<div class="credit-detail">' +
-        '<div class="cd-item"><span class="cd-num">' + c.done + '</span><span class="cd-lbl">完成單</span></div>' +
-        '<div class="cd-item"><span class="cd-num">' + c.abandon + '</span><span class="cd-lbl">棄單</span></div>' +
-        '<div class="cd-item"><span class="cd-num">' + c.ontime + '%</span><span class="cd-lbl">準時率</span></div>' +
-      '</div>' +
-    '</div>';
-
-  // 組裝鎖區內容
-  document.getElementById('locked-content').innerHTML =
-    '<div class="sec-title" style="margin:0 0 0.8rem;">分項評分</div>' +
-    '<div class="sub-list">' + subHTML + '</div>' +
-    '<div class="sec-title" style="margin:1.4rem 0 0.8rem;">行為紀錄</div>' +
-    '<div class="flag-list">' + flagsHTML + '</div>' +
-    '<div class="sec-title" style="margin:1.4rem 0 0.8rem;">信用分</div>' +
-    creditHTML;
-
-  // 遮罩預設蓋上(Demo:點解鎖直接掀開、不真扣點)
-  var locked = document.getElementById('lock-area');
-  locked.classList.add('is-locked');
-  locked.className = 'lock-area is-locked ' + roleClass;
-
-  var listHTML = data.reviews.map(function(r){
-    var stars = '';
-    for (var s = 0; s < 5; s++) stars += s < r.stars ? '★' : '☆';
-    var tagsHTML = r.tags.map(function(t){ return '<span class="r-tag">' + t + '</span>'; }).join('');
-
-    // 評價人打碼:一般人看遮姓名(保留首字+角色),只有後台帳號看真名
-    var avatarHTML, nameHTML;
-    if (IS_ADMIN) {
-      avatarHTML = '<div class="r-avatar">' + r.reviewer + '</div>';
-      nameHTML = '<div class="r-name">' + r.name + ' <span class="admin-eye">後台可見</span></div>';
-    } else {
-      avatarHTML = '<div class="r-avatar masked"><svg><use href="#i-shield"/></svg></div>';
-      nameHTML = '<div class="r-name">' + maskName(r.name) + '</div>';
-    }
-
-    return '<div class="review-card">' +
-      '<div class="reviewer-row">' +
-        avatarHTML +
-        '<div style="flex:1;">' +
-          nameHTML +
-          '<div class="r-date">' + r.date + '</div>' +
-        '</div>' +
-        '<div class="r-stars">' + stars + '</div>' +
-        '<button class="report-btn" onclick="reportReview(this)" title="檢舉此評價"><svg><use href="#i-flag"/></svg></button>' +
-      '</div>' +
-      '<div class="r-comment">' + r.comment + '</div>' +
-      '<div class="r-tags">' + tagsHTML + '</div>' +
-    '</div>';
-  }).join('');
-  document.getElementById('review-list').innerHTML = listHTML;
-}
-
 /* 本人真實評價:讀 reviews 裡 reviewee_id = 登入者(=我收到的評價)。本人看自己一律免解鎖,分項/行為/信用全開。
  * reviews 欄位:reviewer_id, reviewee_id, order_id, mode, ratings(jsonb), flags(jsonb), comment, is_public, created_at
  * 約定格式(submitReview 已照此寫入):
@@ -949,8 +758,9 @@ async function showMyReviews() {
   if (!user) { window.location.href = '13_login.html'; return; }
 
   /* 本人基本資料 */
-  var pr = await sb.from('users').select('display_name,credit_score,cancel_count,has_caregiver_cert,is_realname,is_verified,role_detail').eq('id', user.id).maybeSingle();
+  var pr = await sb.from('users').select('display_name,credit_score,cancel_count,has_caregiver_cert,is_realname,is_verified,role_detail,is_admin').eq('id', user.id).maybeSingle();
   var u = pr.data || {};
+  IS_ADMIN = !!u.is_admin;   // 只有真正登入的管理員才掀真名(取代舊版 ?admin=1 網址後門)
   var myName = u.display_name || '我';
   var avatarUrl = u.role_detail && u.role_detail.avatar_url;
 
