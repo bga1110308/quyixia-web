@@ -174,8 +174,8 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
 <script>
-// 登入頁。LINE 已串接 Supabase Auth。
-// Google 與 Email 待 Supabase 設定好供應商後再開放。
+// 登入頁。LINE / Google / Email 皆已串接 Supabase Auth。
+// Google:signInWithOAuth provider 'google';Email:signInWithOtp 寄 magic link 到信箱。
 
 var card = document.querySelector('.login-card');
 
@@ -254,15 +254,40 @@ async function loginWith(provider) {
     if (r.error) alert('LINE 登入啟動失敗:' + r.error.message);
     return;
   }
+  if (provider === 'Google') {
+    // Google 標準供應商。登入完跳回本頁,DOMContentLoaded 會 handlePostLogin 依角色導首頁
+    var rg = await sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/13_login.html' }
+    });
+    if (rg.error) alert('Google 登入啟動失敗:' + rg.error.message);
+    return;
+  }
   alert(provider + ' 登入尚未開放,目前請先用 LINE 登入。');
 }
 
+// Email 登入:展開/收合下方的 Email 輸入區,展開時暫時隱藏社群按鈕
 function toggleEmail() {
-  alert('Email 登入尚未開放,目前請先用 LINE 登入。');
+  var sec = document.getElementById('email-section');
+  var row = document.getElementById('social-row');
+  if (!sec) return;
+  var showing = sec.classList.toggle('show');
+  if (row) row.style.display = showing ? 'none' : 'flex';
 }
 
-function sendEmailLink() {
-  alert('Email 登入尚未開放,目前請先用 LINE 登入。');
+// Email 登入:寄 magic link 到信箱,點信裡連結跳回本頁就完成登入
+async function sendEmailLink() {
+  var email = (document.getElementById('email-input').value || '').trim();
+  if (!email) { alert('請先輸入 Email'); return; }
+  var btn = document.querySelector('.email-send-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '寄送中…'; }
+  var r = await sb.auth.signInWithOtp({
+    email: email,
+    options: { emailRedirectTo: window.location.origin + '/13_login.html' }
+  });
+  if (btn) { btn.disabled = false; btn.textContent = '寄送登入連結'; }
+  if (r.error) { alert('寄送失敗:' + r.error.message); return; }
+  alert('登入連結已寄到 ' + email + '，請到信箱點連結登入(也檢查垃圾信匣)。');
 }
 </script>
 </body>
