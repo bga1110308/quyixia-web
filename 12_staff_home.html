@@ -291,6 +291,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <script src="qyx-load-guard.js"></script>
 <script src="qyx-consent-guard.js"></script>
 <script src="qyx-notify.js"></script>
+<script src="qyx-announce.js"></script>
 </head>
 <body>
 
@@ -327,6 +328,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <button type="button" class="logout-link" title="登出" onclick="if(confirm('確定要登出嗎?')){window.sb.auth.signOut().finally(function(){location.href='index.html';});}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>登出</button>
   </span>
 </div>
+
+<!-- 平台公告(真資料;對象=全部或僅順咖;沒公告自動隱藏) -->
+<div id="qyx-announce" style="max-width:900px;margin:14px auto 0;padding:0 1.1rem;display:none;"></div>
+<script>document.addEventListener('DOMContentLoaded',function(){ if(window.qyxAnnounce) qyxAnnounce('qyx-announce',['all','suncar']); });</script>
 
 <!-- HERO -->
 <div class="hero">

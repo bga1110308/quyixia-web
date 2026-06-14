@@ -298,6 +298,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-announce.js"></script>
 </head>
 <body>
 
@@ -332,6 +333,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </div>
   </div>
 </nav>
+
+<!-- 平台公告(真資料,announcements 表;沒公告自動隱藏) -->
+<div id="qyx-announce" style="max-width:1200px;margin:14px auto 0;padding:0 1.25rem;display:none;"></div>
+<script>document.addEventListener('DOMContentLoaded',function(){ if(window.qyxAnnounce) qyxAnnounce('qyx-announce',['all']); });</script>
 
 <!-- Hero -->
 <section class="hero">
