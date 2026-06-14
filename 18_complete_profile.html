@@ -55,6 +55,10 @@ body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','
    display_name / phone 不在 protect_sensitive_user_cols 鎖定清單,本人可改。 */
 
 async function routeHome(uid){
+  // 有「登入後要回去的頁」就回那頁(例:未登入在 04 下單→登入→補資料完,回去把單送出),不進預設首頁
+  var _ret = null;
+  try { _ret = sessionStorage.getItem('post_login_return'); } catch(e){}
+  if (_ret) { try { sessionStorage.removeItem('post_login_return'); } catch(e){} location.href = _ret; return; }
   var rr = await sb.from('user_roles').select('role').eq('user_id', uid);
   var rl = (rr && rr.data) ? rr.data : [];
   if(rl.some(function(r){ return r.role === 'client'; })){ location.href = '11_client_home.html'; return; }

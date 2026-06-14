@@ -273,6 +273,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-consent-guard.js"></script>
 </head>
 <body>
 
@@ -1203,12 +1204,20 @@ async function submitOrder(payload, rateCheck) {
   if (btn) { btn.disabled = true; btn.textContent = '送出中...'; }
 
   try {
-    /* 沒登入直接導登入頁 */
+    /* 沒登入:先把整張單存起來,登入完(經 13、新用戶再經 18 補資料)自動跳回 04?resume=1 把單送出,
+       不再像舊版直接丟掉那張單、害人白填一次。post_login_return 由 13/18 讀,認得才跳回。 */
     var user = null;
     var sres = await sb.auth.getSession();
     if (sres.data && sres.data.session && sres.data.session.user) { user = sres.data.session.user; }
     else { var ures = await sb.auth.getUser(); user = (ures && ures.data) ? ures.data.user : null; }
-    if (!user) { window.location.href = '13_login.html'; return; }
+    if (!user) {
+      try {
+        sessionStorage.setItem('pending_order', JSON.stringify(payload));
+        sessionStorage.setItem('post_login_return', '04_order_form.html?resume=1');
+      } catch(e){}
+      window.location.href = '13_login.html';
+      return;
+    }
 
     /* 安全網:不能指定自己接單(案家與順咖同一人＝自接自單)。萬一前面沒擋到,送出這關一定擋。 */
     if (window._specifiedStaffId && window._specifiedStaffId === user.id) {
@@ -1298,244 +1307,29 @@ async function submitOrder(payload, rateCheck) {
   }
 }
 
-/* === 註冊 Modal === */
-function closeRegModal() {
-  document.getElementById('reg-modal').classList.remove('show');
-  document.body.style.overflow = '';
-  document.getElementById('reg-email-section').style.display = 'none';
-  document.getElementById('reg-social-row').style.display = 'flex';
-  document.getElementById('reg-submit-btn').style.display = 'none';
-  var sw = document.getElementById('reg-switch-to-login');
-  if (sw) sw.style.display = 'block';
-}
-
-function goToLogin() {
-  if (window._pendingContactInfo) {
-    try {
-      sessionStorage.setItem('pending_order_contact', JSON.stringify(window._pendingContactInfo));
-    } catch(e) {}
-  }
-  window.location.href = '13_login.html';
-}
-
-function regWith(provider) {
-  window.location.href = '13_login.html';
-}
-
-function showEmailReg() {
-  loadRegLegalDocs(); // 開信箱註冊時才去讀後台三份條款(只讀一次)
-  document.getElementById('reg-social-row').style.display = 'none';
-  document.getElementById('reg-email-section').style.display = 'block';
-  document.getElementById('reg-submit-btn').style.display = 'block';
-  var sw = document.getElementById('reg-switch-to-login');
-  if (sw) sw.style.display = 'none';
-  if (window._pendingContactInfo) {
-    document.getElementById('reg-nickname').value = window._pendingContactInfo.name || '';
-    document.getElementById('reg-phone').value = window._pendingContactInfo.phone || '';
-  }
-}
-
-function hideEmailReg() {
-  document.getElementById('reg-social-row').style.display = 'flex';
-  document.getElementById('reg-email-section').style.display = 'none';
-  document.getElementById('reg-submit-btn').style.display = 'none';
-  var sw = document.getElementById('reg-switch-to-login');
-  if (sw) sw.style.display = 'block';
-}
-
-function completeReg() {
-  var nickname = document.getElementById('reg-nickname').value.trim();
-  var email = document.getElementById('reg-email').value.trim();
-  var agreed = document.getElementById('reg-agree').checked;
-
-  if (!nickname) { return fail(document.getElementById('reg-nickname'), '請輸入暱稱'); }
-  if (!email) { return fail(document.getElementById('reg-email'), '請輸入 Email'); }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return fail(document.getElementById('reg-email'), '請輸入正確的 Email 格式');
-  }
-  var allRead = REG_LEGAL_KEYS.every(function(k){ return regReadStatus[k]; });
-  if (!allRead) {
-    return fail(document.getElementById('reg-legal-links'), '請先閱讀完所有文件');
-  }
-  if (!agreed) { return fail(document.getElementById('reg-agree'), '請勾選同意條款'); }
-
-  // TODO(信箱註冊接通時):目前信箱註冊尚未接通,這裡只把人導去登入、不建帳號。
-  // 等信箱註冊做成能建帳號(拿到 user.id)後,在建好帳號那一步比照 14/03 寫入同意:
-  //   var now = new Date().toISOString();
-  //   var rows = REG_LEGAL_KEYS.map(function(k){ var d=regLegalDocs[k];
-  //     return d ? { user_id:user.id, doc_key:k, agreed_version:d.version, agreed_at:now } : null; }).filter(Boolean);
-  //   if(rows.length) await sb.from('user_consents').upsert(rows, { onConflict: 'user_id,doc_key' });
-  closeRegModal();
-  window.location.href = '13_login.html';
-}
-
-function gotoLogin() {
-  window.location.href = '13_login.html';
-}
-
-/* === 介紹碼 === */
-function toggleReferral() {
-  var block = document.getElementById('referral-block');
-  var icon = document.getElementById('referral-toggle-icon');
-  var text = document.getElementById('referral-toggle-text');
-  if (block.style.display === 'none') {
-    block.style.display = 'block';
-    icon.textContent = '−';
-    text.textContent = '不使用介紹碼';
-    document.getElementById('reg-referral').focus();
-  } else {
-    block.style.display = 'none';
-    icon.textContent = '＋';
-    text.textContent = '有介紹碼?點此輸入';
-    document.getElementById('reg-referral').value = '';
-    document.getElementById('referral-hint').style.color = 'var(--ink-light)';
-    document.getElementById('referral-hint').textContent = '介紹你來的朋友會獲得獎勵點數';
-  }
-}
-
-function validateReferral(input) {
-  input.value = input.value.toUpperCase().replace(/\s/g, '');
-  var hint = document.getElementById('referral-hint');
-  var code = input.value;
-
-  if (code.length === 0) {
-    hint.style.color = 'var(--ink-light)';
-    hint.textContent = '介紹你來的朋友會獲得獎勵點數';
-    return;
-  }
-  if (!/^[A-Z0-9]{4,12}$/.test(code)) {
-    hint.style.color = 'var(--warn)';
-    hint.textContent = '介紹碼格式不正確(4-12 個英數字)';
-    return;
-  }
-  var validCodes = ['FANG2025', 'KAI001', 'WANG888'];
-  if (validCodes.indexOf(code) >= 0) {
-    hint.style.color = 'var(--forest)';
-    hint.textContent = '✓ 介紹碼有效(' + code + ')';
-  } else {
-    hint.style.color = 'var(--warn)';
-    hint.textContent = '找不到這個介紹碼,請確認後重試';
-  }
-}
-
-/* === 同意書:三份文件即時讀後台,所有顯示條款的地方都指向同一份;以後合約一改這裡自動同步。
-   註:目前信箱註冊尚未接通(completeReg 只導去登入、不建帳號)。等做成能建帳號時,
-   在 completeReg 建好帳號那步比照 14/03 寫 user_consents(該處已留 TODO 與寫法)。 === */
-var REG_LEGAL_KEYS = ['terms_client', 'privacy', 'data_notice']; // 案家(信箱註冊)要簽的後台文件 doc_key
-var regLegalDocs = {};   // doc_key -> { doc_key, title, content, version }
-var regReadStatus = {};  // doc_key -> true 表示已讀完
-var regCurrentDoc = null;
-var regLegalLoaded = false;
-
-/* 讀後台三份文件,產生同意連結。讀不到 fail-open:連結退回顯示三份名稱、放行,進首頁由閘門補簽。 */
-async function loadRegLegalDocs(){
-  if(regLegalLoaded) return; // 只讀一次
-  regLegalLoaded = true;
-  try{
-    var res = await sb.from('legal_documents').select('doc_key,title,content,version').in('doc_key', REG_LEGAL_KEYS);
-    if(res.error || !res.data || !res.data.length) throw (res.error || new Error('no docs'));
-    res.data.forEach(function(d){ regLegalDocs[d.doc_key] = d; });
-    renderRegLegalLinks();
-  }catch(e){
-    if(window.console) console.error('[order/reg] 條款讀取失敗,改走首頁閘門補簽', e);
-    var box = document.getElementById('reg-legal-links');
-    if(box) box.textContent = '服務條款、隱私權政策、個資告知';
-    REG_LEGAL_KEYS.forEach(function(k){ regReadStatus[k] = true; });
-    var cb = document.getElementById('reg-agree'); if(cb) cb.disabled = false;
-    var uh = document.getElementById('reg-unread-hint'); if(uh) uh.classList.add('hide');
-  }
-}
-
-// 依 REG_LEGAL_KEYS 順序把連結畫出來,點了開閱讀視窗
-function renderRegLegalLinks(){
-  var box = document.getElementById('reg-legal-links');
-  if(!box) return;
-  box.innerHTML = REG_LEGAL_KEYS.map(function(k){
-    var d = regLegalDocs[k];
-    return d ? '<a id="reg-legal-link-'+k+'" onclick="openRegDoc(\''+k+'\')">'+esc(d.title)+'</a>' : '';
-  }).filter(Boolean).join('、');
-}
-
-/* === 內層條款閱讀視窗(單一通用,內容讀後台) === */
-function openRegDoc(key){
-  var d = regLegalDocs[key]; if(!d) return;
-  regCurrentDoc = key;
-  document.getElementById('inner-doc-title').textContent = d.title;
-  var body = document.getElementById('inner-doc-body');
-  document.getElementById('inner-modal-doc').classList.add('show'); // 先顯示,body 才有版面,scrollTop 才設得進去
-  body.textContent = d.content || '';
-  body.scrollTop = 0;
-  resetRegDocConfirm();
-  // textContent 換新內容後版面要重排,等一個影格再強制回到最頂並重算進度,否則沿用上一份捲到底位置被算成 100%。
-  setTimeout(function(){ body.scrollTop = 0; trackRegDocScroll(body); }, 30); // 內容太短不需捲動的,直接算讀完
-}
-
-function closeRegDoc(){
-  document.getElementById('inner-modal-doc').classList.remove('show');
-}
-
-// 依現在這份是否讀過,重設確認鈕與進度條
-function resetRegDocConfirm(){
-  var done = !!(regCurrentDoc && regReadStatus[regCurrentDoc]);
-  var btn = document.getElementById('inner-doc-confirm');
-  btn.classList.toggle('ready', done);
-  btn.textContent = done ? '我已讀完,確認同意' : '請將內容拉至最底才能確認';
-  document.getElementById('inner-doc-progress').style.width = done ? '100%' : '0%';
-  document.getElementById('inner-doc-progress-text').textContent = done ? '100%' : '0%';
-}
-
-function trackRegDocScroll(el){
-  var pct = el.scrollHeight > el.clientHeight
-    ? Math.min(100, Math.round((el.scrollTop + el.clientHeight) / el.scrollHeight * 100))
-    : 100;
-  document.getElementById('inner-doc-progress').style.width = pct + '%';
-  document.getElementById('inner-doc-progress-text').textContent = pct + '%';
-  if (pct >= 95) {
-    var btn = document.getElementById('inner-doc-confirm');
-    if (!btn.classList.contains('ready')) {
-      btn.classList.add('ready');
-      btn.textContent = '我已讀完,確認同意';
-    }
-  }
-}
-
-function confirmRegDoc(){
-  var btn = document.getElementById('inner-doc-confirm');
-  if(!btn.classList.contains('ready')) return;
-  if(regCurrentDoc){
-    regReadStatus[regCurrentDoc] = true;
-    var link = document.getElementById('reg-legal-link-' + regCurrentDoc);
-    if(link) link.classList.add('read');
-  }
-  closeRegDoc();
-  // 三份都讀完才開放勾選同意
-  var allRead = REG_LEGAL_KEYS.every(function(k){ return regReadStatus[k]; });
-  if(allRead){
-    document.getElementById('reg-agree').disabled = false;
-    document.getElementById('reg-unread-hint').classList.add('hide');
-  }
-}
-
-function handleRegAgreeChange(cb) {
-  var allRead = REG_LEGAL_KEYS.every(function(k){ return regReadStatus[k]; });
-  if (cb.checked && !allRead) {
-    cb.checked = false;
-    alert('請先點開並閱讀完所有文件');
-  }
-}
+/* 註：04 原本下單時的「彈出式註冊小視窗」(reg-modal)已移除。它從未被任何程式叫出來(死碼)，
+   未登入下單改走治本流程:submitOrder 存好訂單→導 13 登入(新用戶再經 18 補資料)→自動跳回 04?resume=1 送出。
+   同意條款由共用檔 qyx-consent-guard.js 在 resume 送單前統一把關,不再各頁自己做一套。 */
 
 (function(){
   var params = new URLSearchParams(window.location.search);
 
-  /* 從加值頁回來:點數已補足,自動完成剛才未送出的訂單 */
+  /* 從加值頁或登入頁回來:自動完成剛才未送出的訂單。
+     兩條路都會走到這:①點數不足去 16 加值回來 ②未登入去 13 登入(新用戶再經 18)回來。
+     送單前先跑同意條款閘門(qyxConsentGate,跟首頁同一支共用檔):新用戶是直接被帶回下單、
+     沒先經過首頁那道同意關,這裡補跑一次才不會把同意跳過去。老用戶已簽過會即時放行、無感。 */
   if (params.get('resume') === '1' || params.get('paid') === '1') {
     var savedRaw = null;
     try { savedRaw = sessionStorage.getItem('pending_order'); } catch(e){}
     if (savedRaw) {
       try {
         var savedPayload = JSON.parse(savedRaw);
-        alert('點數已足夠,正在幫你完成剛才的訂單');
-        submitOrder(savedPayload, null);
+        alert('正在幫你完成剛才的訂單');
+        if (typeof qyxConsentGate === 'function') {
+          qyxConsentGate({ color:'#EF9F27' }).then(function(){ submitOrder(savedPayload, null); });
+        } else {
+          submitOrder(savedPayload, null);
+        }
         return;
       } catch(e){}
     }
@@ -1576,112 +1370,6 @@ function handleRegAgreeChange(cb) {
   }
 })();
 </script>
-
-<!-- === 註冊 Modal === -->
-<div class="modal-overlay" id="reg-modal" onclick="if(event.target===this)closeRegModal()">
-  <div class="modal">
-    <button class="modal-close" onclick="closeRegModal()">×</button>
-    <div class="modal-header">
-      <div class="modal-icon">
-        <svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-person"/></svg>
-      </div>
-      <div class="modal-title">最後一步,快速註冊</div>
-      <div class="modal-sub">建立帳號才能追蹤訂單進度<br>建議用 LINE 註冊,方便接收訂單通知</div>
-    </div>
-    <div class="modal-body">
-
-      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1rem;" id="reg-social-row">
-        <button onclick="regWith('LINE')" style="display:flex;align-items:center;justify-content:center;gap:9px;padding:0.85rem;border-radius:12px;font-size:0.92rem;font-weight:600;cursor:pointer;font-family:inherit;border:none;background:var(--line-green);color:#fff;box-shadow:0 4px 14px rgba(6,199,85,0.25);transition:all 0.2s;">
-          <svg style="width:1.2em;height:1.2em;" viewBox="0 0 24 24" fill="currentColor"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.81 4.27 8.84 10.035 9.608.391.084.923.258 1.058.592.122.303.08.778.039 1.085 0 0-.141.846-.171 1.027-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.572-3.843 2.572-5.992z"/></svg>
-          用 LINE 註冊
-        </button>
-        <button onclick="regWith('Google')" style="display:flex;align-items:center;justify-content:center;gap:9px;padding:0.85rem;border-radius:12px;font-size:0.92rem;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid #e0e0e0;background:#fff;color:#3c4043;transition:all 0.2s;">
-          <svg style="width:1.2em;height:1.2em;" viewBox="0 0 24 24"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          用 Google 註冊
-        </button>
-        <button onclick="showEmailReg()" style="display:flex;align-items:center;justify-content:center;gap:9px;padding:0.85rem;border-radius:12px;font-size:0.92rem;font-weight:600;cursor:pointer;font-family:inherit;border:1.5px solid var(--amber);background:#fff;color:var(--amber-deep);transition:all 0.2s;">
-          <svg style="width:1.2em;height:1.2em;fill:currentColor;" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-          用 Email 註冊
-        </button>
-      </div>
-
-      <div class="switch-to-login" id="reg-switch-to-login">
-        已經是會員了? <a onclick="goToLogin()">改用登入</a>
-      </div>
-
-      <div id="reg-email-section" style="display:none;border-top:1px solid var(--border);padding-top:1rem;">
-        <div class="modal-field">
-          <label>暱稱<span class="req">*</span></label>
-          <input type="text" class="modal-input" id="reg-nickname" placeholder="順咖會這樣稱呼你">
-        </div>
-        <div class="modal-field">
-          <label>Email<span class="req">*</span></label>
-          <input type="email" class="modal-input" id="reg-email" placeholder="your@email.com">
-          <div class="modal-perk">
-            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-            登入連結將寄到此信箱
-          </div>
-        </div>
-
-        <div class="modal-field">
-          <label style="display:flex;justify-content:space-between;align-items:center;">
-            <span>聯絡電話</span>
-            <span style="font-size:0.66rem;color:var(--ink-light);font-weight:normal;">選填 · 暫無驗證</span>
-          </label>
-          <input type="tel" class="modal-input" id="reg-phone" placeholder="0912-345-678">
-          <div class="field-hint">緊急聯繫用,未來開啟手機驗證後將用此號碼</div>
-        </div>
-
-        <div class="modal-field" style="margin-bottom:0.9rem;">
-          <a id="referral-toggle" onclick="toggleReferral()" style="font-size:0.8rem;color:var(--amber-deep);cursor:pointer;display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-weight:600;">
-            <span id="referral-toggle-icon">＋</span>
-            <span id="referral-toggle-text">有介紹碼?點此輸入</span>
-          </a>
-          <div id="referral-block" style="display:none;margin-top:9px;">
-            <input type="text" class="modal-input" id="reg-referral" placeholder="輸入朋友的介紹碼(例:FANG2025)" style="text-transform:uppercase;" oninput="validateReferral(this)">
-            <div class="field-hint" id="referral-hint" style="margin-top:5px;">介紹你來的朋友會獲得獎勵點數</div>
-          </div>
-        </div>
-
-        <!-- 同意書:三份文件即時讀後台,連結由 renderRegLegalLinks() 動態產生,全站同一份來源 -->
-        <div class="modal-terms">
-          <input type="checkbox" id="reg-agree" disabled onchange="handleRegAgreeChange(this)">
-          <label for="reg-agree">
-            我同意 <span id="reg-legal-links">載入中…</span>,了解平台僅為媒合資訊。
-            <span class="unread-hint" id="reg-unread-hint">請先點開並閱讀完所有文件,才能勾選同意</span>
-          </label>
-        </div>
-
-        <div style="text-align:center;font-size:0.76rem;color:var(--ink-light);margin-top:0.8rem;">
-          <a onclick="hideEmailReg()" style="color:var(--amber-deep);cursor:pointer;text-decoration:underline;font-weight:500;">← 改用 LINE 或 Google 註冊</a>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="modal-submit" id="reg-submit-btn" onclick="completeReg()" style="display:none;">完成註冊並送出訂單</button>
-      <div class="modal-alt">已經有帳號?<a onclick="gotoLogin()">登入</a></div>
-    </div>
-  </div>
-</div>
-
-<!-- 內層條款閱讀視窗:單一通用,內容由 openRegDoc() 從 legal_documents 注入(純文字、保留換行) -->
-<div class="inner-modal-overlay" id="inner-modal-doc" onclick="if(event.target===this)closeRegDoc()">
-  <div class="inner-modal">
-    <div class="inner-modal-header">
-      <div class="inner-modal-title" id="inner-doc-title">文件</div>
-      <button class="inner-modal-close" onclick="closeRegDoc()">×</button>
-    </div>
-    <div class="inner-modal-body" id="inner-doc-body" onscroll="trackRegDocScroll(this)" style="white-space:pre-wrap;"></div>
-    <div class="inner-modal-footer">
-      <div class="inner-scroll-hint">
-        <span>閱讀進度</span>
-        <div class="progress"><div class="progress-fill" id="inner-doc-progress" style="width:0%;"></div></div>
-        <span id="inner-doc-progress-text">0%</span>
-      </div>
-      <button class="inner-confirm-btn" id="inner-doc-confirm" onclick="confirmRegDoc()">請將內容拉至最底才能確認</button>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
