@@ -725,12 +725,12 @@ textarea.form-input{min-height:80px;resize:vertical;}
           <div class="sg-title"><svg class="icon"><use href="#i-bell"/></svg>加購通知費用設定</div>
           <div class="setting-row">
             <div class="sr-left">
-              <div class="sr-label">優先通知費</div>
-              <div class="sr-desc">案家加購後,系統優先通知其指定順咖此任務單</div>
+              <div class="sr-label">優先通知費 <span style="font-size:10px;background:var(--ink-soft);color:#fff;padding:2px 7px;border-radius:99px;font-weight:600;">尚未啟用</span></div>
+              <div class="sr-desc">案家加購後,系統優先通知其指定順咖此任務單。此功能尚未開放,設定暫不生效。</div>
               <div class="price-input-row">
-                <input class="price-input" type="number" value="50" min="0">
+                <input class="price-input" type="number" value="50" min="0" disabled style="opacity:.5;">
                 <span class="price-unit">元 / 次</span>
-                <span style="font-size:11px;color:var(--ink-light);">(0 = 免費)</span>
+                <span style="font-size:11px;color:var(--ink-light);">(尚未啟用)</span>
               </div>
             </div>
           </div>
@@ -743,7 +743,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
               <div class="sr-label">一般跑腿池下單點數</div>
               <div class="sr-desc">代排、遛狗、陪逛街、陪打遊戲等任務</div>
               <div class="price-input-row">
-                <input class="price-input" type="number" value="50" min="0" max="200">
+                <input class="price-input" id="cfg-price-a" type="number" min="0" max="200">
                 <span class="price-unit">點 / 單</span>
               </div>
             </div>
@@ -753,7 +753,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
               <div class="sr-label">照服員池下單點數</div>
               <div class="sr-desc">身體照顧、陪同就醫、備餐等需證照任務(建議設低以吸引案家媒合照服員)</div>
               <div class="price-input-row">
-                <input class="price-input" type="number" value="40" min="0" max="200">
+                <input class="price-input" id="cfg-price-b" type="number" min="0" max="200">
                 <span class="price-unit">點 / 單</span>
               </div>
             </div>
@@ -763,18 +763,18 @@ textarea.form-input{min-height:80px;resize:vertical;}
               <div class="sr-label">無人接單退點比例</div>
               <div class="sr-desc">24 小時內無順咖接單時退還的點數(預設全額退還;若未來出現濫用刷單可調低保留行政成本)</div>
               <div class="price-input-row">
-                <input class="price-input" type="number" value="100" min="0" max="100">
+                <input class="price-input" id="cfg-refund" type="number" min="0" max="100">
                 <span class="price-unit">% 退還</span>
               </div>
             </div>
           </div>
           <div class="setting-row">
             <div class="sr-left">
-              <div class="sr-label">照服員池任務僅限有證者接單</div>
-              <div class="sr-desc">關閉後一般順咖也能接,但會失去差異化優勢(且違反長照法第 18 條)</div>
-              <span class="status-chip chip-on" id="chip-pool">目前:僅限證照</span>
+              <div class="sr-label">照服員池任務僅限有證者接單 <span style="font-size:10px;background:#d9534f;color:#fff;padding:2px 7px;border-radius:99px;font-weight:600;">法律強制</span></div>
+              <div class="sr-desc">長照法第 18 條:非照服員不可從事身體照顧(罰 6 到 30 萬)。後端永遠擋無照接照服員池,此項鎖定開啟、不可關閉。</div>
+              <span class="status-chip chip-on" id="chip-pool">鎖定:僅限證照</span>
             </div>
-            <label class="toggle"><input type="checkbox" checked onchange="updateChip(this,'chip-pool','僅限證照','全部可接')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+            <label class="toggle" style="opacity:.5;pointer-events:none;"><input type="checkbox" checked disabled><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
         </div>
 
@@ -782,27 +782,28 @@ textarea.form-input{min-height:80px;resize:vertical;}
           <div class="sg-title"><svg class="icon"><use href="#i-pin"/></svg>服務範圍與基本設定</div>
           <div class="setting-row">
             <div class="sr-left"><div class="sr-label">平台名稱</div></div>
-            <input class="text-input" value="去一下 QU YI XIA">
+            <input class="text-input" id="cfg-platform" value="去一下 QU YI XIA">
           </div>
           <div class="setting-row">
             <div class="sr-left"><div class="sr-label">服務範圍</div><div class="sr-desc">主要服務區域(顯示於首頁)</div></div>
-            <select class="select-input">
-              <option>全台灣 22 縣市</option><option>雙北地區</option><option>北台灣</option><option>中台灣</option><option>南台灣</option>
+            <select class="select-input" id="cfg-area">
+              <option value="全台灣 22 縣市">全台灣 22 縣市</option><option value="雙北地區">雙北地區</option><option value="北台灣">北台灣</option><option value="中台灣">中台灣</option><option value="南台灣">南台灣</option>
             </select>
           </div>
           <div class="setting-row">
             <div class="sr-left"><div class="sr-label">免費期截止日</div></div>
-            <input class="date-input" type="date" value="2025-06-30">
+            <input class="date-input" id="cfg-freeuntil" type="date">
           </div>
           <div class="setting-row">
-            <div class="sr-left"><div class="sr-label">AI 審核嚴格度</div><div class="sr-desc">影響高/黃/低風險標記門檻</div></div>
-            <select class="select-input" style="width:140px;">
+            <div class="sr-left"><div class="sr-label">AI 審核嚴格度 <span style="font-size:10px;background:var(--ink-soft);color:#fff;padding:2px 7px;border-radius:99px;font-weight:600;">尚未啟用</span></div><div class="sr-desc">目前沒有 AI 風險審核引擎,此設定暫不生效。</div></div>
+            <select class="select-input" style="width:140px;opacity:.5;" disabled>
               <option>標準</option><option>嚴格</option><option>寬鬆</option>
             </select>
           </div>
         </div>
 
-        <button class="btn-gold-sm" style="padding:11px 28px;font-size:14px;">儲存設定</button>
+        <button class="btn-gold-sm" style="padding:11px 28px;font-size:14px;" onclick="saveBasicSettings(this)">儲存設定</button>
+        <span id="basic-result" style="font-size:12px;color:var(--ink-soft);margin-left:12px;"></span>
         </div><!-- /sp-other -->
       </div>
 
@@ -1925,6 +1926,13 @@ async function loadPricing(){
   if(rf){ rf.checked = (c.review_free === true); updateChip(rf,'chip-review','完整顯示','付費限定'); }
   var rp=document.getElementById('cfg-reviewpub');
   if(rp){ rp.checked = (c.review_public_on === true); updateChip(rp,'chip-reviewpub','公開查詢','不公開'); }
+  /* 批次二:下單點數(A/B 池)、無人接單退點比例、基本設定。沒值用空白/原值,不會壞頁 */
+  var pa=document.getElementById('cfg-price-a'); if(pa) pa.value=(c.price_order_a==null?'':c.price_order_a);
+  var pb=document.getElementById('cfg-price-b'); if(pb) pb.value=(c.price_order_b==null?'':c.price_order_b);
+  var rfd=document.getElementById('cfg-refund'); if(rfd) rfd.value=(c.refund_pct==null?'':c.refund_pct);
+  var pn=document.getElementById('cfg-platform'); if(pn && c.platform_name!=null) pn.value=c.platform_name;
+  var ar=document.getElementById('cfg-area'); if(ar && c.service_area) ar.value=c.service_area;
+  var fu=document.getElementById('cfg-freeuntil'); if(fu && c.free_until) fu.value=String(c.free_until).slice(0,10);
 }
 
 /* 數字欄轉存:空字串→null(讓「單次永久」可存),其餘轉整數 */
@@ -1988,6 +1996,26 @@ function saveOrderOpen(cb){ saveSwitch(cb,'order_open','chip-order','開放中',
 function saveViewCounts(cb){ saveSwitch(cb,'show_view_counts','chip-views','開啟中','關閉中'); }
 function saveReviewFree(cb){ saveSwitch(cb,'review_free','chip-review','完整顯示','付費限定'); }
 function saveReviewPublic(cb){ saveSwitch(cb,'review_public_on','chip-reviewpub','公開查詢','不公開'); }
+
+/* 下單點數/退點比例/基本設定:寫回 app_config id=1(沿用 app_config_admin_write 政策)。
+   下單點數真生效在後台 place_order(依池讀 price_order_a/b);退點比例在 auto_cancel_stale_matching 讀 refund_pct。 */
+async function saveBasicSettings(btn){
+  var r=document.getElementById('basic-result'); if(r) r.textContent='儲存中…';
+  var area=document.getElementById('cfg-area');
+  var payload={
+    price_order_a: (numOrNull('cfg-price-a')==null ? 50 : numOrNull('cfg-price-a')),
+    price_order_b: (numOrNull('cfg-price-b')==null ? 40 : numOrNull('cfg-price-b')),
+    refund_pct: (numOrNull('cfg-refund')==null ? 100 : numOrNull('cfg-refund')),
+    platform_name: ((document.getElementById('cfg-platform').value||'').trim() || null),
+    service_area: ((area && area.value) || null),
+    free_until: (document.getElementById('cfg-freeuntil').value || null)
+  };
+  if(btn) btn.disabled=true;
+  var up=await sb.from('app_config').update(payload).eq('id',1);
+  if(btn) btn.disabled=false;
+  if(up.error){ if(r) r.textContent='儲存失敗:'+up.error.message+'(若說找不到欄位,代表批次二的 SQL 還沒跑)'; return; }
+  if(r) r.textContent='已儲存。下單點數立刻生效(下一筆下單照新點數扣)。';
+}
 
 /* === 公告管理(真資料) ===
    為什麼直接 from announcements:後台 announcements_admin_all 政策已放行管理員讀寫,
