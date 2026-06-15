@@ -187,8 +187,28 @@ window.addEventListener('DOMContentLoaded', async function () {
     await handlePostLogin();
     return; // 已導向首頁，不顯示登入卡
   }
+  await applyLoginMethods(); // 依後台「登入方式開關」決定顯示哪幾顆按鈕
   if (card) card.style.visibility = 'visible';
 });
+
+// 讀後台登入方式開關,被關掉的就不顯示按鈕。走 security definer 函式 login_methods(),
+// 未登入也讀得到;讀不到時 fail-open(維持全顯示),不會把人鎖在登入頁外面。
+async function applyLoginMethods() {
+  var m = { line: true, google: true, email: true };
+  try {
+    var r = await sb.rpc('login_methods');
+    if (!r.error && r.data) { m = r.data; }
+  } catch (e) { /* 讀不到就維持全顯示 */ }
+  var setShow = function (sel, on) { var el = document.querySelector(sel); if (el) el.style.display = on ? '' : 'none'; };
+  setShow('.btn-line', m.line !== false);
+  setShow('.btn-google', m.google !== false);
+  setShow('.btn-email', m.email !== false);
+  // 三種全關時給說明,避免使用者看到沒有任何按鈕的空白卡片
+  if (m.line === false && m.google === false && m.email === false) {
+    var row = document.getElementById('social-row');
+    if (row) { row.innerHTML = '<div style="text-align:center;color:var(--ink-soft);font-size:0.9rem;padding:0.5rem 0;line-height:1.6;">目前暫停註冊與登入,請稍後再試或聯繫平台。</div>'; }
+  }
+}
 
 // 登入成功後：補 line_user_id，再依角色進對應首頁
 async function handlePostLogin() {
