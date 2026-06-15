@@ -92,14 +92,24 @@ async function saveProfile(){
   var btn = document.getElementById('cp-save'); btn.disabled = true; btn.textContent = '儲存中…';
   // 為什麼用 upsert 不用 update:信箱/Google 第一次登入若 handle_new_user 沒建到 users 主檔,
   // update 會 0 筆默默失敗。upsert(帶 id)有就更新、沒有就當場建,跟標準流程一致。
-  var up = await sb.from('users').upsert({ id: user.id, display_name: name, phone: phone });
+  // 為什麼一起寫 email:users 表早有 users_email_key 唯一鎖,但這頁原本沒把登入信箱寫進會員主檔,
+  // 信箱欄留空,空值不會觸發唯一鎖,造成「同一信箱開兩個帳號」沒擋下。把登入信箱寫進來,鎖才會生效。
+  // 統一轉小寫:gmail 不分大小寫,避免 A@x 與 a@x 被當成兩個信箱繞過鎖。LINE 登入沒信箱(空)就不寫。
+  var loginEmail = (user.email || '').trim().toLowerCase();
+  var payload = { id: user.id, display_name: name, phone: phone };
+  if(loginEmail){ payload.email = loginEmail; }
+  var up = await sb.from('users').upsert(payload);
   if(up.error){
     btn.disabled = false; btn.textContent = '完成,開始使用';
-    // 撞號:這支電話(或信箱)已屬於別的帳號。通常是同一個人之前用 LINE/Google/信箱其中一種註冊過,
+    // 撞號:電話或信箱已屬於別的帳號。通常是同一個人之前用 LINE/Google/信箱其中一種註冊過,
     // 這次又用另一種方式進來而開了新空帳號。不把資料庫錯誤丟給使用者,改成指引他回去用原本方式登入。
     // (這個新開的空帳號之後會被「每週自動清空殼」排程清掉,不會留髒)
-    if(up.error.code === '23505' || /duplicate key|users_phone_key|users_email_key/i.test(up.error.message || '')){
-      alert('這支電話已經有帳號在用了。你可能之前用 LINE、Google 或信箱其中一種註冊過。\n\n幫你回到登入頁,請用你「第一次註冊時用的那種方式」登入,就會回到原本的帳號。');
+    if(up.error.code === '23505' || /duplicate key|users_phone_key|users_email_key|users_id_number_key/i.test(up.error.message || '')){
+      var dupMsg = '這個資料和現有帳號重複了。';
+      if(/email/i.test(up.error.message || '')) dupMsg = '這個信箱已經有帳號在用了。';
+      else if(/phone/i.test(up.error.message || '')) dupMsg = '這支電話已經有帳號在用了。';
+      else if(/id_number/i.test(up.error.message || '')) dupMsg = '這個身分證號已經有帳號在用了。';
+      alert(dupMsg + '你可能之前用 LINE、Google 或信箱其中一種註冊過。\n\n幫你回到登入頁,請用你「第一次註冊時用的那種方式」登入,就會回到原本的帳號。');
       sb.auth.signOut().then(function(){ location.href = '13_login.html'; }).catch(function(){ location.href = '13_login.html'; });
       return;
     }
