@@ -1578,7 +1578,11 @@ function syncHbars(){
     if(!scroll) return;
     var table=scroll.querySelector('table');
     var spacer=bar.firstElementChild;
-    if(table&&spacer) spacer.style.width=table.scrollWidth+'px';
+    if(!table||!spacer) return;
+    // 只有表格真的比容器寬(放不下)才顯示上方橫桿;放得下就藏起來,不佔版面。+1 是捲動誤差容差。
+    var overflow=table.scrollWidth>scroll.clientWidth+1;
+    bar.style.display=overflow?'block':'none';
+    if(overflow) spacer.style.width=table.scrollWidth+'px';
   });
 }
 function initHScroll(){
@@ -1600,6 +1604,8 @@ document.addEventListener('click', function(e){
   if(e.target.closest('.colpanel')) return;
   p.classList.remove('open');
 });
+// 視窗大小改變時重算:變窄可能從放得下變成放不下,橫桿要跟著出現/消失
+window.addEventListener('resize', function(){ syncHbars(); });
 
 function renderAccounts(){
   var box=document.getElementById('account-list');
