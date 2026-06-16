@@ -173,6 +173,7 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-profile-guard.js"></script>
 <script>
 // 登入頁。LINE / Google / Email 皆已串接 Supabase Auth。
 // Google:signInWithOAuth provider 'google';Email:signInWithOtp 寄 magic link 到信箱。
@@ -223,13 +224,15 @@ async function handlePostLogin() {
   }
   if (user) {
     // 帳號狀態守門:被刪除/停用的帳號擋住,不補資料也不導首頁(同一支 LINE 再登入會回到原帳號,也擋在這)
-    var acc = await sb.from('users').select('deleted_at,is_active,display_name,phone,is_admin,is_super_admin').eq('id', user.id).maybeSingle();
+    var acc = await sb.from('users').select('deleted_at,is_active,display_name,phone,email,id_number,is_admin,is_super_admin').eq('id', user.id).maybeSingle();
     var ad = acc && acc.data ? acc.data : null;
     if (ad && ad.deleted_at) { await sb.auth.signOut(); alert('此帳號已刪除，無法再使用。'); window.location.href = 'index.html'; return; }
     if (ad && ad.is_active === false) { await sb.auth.signOut(); alert('此帳號已停用，如有疑問請聯繫平台。'); window.location.href = 'index.html'; return; }
     // 補資料守門:非管理員若缺暱稱或電話,先導去補資料頁(Google/Email 登入拿不到電話、Email 連暱稱都沒有)
     var _adm = ad && (ad.is_admin || ad.is_super_admin);
-    if (!_adm && (!ad || !ad.display_name || !String(ad.display_name).trim() || !ad.phone || !String(ad.phone).trim())) {
+    // 缺任何必填(暱稱/電話/信箱/身分證號)就導去 18 補齊。必填清單由 qyx-profile-guard.js 統一定義,
+    // 管理員一律視為填齊(guard 內已豁免),不會被擋。
+    if (!_adm && QyxProfile.missingFields(ad).length > 0) {
       window.location.href = '18_complete_profile.html'; return;
     }
     var lineId = extractLineId(user);

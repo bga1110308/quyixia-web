@@ -151,15 +151,19 @@ async function saveProfile(){
   }
 
   // 為什麼補建角色:後台帳號管理(08)用 user_roles 撈會員、會員編號也是建角色那刻才發。
-  // 信箱/Google 走 13→18 這條路原本只寫 users、不建角色,人就只在 11 出現、後台看不到、也沒編號,
-  // 下次來又像新帳號。這裡補預設「案家」角色(active),跟 14 註冊頁、跟 routeHome 預設進案家首頁一致。
-  // onConflict user_id,role:已經有這個角色就不重複建,不會弄壞日後另外申請順咖的人。
-  var roleUp = await sb.from('user_roles').upsert(
-    { user_id: user.id, role: 'client', status: 'active' },
-    { onConflict: 'user_id,role', ignoreDuplicates: true }
-  );
-  // 角色沒建成不擋使用者進站(主檔已存),只記 log 方便日後查
-  if(roleUp.error){ console.error('建立案家角色失敗', roleUp.error); }
+  // 信箱/Google 走 13→18 這條路原本只寫 users、不建角色,人就只在 11 出現、後台看不到、也沒編號,下次來又像新帳號。
+  // 只有「完全沒有任何角色」的新人才補預設「案家」角色(active)。本來就有角色的人(例:已是順咖)不動,
+  // 避免被守門叫進 18 補身分證時,被多塞一個案家角色、害他登入跑錯首頁。
+  var existRoles = await sb.from('user_roles').select('role').eq('user_id', user.id);
+  var hasAnyRole = existRoles && existRoles.data && existRoles.data.length > 0;
+  if(!hasAnyRole){
+    var roleUp = await sb.from('user_roles').upsert(
+      { user_id: user.id, role: 'client', status: 'active' },
+      { onConflict: 'user_id,role', ignoreDuplicates: true }
+    );
+    // 角色沒建成不擋使用者進站(主檔已存),只記 log 方便日後查
+    if(roleUp.error){ console.error('建立案家角色失敗', roleUp.error); }
+  }
   await routeHome(user.id);
 }
 </script>
