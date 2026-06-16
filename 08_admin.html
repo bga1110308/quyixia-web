@@ -77,6 +77,36 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',system-ui,-apple-system,san
 .data-table td{padding:11px 10px;border-bottom:1px solid #F5EDE0;vertical-align:middle;}
 .data-table tr:last-child td{border-bottom:none;}
 .data-table tbody tr:hover td{background:var(--champagne-soft);cursor:pointer;}
+/* 帳號表:不壓縮欄寬,改用自然寬度+橫向捲動(欄位多時左右拉,不要擠成一團) */
+.acct-table{width:auto;min-width:100%;}
+.acct-table td{white-space:nowrap;}
+.acct-scroll{overflow-x:auto;}
+/* 頂部同步捲動條:貼在表格上緣(sticky),不用滾到表格最底才能拉橫桿 */
+.hbar-top{position:sticky;top:0;z-index:18;overflow-x:auto;overflow-y:hidden;height:14px;background:var(--champagne-soft);border:1px solid var(--border-soft);border-radius:8px;margin-bottom:5px;}
+.hbar-top>div{height:1px;}
+/* 欄位顯示開關:在 #account-list 加 hide-XXX 類別即隱藏對應 data-col 的欄(表頭與每列一起藏) */
+#account-list.hide-no [data-col="no"],
+#account-list.hide-id [data-col="id"],
+#account-list.hide-phone [data-col="phone"],
+#account-list.hide-email [data-col="email"],
+#account-list.hide-area [data-col="area"],
+#account-list.hide-cats [data-col="cats"],
+#account-list.hide-badge [data-col="badge"],
+#account-list.hide-pool [data-col="pool"],
+#account-list.hide-rating [data-col="rating"],
+#account-list.hide-orders [data-col="orders"]{display:none;}
+/* 身分證遮罩/揭露:預設只顯示遮罩;單列加 id-on 或全表加 idall 就顯示全碼 */
+[data-idcell] .id-full{display:none;}
+#account-list.idall [data-idcell] .id-full,[data-idcell].id-on .id-full{display:inline;}
+#account-list.idall [data-idcell] .id-mask,[data-idcell].id-on .id-mask{display:none;}
+.id-eye{margin-left:6px;border:none;background:none;cursor:pointer;color:var(--amber-deep);font-size:11px;padding:2px 6px;border-radius:6px;}
+.id-eye:hover{background:var(--champagne);}
+/* 顯示欄位面板 */
+.colpanel{position:relative;display:inline-block;}
+.colpanel-pop{position:absolute;top:40px;left:0;z-index:30;background:#fff;border:1.5px solid var(--border-soft);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,0.12);padding:10px 14px;min-width:200px;display:none;}
+.colpanel-pop.open{display:block;}
+.colpanel-pop label{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);padding:5px 0;cursor:pointer;white-space:nowrap;}
+.colpanel-pop hr{border:none;border-top:1px solid var(--border-soft);margin:8px 0;}
 
 /* Pills */
 .pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 10px;border-radius:99px;font-weight:600;white-space:nowrap;}
@@ -324,6 +354,29 @@ textarea.form-input{min-height:80px;resize:vertical;}
           <button class="filter-btn" onclick="setAccountRoleFilter('client',this)">案家</button>
           <button class="filter-btn" onclick="setAccountRoleFilter('suncar',this)">順咖</button>
           <button class="filter-btn" onclick="setAccountRoleFilter('suspended',this)">已停權</button>
+        </div>
+        <!-- 顯示控制:勾選要看的欄位、身分證全顯示開關 -->
+        <div class="acct-toolbar" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:0 0 14px;">
+          <div class="colpanel">
+            <button class="filter-btn" type="button" onclick="toggleColPanel(event)">顯示欄位 ▾</button>
+            <div class="colpanel-pop" id="colpanel-pop" onclick="event.stopPropagation()">
+              <label><input type="checkbox" data-colkey="no" checked onchange="applyColVisibility()">會員編號</label>
+              <label><input type="checkbox" data-colkey="id" checked onchange="applyColVisibility()">身分證</label>
+              <label><input type="checkbox" data-colkey="phone" checked onchange="applyColVisibility()">電話</label>
+              <label><input type="checkbox" data-colkey="email" checked onchange="applyColVisibility()">Email</label>
+              <hr>
+              <div style="font-size:11px;color:var(--ink-light);margin-bottom:2px;">順咖專屬欄</div>
+              <label><input type="checkbox" data-colkey="area" checked onchange="applyColVisibility()">服務區域</label>
+              <label><input type="checkbox" data-colkey="cats" checked onchange="applyColVisibility()">服務類型</label>
+              <label><input type="checkbox" data-colkey="badge" checked onchange="applyColVisibility()">徽章</label>
+              <label><input type="checkbox" data-colkey="pool" checked onchange="applyColVisibility()">池別</label>
+              <label><input type="checkbox" data-colkey="rating" checked onchange="applyColVisibility()">評分</label>
+              <label><input type="checkbox" data-colkey="orders" checked onchange="applyColVisibility()">訂單/接單數</label>
+            </div>
+          </div>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink);cursor:pointer;">
+            <input type="checkbox" id="id-reveal-all" onchange="toggleIdRevealAll()">顯示全部身分證
+          </label>
         </div>
         <!-- 會員卡由 loadAccounts() 填入此處 -->
         <div id="account-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
@@ -1446,12 +1499,12 @@ function acctNameCell(acc, role){
 // 案家一列:姓名 電話 訂單數 狀態 操作
 function clientRowHtml(acc){
   return '<tr onclick="openMemberDrawer(\''+esc(acc.uid)+'\')">'+
-    '<td>'+(acc.member_no?esc(acc.member_no):'—')+'</td>'+
+    '<td data-col="no">'+(acc.member_no?esc(acc.member_no):'—')+'</td>'+
     '<td>'+acctNameCell(acc,'client')+'</td>'+
-    '<td>'+(acc.id_number?esc(acc.id_number):'—')+'</td>'+
-    '<td>'+(acc.phone?esc(acc.phone):'—')+'</td>'+
-    '<td>'+(acc.email?esc(acc.email):'—')+'</td>'+
-    '<td>'+(acc.clientOrders==null?'—':acc.clientOrders)+'</td>'+
+    idCellHtml(acc.id_number)+
+    '<td data-col="phone">'+(acc.phone?esc(acc.phone):'—')+'</td>'+
+    '<td data-col="email">'+(acc.email?esc(acc.email):'—')+'</td>'+
+    '<td data-col="orders">'+(acc.clientOrders==null?'—':acc.clientOrders)+'</td>'+
     '<td>'+acctStatusCell(acc,'client')+'</td>'+
     '<td>'+acctOpsBtn(acc,'client')+'</td>'+
   '</tr>';
@@ -1462,17 +1515,17 @@ function suncarRowHtml(acc){
   var pool=acc.has_caregiver_cert?'<span class="pill p-poolB">照服員池</span>':'<span class="pill p-poolA">一般池</span>';
   var rt=(acc.rating&&acc.rating.enough)?'<span class="star">★</span> '+Number(acc.rating.overall_avg).toFixed(1):'—';
   return '<tr onclick="openMemberDrawer(\''+esc(acc.uid)+'\')">'+
-    '<td>'+(acc.member_no?esc(acc.member_no):'—')+'</td>'+
+    '<td data-col="no">'+(acc.member_no?esc(acc.member_no):'—')+'</td>'+
     '<td>'+acctNameCell(acc,'suncar')+'</td>'+
-    '<td>'+(acc.id_number?esc(acc.id_number):'—')+'</td>'+
-    '<td>'+(acc.phone?esc(acc.phone):'—')+'</td>'+
-    '<td>'+(acc.email?esc(acc.email):'—')+'</td>'+
-    '<td>'+memberArea(acc.suncar_data)+'</td>'+
-    '<td>'+memberCats(acc.suncar_data)+'</td>'+
-    '<td>'+memberBadges(acc)+'</td>'+
-    '<td>'+pool+'</td>'+
-    '<td>'+rt+'</td>'+
-    '<td>'+(acc.suncarOrders==null?'—':acc.suncarOrders)+'</td>'+
+    idCellHtml(acc.id_number)+
+    '<td data-col="phone">'+(acc.phone?esc(acc.phone):'—')+'</td>'+
+    '<td data-col="email">'+(acc.email?esc(acc.email):'—')+'</td>'+
+    '<td data-col="area">'+memberArea(acc.suncar_data)+'</td>'+
+    '<td data-col="cats">'+memberCats(acc.suncar_data)+'</td>'+
+    '<td data-col="badge">'+memberBadges(acc)+'</td>'+
+    '<td data-col="pool">'+pool+'</td>'+
+    '<td data-col="rating">'+rt+'</td>'+
+    '<td data-col="orders">'+(acc.suncarOrders==null?'—':acc.suncarOrders)+'</td>'+
     '<td>'+acctStatusCell(acc,'suncar')+'</td>'+
     '<td>'+acctOpsBtn(acc,'suncar')+'</td>'+
   '</tr>';
@@ -1482,9 +1535,71 @@ function suncarRowHtml(acc){
 function acctTableBlock(title, count, headHtml, rowsHtml){
   return '<div style="margin-bottom:26px;">'+
     '<div class="sec-title" style="font-size:15px;margin:0 0 10px;">'+title+' <span style="color:var(--ink-light);font-weight:600;font-size:12px;">('+count+')</span></div>'+
-    '<div style="overflow-x:auto;"><table class="data-table">'+headHtml+'<tbody>'+rowsHtml+'</tbody></table></div>'+
+    '<div class="hbar-top"><div></div></div>'+
+    '<div class="acct-scroll"><table class="data-table acct-table">'+headHtml+'<tbody>'+rowsHtml+'</tbody></table></div>'+
   '</div>';
 }
+
+// 身分證遮罩:預設只露前 3 碼與末 3 碼,中間蓋掉(平常不全顯示,降低被看到/截圖的風險)
+function idMask(s){ s=String(s||''); if(s.length<6) return s||'—'; return s.slice(0,3)+'****'+s.slice(-3); }
+// 列表的身分證格:同時放遮罩版與全碼版,靠 CSS 決定顯示哪個。旁邊「看」可單獨揭露這一列。
+function idCellHtml(idn){
+  if(!idn) return '<td data-col="id">—</td>';
+  return '<td data-col="id" data-idcell>'+
+    '<span class="id-mask">'+esc(idMask(idn))+'</span>'+
+    '<span class="id-full">'+esc(idn)+'</span>'+
+    '<button class="id-eye" type="button" onclick="event.stopPropagation();toggleIdRow(this)">看</button>'+
+  '</td>';
+}
+// 單列揭露/收回身分證(只影響這一列)
+function toggleIdRow(btn){ var td=btn.closest('[data-idcell]'); if(td) td.classList.toggle('id-on'); }
+// 「顯示全部身分證」總開關:一次把整個名單的身分證全顯示或全遮罩
+function toggleIdRevealAll(){
+  var box=document.getElementById('account-list');
+  var on=document.getElementById('id-reveal-all');
+  if(box) box.classList.toggle('idall', !!(on&&on.checked));
+}
+// 開關「顯示欄位」面板
+function toggleColPanel(e){ if(e) e.stopPropagation(); var p=document.getElementById('colpanel-pop'); if(p) p.classList.toggle('open'); }
+// 依勾選決定哪些欄位顯示:沒勾的在 #account-list 加 hide-XXX 類別(CSS 連表頭帶每列一起藏)
+function applyColVisibility(){
+  var box=document.getElementById('account-list');
+  if(!box) return;
+  document.querySelectorAll('#colpanel-pop input[data-colkey]').forEach(function(cb){
+    box.classList.toggle('hide-'+cb.getAttribute('data-colkey'), !cb.checked);
+  });
+  syncHbars(); // 欄位增減後表格寬度變了,重算頂部捲動條
+}
+// 頂部同步捲動條:把每張表上方的細捲軸寬度對齊表格實際寬度,並與表格左右捲動互相同步。
+// 為什麼要這條:表格很寬時,原本的橫桿在表格最底,要滾很久才搆得到;這條貼在表格上緣(sticky),隨手可拉。
+function syncHbars(){
+  document.querySelectorAll('#account-list .hbar-top').forEach(function(bar){
+    var scroll=bar.nextElementSibling;
+    if(!scroll) return;
+    var table=scroll.querySelector('table');
+    var spacer=bar.firstElementChild;
+    if(table&&spacer) spacer.style.width=table.scrollWidth+'px';
+  });
+}
+function initHScroll(){
+  document.querySelectorAll('#account-list .hbar-top').forEach(function(bar){
+    if(bar._wired) return;          // 同一個元素只綁一次(renderAccounts 重畫會產生新元素,舊的連同事件被丟棄)
+    bar._wired=true;
+    var scroll=bar.nextElementSibling;
+    if(!scroll) return;
+    var lock=false;
+    bar.addEventListener('scroll', function(){ if(lock)return; lock=true; scroll.scrollLeft=bar.scrollLeft; lock=false; });
+    scroll.addEventListener('scroll', function(){ if(lock)return; lock=true; bar.scrollLeft=scroll.scrollLeft; lock=false; });
+  });
+  syncHbars();
+}
+// 點面板以外的地方就收起「顯示欄位」面板
+document.addEventListener('click', function(e){
+  var p=document.getElementById('colpanel-pop');
+  if(!p||!p.classList.contains('open')) return;
+  if(e.target.closest('.colpanel')) return;
+  p.classList.remove('open');
+});
 
 function renderAccounts(){
   var box=document.getElementById('account-list');
@@ -1506,14 +1621,15 @@ function renderAccounts(){
   if(badge) badge.textContent=(showClient?clients.length:0)+(showSuncar?suncars.length:0);
   var html='';
   if(showClient){
-    var ch='<thead><tr><th>會員編號</th><th>姓名</th><th>身分證</th><th>電話</th><th>Email</th><th>訂單數</th><th>狀態</th><th>操作</th></tr></thead>';
+    var ch='<thead><tr><th data-col="no">會員編號</th><th>姓名</th><th data-col="id">身分證</th><th data-col="phone">電話</th><th data-col="email">Email</th><th data-col="orders">訂單數</th><th>狀態</th><th>操作</th></tr></thead>';
     html+=acctTableBlock('案家', clients.length, ch, clients.length?clients.map(clientRowHtml).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-light);padding:18px;">沒有符合的案家</td></tr>');
   }
   if(showSuncar){
-    var sh='<thead><tr><th>會員編號</th><th>姓名</th><th>身分證</th><th>電話</th><th>Email</th><th>服務區域</th><th>服務類型</th><th>徽章</th><th>池別</th><th>評分</th><th>接單數</th><th>狀態</th><th>操作</th></tr></thead>';
+    var sh='<thead><tr><th data-col="no">會員編號</th><th>姓名</th><th data-col="id">身分證</th><th data-col="phone">電話</th><th data-col="email">Email</th><th data-col="area">服務區域</th><th data-col="cats">服務類型</th><th data-col="badge">徽章</th><th data-col="pool">池別</th><th data-col="rating">評分</th><th data-col="orders">接單數</th><th>狀態</th><th>操作</th></tr></thead>';
     html+=acctTableBlock('順咖', suncars.length, sh, suncars.length?suncars.map(suncarRowHtml).join(''):'<tr><td colspan="13" style="text-align:center;color:var(--ink-light);padding:18px;">沒有符合的順咖</td></tr>');
   }
   box.innerHTML=html||'<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">沒有符合的會員</div>';
+  initHScroll(); // 重畫後重接頂部捲動條(欄位隱藏類別在 #account-list 上,重畫不掉,自動延續)
 }
 
 function setAccountRoleFilter(f, el){
