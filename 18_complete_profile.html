@@ -23,7 +23,9 @@ body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','
 .field-label .req{color:#d9534f;margin-left:3px;}
 .field-input{width:100%;border:2px solid var(--border);border-radius:14px;padding:0.85rem 1rem;font-size:0.95rem;font-family:inherit;color:var(--ink);background:var(--champagne-soft);transition:all 0.2s;}
 .field-input:focus{outline:none;border-color:var(--amber);background:#fff;box-shadow:0 0 0 4px rgba(239,159,39,0.12);}
+.field-input[readonly]{background:#F3EEE4;color:var(--ink-soft);cursor:not-allowed;}
 .field-hint{font-size:0.74rem;color:var(--ink-light);margin-top:6px;}
+.privacy-note{font-size:0.74rem;color:var(--ink-soft);background:var(--mint-pale);border-radius:10px;padding:0.7rem 0.85rem;margin-bottom:1.25rem;line-height:1.6;}
 .save-btn{width:100%;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;padding:0.95rem;border-radius:14px;font-size:0.98rem;font-weight:600;cursor:pointer;font-family:inherit;margin-top:0.5rem;box-shadow:0 6px 20px rgba(239,159,39,0.3);transition:all 0.2s;}
 .save-btn:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(239,159,39,0.4);}
 .save-btn:disabled{opacity:0.6;cursor:default;transform:none;}
@@ -32,8 +34,8 @@ body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','
 <body>
 <div class="cp-card">
   <div class="brand-wrap"><span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span></div>
-  <div class="cp-title">再填兩個資料就好</div>
-  <div class="cp-sub">為了讓順咖能聯絡你、訂單能正常運作,<br>請填寫你的暱稱和電話。</div>
+  <div class="cp-title">補完基本資料就能開始</div>
+  <div class="cp-sub">為了確認身分、讓訂單正常運作,<br>請填好下面幾項資料。</div>
   <div class="field">
     <label class="field-label">暱稱<span class="req">*</span></label>
     <input type="text" class="field-input" id="cp-name" placeholder="順咖會這樣稱呼你,例:王小姐">
@@ -41,18 +43,31 @@ body{font-family:'Noto Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','
   </div>
   <div class="field">
     <label class="field-label">聯絡電話<span class="req">*</span></label>
-    <input type="tel" class="field-input" id="cp-phone" placeholder="0912-345-678">
+    <input type="tel" class="field-input" id="cp-phone" placeholder="0912345678">
     <div class="field-hint">訂單成立後才會給接單的順咖,平台不會公開</div>
   </div>
+  <div class="field">
+    <label class="field-label">信箱<span class="req">*</span></label>
+    <input type="email" class="field-input" id="cp-email" placeholder="your@email.com">
+    <div class="field-hint" id="cp-email-hint">用來通知與找回帳號</div>
+  </div>
+  <div class="field">
+    <label class="field-label">身分證號 / 居留證號<span class="req">*</span></label>
+    <input type="text" class="field-input" id="cp-id" placeholder="A123456789" maxlength="10" style="text-transform:uppercase;">
+    <div class="field-hint">本國身分證號或居留證號,用來確認一人一帳號</div>
+  </div>
+  <div class="privacy-note">為什麼要身分證號:防止他人冒用、確保一個人只有一個帳號。號碼只用於核對身分、不會公開給任何人,平台加密保管。</div>
   <button class="save-btn" id="cp-save" onclick="saveProfile()">完成,開始使用</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-profile-guard.js"></script>
 <script>
-/* 補基本資料頁。任何登入方式(LINE/Google/Email)第一次進來若缺暱稱或電話,
-   13/11/12 會把人導到這裡,填好才放行。管理員與已填齊者直接進首頁。
-   display_name / phone 不在 protect_sensitive_user_cols 鎖定清單,本人可改。 */
+/* 補基本資料頁。任何登入方式(LINE/Google/Email)第一次進來,缺必填資料就被 13/11/12 導到這裡,
+   填齊才放行。管理員與已填齊者直接進首頁。
+   必填欄位由共用檔 qyx-profile-guard.js 的 QyxProfile.REQUIRED 統一定義(暱稱/電話/信箱/身分證號)。
+   display_name / phone / email / id_number 都不在 protect_sensitive_user_cols 鎖定清單,本人可改。 */
 
 async function routeHome(uid){
   // 有「登入後要回去的頁」就回那頁(例:未登入在 04 下單→登入→補資料完,回去把單送出),不進預設首頁
@@ -71,13 +86,26 @@ window.addEventListener('DOMContentLoaded', async function(){
   var s = await sb.auth.getSession();
   var user = (s.data && s.data.session) ? s.data.session.user : null;
   if(!user){ location.href = '13_login.html'; return; }
-  var p = await sb.from('users').select('display_name,phone,is_admin,is_super_admin').eq('id', user.id).maybeSingle();
+  var p = await sb.from('users').select('display_name,phone,email,id_number,is_admin,is_super_admin').eq('id', user.id).maybeSingle();
   var u = (p && p.data) ? p.data : {};
-  var hasName = u.display_name && String(u.display_name).trim();
-  var hasPhone = u.phone && String(u.phone).trim();
-  // 管理員或已填齊,不用補,直接進首頁
-  if(u.is_admin || u.is_super_admin || (hasName && hasPhone)){ await routeHome(user.id); return; }
-  if(hasName){ document.getElementById('cp-name').value = u.display_name; } // Google 會帶名字,先填好
+  // 管理員或已填齊(由共用 guard 判斷),不用補,直接進首頁
+  if(QyxProfile.isComplete(u)){ await routeHome(user.id); return; }
+
+  // 先把已知資料填回去,使用者只補缺的
+  if(u.display_name){ document.getElementById('cp-name').value = u.display_name; }
+  if(u.phone){ document.getElementById('cp-phone').value = u.phone; }
+  if(u.id_number){ document.getElementById('cp-id').value = u.id_number; }
+  // 信箱:登入時系統已給(Google/Email)就鎖定為登入信箱,不讓改(避免登入身分與資料信箱對不上);
+  // LINE 登入沒帶信箱,留空讓使用者自己填。
+  var loginEmail = (user.email || '').trim();
+  var emailInput = document.getElementById('cp-email');
+  if(loginEmail){
+    emailInput.value = loginEmail;
+    emailInput.setAttribute('readonly', 'readonly');
+    document.getElementById('cp-email-hint').textContent = '這是你的登入信箱,不需修改';
+  } else if(u.email){
+    emailInput.value = u.email;
+  }
   document.querySelector('.cp-card').style.visibility = 'visible';
 });
 
@@ -85,39 +113,46 @@ async function saveProfile(){
   var s = await sb.auth.getSession();
   var user = (s.data && s.data.session) ? s.data.session.user : null;
   if(!user){ location.href = '13_login.html'; return; }
-  var name = (document.getElementById('cp-name').value || '').trim();
+
+  var name  = (document.getElementById('cp-name').value || '').trim();
   var phone = (document.getElementById('cp-phone').value || '').replace(/[^\d]/g, '');
+  var email = (document.getElementById('cp-email').value || '').trim().toLowerCase();
+  var idno  = (document.getElementById('cp-id').value || '').trim().toUpperCase();
+
   if(!name){ alert('請填暱稱'); return; }
   if(phone.length < 8){ alert('請填正確的電話號碼'); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ alert('請填正確的信箱'); return; }
+  if(!QyxProfile.validIdNumber(idno)){ alert('身分證號或居留證號格式不正確,請再確認。\n(本國身分證:1 個英文字母加 9 個數字;居留證:2 個英文字母加 8 個數字)'); return; }
+
   var btn = document.getElementById('cp-save'); btn.disabled = true; btn.textContent = '儲存中…';
+
   // 為什麼用 upsert 不用 update:信箱/Google 第一次登入若 handle_new_user 沒建到 users 主檔,
   // update 會 0 筆默默失敗。upsert(帶 id)有就更新、沒有就當場建,跟標準流程一致。
-  // 為什麼一起寫 email:users 表早有 users_email_key 唯一鎖,但這頁原本沒把登入信箱寫進會員主檔,
-  // 信箱欄留空,空值不會觸發唯一鎖,造成「同一信箱開兩個帳號」沒擋下。把登入信箱寫進來,鎖才會生效。
-  // 統一轉小寫:gmail 不分大小寫,避免 A@x 與 a@x 被當成兩個信箱繞過鎖。LINE 登入沒信箱(空)就不寫。
-  var loginEmail = (user.email || '').trim().toLowerCase();
-  var payload = { id: user.id, display_name: name, phone: phone };
-  if(loginEmail){ payload.email = loginEmail; }
+  // 信箱、身分證號一起寫進來,users 表的三道唯一鎖(電話/信箱/身分證)才比對得到、擋得住重複。
+  // 信箱統一小寫、身分證統一大寫,避免大小寫差異繞過唯一鎖。
+  var payload = { id: user.id, display_name: name, phone: phone, email: email, id_number: idno };
   var up = await sb.from('users').upsert(payload);
   if(up.error){
     btn.disabled = false; btn.textContent = '完成,開始使用';
-    // 撞號:電話或信箱已屬於別的帳號。通常是同一個人之前用 LINE/Google/信箱其中一種註冊過,
-    // 這次又用另一種方式進來而開了新空帳號。不把資料庫錯誤丟給使用者,改成指引他回去用原本方式登入。
+    // 撞號:電話/信箱/身分證其中之一已屬於別的帳號。通常是同一個人之前用 LINE/Google/信箱其中一種註冊過,
+    // 這次又用另一種方式進來開了新空帳號。不把資料庫錯誤丟給使用者,改成擋下並指引回原本方式登入。
     // (這個新開的空帳號之後會被「每週自動清空殼」排程清掉,不會留髒)
-    if(up.error.code === '23505' || /duplicate key|users_phone_key|users_email_key|users_id_number_key/i.test(up.error.message || '')){
-      var dupMsg = '這個資料和現有帳號重複了。';
-      if(/email/i.test(up.error.message || '')) dupMsg = '這個信箱已經有帳號在用了。';
-      else if(/phone/i.test(up.error.message || '')) dupMsg = '這支電話已經有帳號在用了。';
-      else if(/id_number/i.test(up.error.message || '')) dupMsg = '這個身分證號已經有帳號在用了。';
+    var em = up.error.message || '';
+    if(up.error.code === '23505' || /duplicate key|users_phone_key|users_email_key|users_id_number_key/i.test(em)){
+      var dupMsg = '這筆資料和現有帳號重複了。';
+      if(/id_number/i.test(em)) dupMsg = '這個身分證號已經有帳號在用了。';
+      else if(/email/i.test(em)) dupMsg = '這個信箱已經有帳號在用了。';
+      else if(/phone/i.test(em)) dupMsg = '這支電話已經有帳號在用了。';
       alert(dupMsg + '你可能之前用 LINE、Google 或信箱其中一種註冊過。\n\n幫你回到登入頁,請用你「第一次註冊時用的那種方式」登入,就會回到原本的帳號。');
       sb.auth.signOut().then(function(){ location.href = '13_login.html'; }).catch(function(){ location.href = '13_login.html'; });
       return;
     }
-    alert('儲存失敗:' + up.error.message); return;
+    alert('儲存失敗:' + em); return;
   }
-  // 為什麼補建角色:後台帳號管理(08)是用 user_roles 撈會員。信箱/Google 走 13→18 這條路
-  // 原本只寫 users、不建角色,人就只在 11 出現、後台卻看不到,下次來又像新帳號。
-  // 這裡補預設「案家」角色(active),跟 14 註冊頁、跟 routeHome 預設進案家首頁的行為一致。
+
+  // 為什麼補建角色:後台帳號管理(08)用 user_roles 撈會員、會員編號也是建角色那刻才發。
+  // 信箱/Google 走 13→18 這條路原本只寫 users、不建角色,人就只在 11 出現、後台看不到、也沒編號,
+  // 下次來又像新帳號。這裡補預設「案家」角色(active),跟 14 註冊頁、跟 routeHome 預設進案家首頁一致。
   // onConflict user_id,role:已經有這個角色就不重複建,不會弄壞日後另外申請順咖的人。
   var roleUp = await sb.from('user_roles').upsert(
     { user_id: user.id, role: 'client', status: 'active' },
