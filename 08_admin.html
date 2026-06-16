@@ -948,8 +948,12 @@ function memberDrawerHtml(acc, x){
     '<div class="d-avatar" style="background:var(--champagne);color:var(--amber-deep);">'+esc((acc.name||'？').charAt(0))+'</div>'+
     '<div class="d-name">'+esc(acc.name)+'</div>'+
     '<div class="d-sub">'+(acc.member_no?esc(acc.member_no):'未發編號')+'</div>'+
-    '<div class="d-section">聯絡資訊</div>'+
-    '<div class="d-row"><span class="d-key">電話</span><span class="d-val">'+(acc.phone?esc(acc.phone):'—')+'</span></div>';
+    '<div class="d-section">基本資料</div>'+
+    '<div class="d-row"><span class="d-key">會員編號</span><span class="d-val">'+(acc.member_no?esc(acc.member_no):'未發編號')+'</span></div>'+
+    '<div class="d-row"><span class="d-key">姓名</span><span class="d-val">'+(acc.name?esc(acc.name):'—')+'</span></div>'+
+    '<div class="d-row"><span class="d-key">身分證號</span><span class="d-val">'+(acc.id_number?esc(acc.id_number):'—')+'</span></div>'+
+    '<div class="d-row"><span class="d-key">電話</span><span class="d-val">'+(acc.phone?esc(acc.phone):'—')+'</span></div>'+
+    '<div class="d-row"><span class="d-key">Email</span><span class="d-val">'+(acc.email?esc(acc.email):'—')+'</span></div>';
   if(acc.client){
     html+=memberSection('案家身分', acctStatusPill(acc.client),
       '<div class="d-row"><span class="d-key">累計下單</span><span class="d-val">'+(x.clientOrders==null?'—':x.clientOrders+' 筆')+'</span></div>');
@@ -1365,7 +1369,7 @@ async function loadAccounts(){
   if(!rows.length){ _accounts=[]; renderAccounts(); return; }
   // 撈這些人的基本資料(admin_read_all_users 政策允許)
   var ids=rows.map(function(r){ return r.user_id; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
-  var ur=await sb.from('users').select('id,display_name,phone,member_no,role_detail,is_realname,has_caregiver_cert,has_good_conduct,has_cpr,is_active,deleted_at,is_admin,is_super_admin').in('id',ids);
+  var ur=await sb.from('users').select('id,display_name,phone,email,id_number,member_no,role_detail,is_realname,has_caregiver_cert,has_good_conduct,has_cpr,is_active,deleted_at,is_admin,is_super_admin').in('id',ids);
   if(ur.error){ box.innerHTML=acctErrBox(ur.error.message); return; }
   var umap={}; (ur.data||[]).forEach(function(u){ umap[u.id]=u; });
   // 每人合併成一筆,兩種身分各記狀態
@@ -1373,7 +1377,7 @@ async function loadAccounts(){
   rows.forEach(function(r){
     if(!amap[r.user_id]){
       var u=umap[r.user_id]||{};
-      amap[r.user_id]={ uid:r.user_id, name:(u.role_detail&&u.role_detail.real_name)||u.display_name||'未填姓名', phone:u.phone||'', member_no:u.member_no||'', is_realname:!!u.is_realname, has_caregiver_cert:!!u.has_caregiver_cert, has_good_conduct:!!u.has_good_conduct, has_cpr:!!u.has_cpr, is_active:(u.is_active!==false), deleted_at:u.deleted_at||null, is_admin:!!u.is_admin, is_super_admin:!!u.is_super_admin, client:null, suncar:null, suncar_data:null };
+      amap[r.user_id]={ uid:r.user_id, name:(u.role_detail&&u.role_detail.real_name)||u.display_name||'未填姓名', phone:u.phone||'', email:u.email||'', id_number:u.id_number||'', member_no:u.member_no||'', is_realname:!!u.is_realname, has_caregiver_cert:!!u.has_caregiver_cert, has_good_conduct:!!u.has_good_conduct, has_cpr:!!u.has_cpr, is_active:(u.is_active!==false), deleted_at:u.deleted_at||null, is_admin:!!u.is_admin, is_super_admin:!!u.is_super_admin, client:null, suncar:null, suncar_data:null };
     }
     if(r.role==='client') amap[r.user_id].client=r.status;
     if(r.role==='suncar'){ amap[r.user_id].suncar=r.status; amap[r.user_id].suncar_data=r.role_data||{}; }
@@ -1442,8 +1446,11 @@ function acctNameCell(acc, role){
 // 案家一列:姓名 電話 訂單數 狀態 操作
 function clientRowHtml(acc){
   return '<tr onclick="openMemberDrawer(\''+esc(acc.uid)+'\')">'+
+    '<td>'+(acc.member_no?esc(acc.member_no):'—')+'</td>'+
     '<td>'+acctNameCell(acc,'client')+'</td>'+
+    '<td>'+(acc.id_number?esc(acc.id_number):'—')+'</td>'+
     '<td>'+(acc.phone?esc(acc.phone):'—')+'</td>'+
+    '<td>'+(acc.email?esc(acc.email):'—')+'</td>'+
     '<td>'+(acc.clientOrders==null?'—':acc.clientOrders)+'</td>'+
     '<td>'+acctStatusCell(acc,'client')+'</td>'+
     '<td>'+acctOpsBtn(acc,'client')+'</td>'+
@@ -1455,8 +1462,11 @@ function suncarRowHtml(acc){
   var pool=acc.has_caregiver_cert?'<span class="pill p-poolB">照服員池</span>':'<span class="pill p-poolA">一般池</span>';
   var rt=(acc.rating&&acc.rating.enough)?'<span class="star">★</span> '+Number(acc.rating.overall_avg).toFixed(1):'—';
   return '<tr onclick="openMemberDrawer(\''+esc(acc.uid)+'\')">'+
+    '<td>'+(acc.member_no?esc(acc.member_no):'—')+'</td>'+
     '<td>'+acctNameCell(acc,'suncar')+'</td>'+
+    '<td>'+(acc.id_number?esc(acc.id_number):'—')+'</td>'+
     '<td>'+(acc.phone?esc(acc.phone):'—')+'</td>'+
+    '<td>'+(acc.email?esc(acc.email):'—')+'</td>'+
     '<td>'+memberArea(acc.suncar_data)+'</td>'+
     '<td>'+memberCats(acc.suncar_data)+'</td>'+
     '<td>'+memberBadges(acc)+'</td>'+
@@ -1485,7 +1495,7 @@ function renderAccounts(){
   var kwEl=document.getElementById('account-search');
   var kw=(kwEl&&kwEl.value?kwEl.value:'').trim().toLowerCase();
   var base=_accounts.filter(function(a){
-    return !kw || (a.name+' '+a.phone+' '+a.member_no).toLowerCase().indexOf(kw)>=0;
+    return !kw || (a.name+' '+a.phone+' '+a.member_no+' '+(a.id_number||'')+' '+(a.email||'')).toLowerCase().indexOf(kw)>=0;
   });
   // 篩選:除「只看順咖」外都顯示案家表,除「只看案家」外都顯示順咖表;「已停權」兩表都顯示但只列被停權的
   var f=_accountFilter;
@@ -1496,12 +1506,12 @@ function renderAccounts(){
   if(badge) badge.textContent=(showClient?clients.length:0)+(showSuncar?suncars.length:0);
   var html='';
   if(showClient){
-    var ch='<thead><tr><th>姓名</th><th>電話</th><th>訂單數</th><th>狀態</th><th>操作</th></tr></thead>';
-    html+=acctTableBlock('案家', clients.length, ch, clients.length?clients.map(clientRowHtml).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--ink-light);padding:18px;">沒有符合的案家</td></tr>');
+    var ch='<thead><tr><th>會員編號</th><th>姓名</th><th>身分證</th><th>電話</th><th>Email</th><th>訂單數</th><th>狀態</th><th>操作</th></tr></thead>';
+    html+=acctTableBlock('案家', clients.length, ch, clients.length?clients.map(clientRowHtml).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--ink-light);padding:18px;">沒有符合的案家</td></tr>');
   }
   if(showSuncar){
-    var sh='<thead><tr><th>姓名</th><th>電話</th><th>服務區域</th><th>服務類型</th><th>徽章</th><th>池別</th><th>評分</th><th>接單數</th><th>狀態</th><th>操作</th></tr></thead>';
-    html+=acctTableBlock('順咖', suncars.length, sh, suncars.length?suncars.map(suncarRowHtml).join(''):'<tr><td colspan="10" style="text-align:center;color:var(--ink-light);padding:18px;">沒有符合的順咖</td></tr>');
+    var sh='<thead><tr><th>會員編號</th><th>姓名</th><th>身分證</th><th>電話</th><th>Email</th><th>服務區域</th><th>服務類型</th><th>徽章</th><th>池別</th><th>評分</th><th>接單數</th><th>狀態</th><th>操作</th></tr></thead>';
+    html+=acctTableBlock('順咖', suncars.length, sh, suncars.length?suncars.map(suncarRowHtml).join(''):'<tr><td colspan="13" style="text-align:center;color:var(--ink-light);padding:18px;">沒有符合的順咖</td></tr>');
   }
   box.innerHTML=html||'<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">沒有符合的會員</div>';
 }
