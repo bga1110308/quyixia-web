@@ -648,10 +648,10 @@ textarea.form-input{min-height:80px;resize:vertical;}
           <div class="setting-row">
             <div class="sr-left">
               <div class="sr-label">信用卡綁定收會費 <span style="font-size:10px;background:var(--ink-soft);color:#fff;padding:2px 7px;border-radius:99px;font-weight:600;">加值服務</span></div>
-              <div class="sr-desc">開啟後,使用者可綁定信用卡作為會員費或訂閱費扣款。需先接好金流(綠界/藍新)</div>
+              <div class="sr-desc">開啟後,使用者可綁定信用卡作為會員費或訂閱費扣款。需先接好金流(PAYUNi)</div>
               <span class="status-chip chip-off" id="chip-card">目前:關閉</span>
             </div>
-            <label class="toggle"><input type="checkbox" onchange="confirmEnableFeature(this,'chip-card','信用卡綁定','已開啟','關閉','請先確認綠界/藍新已申請完成。確認啟用?')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+            <label class="toggle"><input type="checkbox" onchange="confirmEnableFeature(this,'chip-card','信用卡綁定','已開啟','關閉','請先確認 PAYUNi 已申請完成。確認啟用?')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
 
           <div class="setting-row">
@@ -735,7 +735,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
           <div class="setting-row">
             <div class="sr-left">
               <div class="sr-label">手動設定資訊會員到期日</div>
-              <div class="sr-desc">輸入會員編號(例 U-20260529-0002),按鈕直接幫他開通。給 7 天=往後加 7 天;給 30 天=往後加 30 天(沒過期會在原到期日疊加);取消=清空,立刻變回未付費。這是綠界金流上線前的測試開關,正式金流要由伺服器端驗證後才寫入。</div>
+              <div class="sr-desc">輸入會員編號(例 U-20260529-0002),按鈕直接幫他開通。給 7 天=往後加 7 天;給 30 天=往後加 30 天(沒過期會在原到期日疊加);取消=清空,立刻變回未付費。這是 PAYUNi 金流上線前的測試開關,正式金流要由伺服器端驗證後才寫入。</div>
               <input class="text-input" id="im-member-no" type="text" placeholder="會員編號" style="margin-top:8px;max-width:260px;">
               <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
                 <button type="button" onclick="setInfoMember(7)" style="padding:8px 14px;border:1.5px solid var(--amber);background:var(--amber);color:#fff;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;">給 7 天</button>
@@ -1917,7 +1917,7 @@ function confirmEnableFeature(cb,chipId,featureName,onText,offText,warning){
 /* 測試用:用會員編號手動設資訊會員到期日
    days>0:往後加天數(沒過期就在原到期日上疊加,使用者不吃虧)
    days=0:清空,立刻變回未付費
-   為什麼這樣做:綠界金流上線前先用這個測「鎖頭/解鎖」兩種畫面,不用等金流。
+   為什麼這樣做:PAYUNi 金流上線前先用這個測「鎖頭/解鎖」兩種畫面,不用等金流。
    正式金流上線後改由伺服器端驗證付款後寫入,這個開關只給內部測試用。
    注意:管理員改別人那筆 users,要後台有 admin_update_all_users 政策才會成功(SQL 已附)。 */
 async function setInfoMember(days){
