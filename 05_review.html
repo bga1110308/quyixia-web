@@ -100,12 +100,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .comment-box:focus{outline:none;border-color:var(--amber);background:#fff;box-shadow:0 0 0 4px rgba(239,159,39,0.12);}
 .char-count{text-align:right;font-size:0.72rem;color:var(--ink-light);margin-top:5px;}
 
-/* 打賞 */
-.tip-row{display:flex;gap:7px;flex-wrap:wrap;}
-.tip-btn{font-size:0.85rem;padding:8px 16px;border-radius:12px;background:#fff;border:1.5px solid var(--border);color:var(--ink);cursor:pointer;font-weight:500;font-family:inherit;transition:all 0.15s;}
-.tip-btn:hover{background:var(--champagne);}
-.tip-btn.on{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(239,159,39,0.3);}
-.tip-note{font-size:0.72rem;color:var(--ink-light);margin-top:8px;line-height:1.55;}
 
 /* 送出按鈕 */
 .submit-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;padding:1rem;border-radius:14px;font-size:1rem;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 6px 20px rgba(239,159,39,0.35);transition:all 0.2s;}
@@ -431,20 +425,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="char-count"><span id="cc-client">0</span> / 200</div>
     </div>
 
-    <div class="card">
-      <div class="sec-title">打賞(選填)</div>
-      <div style="font-size:0.82rem;color:var(--ink-soft);margin-bottom:0.85rem;line-height:1.65;">服務超乎預期?給點打賞鼓勵她</div>
-      <div class="tip-row">
-        <button class="tip-btn" onclick="pickTip(this,0)">不打賞</button>
-        <button class="tip-btn" onclick="pickTip(this,10)">$10</button>
-        <button class="tip-btn" onclick="pickTip(this,50)">$50</button>
-        <button class="tip-btn" onclick="pickTip(this,100)">$100</button>
-        <button class="tip-btn" onclick="pickTip(this,'custom')">自訂</button>
-      </div>
-      <div class="tip-note">打賞會全額轉給順咖,平台不抽成</div>
-    </div>
-
     <!-- 案家評順咖的紅旗(冒用帳號)已改成「有可以改進的地方」裡可直接點的標籤(data-flag),不再用獨立回報面板 -->
+    <!-- 原本的「打賞順咖」區已移除:那是從未接通的空殼(selectedTip 設了卻沒送出後台),文案「全額轉給順咖」也從未成立。打賞改成獨立的「打賞平台·種子收集」功能,見 19_seeds.html -->
 
     <button class="submit-btn" onclick="submitReview('client')">送出評價</button>
   </div>
@@ -925,23 +907,6 @@ function updateCharCount(el, id) {
   document.getElementById(id).textContent = el.value.length;
 }
 
-var selectedTip = 0;
-function pickTip(btn, val) {
-  document.querySelectorAll('.tip-btn').forEach(function(b){ b.classList.remove('on'); });
-  btn.classList.add('on');
-  if (val === 'custom') {
-    var amt = prompt('打賞金額(10-2000 元):');
-    if (amt && !isNaN(amt) && +amt >= 10 && +amt <= 2000) {
-      selectedTip = +amt;
-      btn.textContent = '$' + amt;
-    } else {
-      btn.classList.remove('on');
-      btn.textContent = '自訂';
-    }
-  } else {
-    selectedTip = val;
-  }
-}
 
 /* 沒填必填項時:除了 alert 提醒,還把畫面捲到那一格、閃一下框。
    為什麼這樣做:表單很長,只跳提醒使用者不知道要往哪補(跟 04/14 的自動捲同一套)。
