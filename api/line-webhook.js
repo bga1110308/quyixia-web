@@ -59,19 +59,40 @@ async function lineReply(replyToken, text) {
   });
 }
 
-// 回覆並附上「快速按鈕」：讓使用者一點就選定要傳給哪張單
+// 用「Flex 訊息」回覆選單：把選單按鈕做進訊息泡泡裡面
+// 為什麼不用快速回覆(quick reply)：那種按鈕官方只在手機 iOS/Android 顯示，
+// 桌機等其他用戶端常常看不到。Flex 是訊息本身的一部分，手機、桌機、各版本都穩定顯示，
+// 而且過一陣子回頭還能點、不會消失。
 // items = [{ id, label }]，每顆按鈕點下去會回傳 postback data = 'pick:訂單id'
-function buildQuickReply(items) {
-  const buttons = (items || []).slice(0, 13).map((it) => ({
-    type: 'action',
+function buildPickerFlex(promptText, items) {
+  const buttons = (items || []).slice(0, 12).map((it) => ({
+    type: 'button',
+    style: 'primary',
+    height: 'sm',
+    color: '#5FB58E', // 順咖綠，符合站內設計
     action: {
       type: 'postback',
-      label: it.label,                 // 按鈕上看到的字（LINE 上限 20 字，SQL 端已截斷）
+      label: it.label,                 // 按鈕上看到的字（SQL 端已截到 20 字內）
       data: 'pick:' + it.id,           // 點下去回傳這串，webhook 用來認是哪張單
       displayText: '傳給：' + it.label, // 點完後在聊天室顯示這句，讓使用者知道選了哪張
     },
   }));
-  return { items: buttons };
+  return {
+    type: 'flex',
+    altText: '請選擇這句要傳給哪張單',
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        spacing: 'sm',
+        contents: [
+          { type: 'text', text: promptText, wrap: true, weight: 'bold', size: 'sm' },
+          ...buttons,
+        ],
+      },
+    },
+  };
 }
 
 async function lineReplyWithButtons(replyToken, text, items) {
@@ -83,7 +104,7 @@ async function lineReplyWithButtons(replyToken, text, items) {
     },
     body: JSON.stringify({
       replyToken,
-      messages: [{ type: 'text', text, quickReply: buildQuickReply(items) }],
+      messages: [buildPickerFlex(text, items)],
     }),
   });
 }
