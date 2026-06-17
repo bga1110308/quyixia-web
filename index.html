@@ -330,7 +330,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="nav-links">
       <a href="03_staff_apply.html" class="nav-link">加入順咖</a>
       <a href="13_login.html" class="nav-link" id="nav-login">登入/註冊</a>
-      <a href="11_client_home.html" class="nav-link" id="nav-home" style="display:none;">我的首頁</a>
+      <a class="nav-link" id="nav-home" style="display:none;cursor:pointer;" onclick="goMyHome()">我的首頁</a>
       <button type="button" class="nav-link" id="nav-logout" style="display:none;align-items:center;gap:5px;border-color:rgba(239,159,39,0.4);color:var(--amber-deep);">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>登出
       </button>
@@ -354,6 +354,22 @@ document.addEventListener('DOMContentLoaded', function(){
     out.disabled=true; sb.auth.signOut().finally(function(){ location.reload(); });
   });
 });
+
+/* 我的首頁:按身分導頁——有案家角色去 11、只有順咖角色去 12。單一身分自動到對的頁,不寫死(原本寫死去 11,純順咖會被誤送到案家首頁)。 */
+async function goMyHome(){
+  var dest='11_client_home.html';
+  try{
+    var sres=await sb.auth.getSession();
+    var u=(sres.data&&sres.data.session)?sres.data.session.user:null;
+    if(u){
+      var rr=await sb.from('user_roles').select('role').eq('user_id',u.id);
+      var roles=(rr&&rr.data)?rr.data.map(function(x){return x.role;}):[];
+      if(roles.indexOf('client')!==-1) dest='11_client_home.html';
+      else if(roles.indexOf('suncar')!==-1) dest='12_staff_home.html';
+    }
+  }catch(e){}
+  window.location.href=dest;
+}
 </script>
 
 <!-- Hero -->

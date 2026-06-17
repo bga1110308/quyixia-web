@@ -706,6 +706,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     if(_ad && _ad.is_active === false){ await sb.auth.signOut(); alert('此帳號已停用，如有疑問請聯繫平台。'); window.location.href='index.html'; return; }
     // 補資料守門:非管理員缺任何必填(暱稱/電話/信箱/身分證號)就導去 18 補齊。必填清單由 qyx-profile-guard.js 統一定義。
     var _adm = _ad && (_ad.is_admin || _ad.is_super_admin);
+    // 單一身分自動導頁:純順咖(有順咖角色、沒有案家角色)誤入案家首頁時,直接導去順咖首頁 12。管理員不導(可看全部)。
+    if(!_adm){
+      var _rr = await sb.from('user_roles').select('role').eq('user_id', user.id);
+      var _rl = (_rr && _rr.data) ? _rr.data.map(function(x){ return x.role; }) : [];
+      if(_rl.indexOf('client') === -1 && _rl.indexOf('suncar') !== -1){ window.location.replace('12_staff_home.html'); return; }
+    }
     if(!_adm && QyxProfile.missingFields(_ad).length > 0){ window.location.href='18_complete_profile.html'; return; }
     _clientUserId = user.id; // 存本人 id,取消訂單時用來限定只能取消自己的單
 

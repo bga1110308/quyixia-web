@@ -833,6 +833,12 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(_ad && _ad.is_active === false){ await sb.auth.signOut(); alert('此帳號已停用，如有疑問請聯繫平台。'); window.location.href='index.html'; return; }
     // 補資料守門:非管理員缺任何必填(暱稱/電話/信箱/身分證號)就導去 18 補齊。必填清單由 qyx-profile-guard.js 統一定義。
     var _adm = _ad && (_ad.is_admin || _ad.is_super_admin);
+    // 單一身分自動導頁:純案家(有案家角色、沒有順咖角色)誤入順咖首頁時,直接導去案家首頁 11。管理員不導(可看全部)。
+    if(!_adm){
+      var _rr = await sb.from('user_roles').select('role').eq('user_id', user.id);
+      var _rl = (_rr && _rr.data) ? _rr.data.map(function(x){ return x.role; }) : [];
+      if(_rl.indexOf('suncar') === -1 && _rl.indexOf('client') !== -1){ window.location.replace('11_client_home.html'); return; }
+    }
     if(!_adm && QyxProfile.missingFields(_ad).length > 0){ window.location.href='18_complete_profile.html'; return; }
     currentUserId = user.id;
 
