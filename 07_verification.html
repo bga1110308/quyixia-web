@@ -308,7 +308,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="sec-title">信箱認證</div>
     <!-- 信箱驗證:不再用前端假驗證碼。改成依「登入方式」自動判斷——
          用 Google 或 Email(收登入連結)登入者,信箱在登入當下已被驗證,直接顯示已驗證;
-         只用 LINE 登入者拿不到信箱,引導改用 Google/Email。狀態由 applyEmailLoginState() 設定。 -->
+         只用 LINE 登入者拿不到信箱,顯示「等寄信驗證功能」說明(不引導切換登入——一人一帳號綁身分證,切換登入會變成另一個帳號)。狀態由 applyEmailLoginState() 設定。 -->
     <div id="email-verified" style="display:none;">
       <div class="success-box">
         <span class="success-icon-svg"><svg><use href="#i-check-circle"/></svg></span>
@@ -324,8 +324,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
           <span style="color:var(--warn);">尚未驗證</span>
         </div>
       </div>
-      <div class="hint">你目前用 LINE 登入,系統拿不到你的信箱,所以還不能完成信箱驗證。<br>要驗證信箱:請改用 <b>Google</b> 或 <b>Email</b>(收登入連結)登入,登入後回到這頁會自動顯示「信箱已驗證」,不用打任何驗證碼。<br>日後平台開放信箱寄信驗證,用 LINE 登入也能在這裡補驗。</div>
-      <a href="13_login.html" class="send-btn" style="display:inline-flex;margin-top:12px;text-decoration:none;align-items:center;justify-content:center;">改用 Google / Email 登入</a>
+      <div class="hint">你目前用 LINE 登入,系統拿不到你的信箱,所以這裡的信箱驗證還不能用。<br>等平台開放「寄信驗證」功能後(屆時會公告),用 LINE 登入也能在這裡完成信箱驗證。<br>(如果你本來就是用 Google 或 Email 收登入連結登入,這頁會自動顯示「信箱已驗證」,不用做任何事。)</div>
     </div>
   </div>
   <div class="card">
@@ -708,7 +707,7 @@ function uploadCert(card, key, isRequired) {
    為什麼這樣是真的:用 Google 登入=Google 已驗過該信箱;用 Email(magic link)登入=已點過寄到該信箱的連結。
    為什麼要走後台:這會變成案家看得到的公開徽章,不能讓前端自己說了算(前端可竄改)。verify_my_email 在後台讀 auth 端、
    authoritative,並把結果寫進 users.is_email_verified(被觸發器鎖住,只有這支函式能改),02 案家名單才畫得出徽章。
-   只用 LINE 登入拿不到信箱,函式回 verified:false,引導改用 Google/Email。 */
+   只用 LINE 登入拿不到信箱,函式回 verified:false,顯示「等寄信驗證」說明(不引導切換登入,因一人一帳號切換會變成另一個帳號)。 */
 function applyEmailLoginState(user) {
   var box = document.getElementById('email-verified');
   var need = document.getElementById('email-needlogin');
