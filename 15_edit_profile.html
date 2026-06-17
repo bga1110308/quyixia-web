@@ -216,6 +216,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-profile-guard.js"></script>
 <script src="qyx-whoami.js"></script>
 <script src="qyx-load-guard.js"></script>
 <script src="qyx-schedule.js"></script>
@@ -313,6 +314,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </div>
 
     <div class="field">
+      <label class="field-label">身分證號 <span class="req">*</span><span class="opt" id="id-lock-tag" style="display:none;">🔒 已設定·不可自行修改</span></label>
+      <input type="text" id="id-number" value="" maxlength="10" placeholder="例:A123456789" style="text-transform:uppercase;">
+      <div class="field-hint" id="id-hint">用於一人一帳號辨識。設定後不可自行修改,需更正請聯絡平台。</div>
+    </div>
+
+    <div class="field">
       <label class="field-label">手機號碼 <span class="req">*</span></label>
       <input type="tel" id="phone" value="" maxlength="10" pattern="09[0-9]{8}" placeholder="09xxxxxxxx">
       <div class="field-hint">緊急聯繫用,請填可接通號碼</div>
@@ -339,6 +346,18 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <label class="field-label">密碼 <span class="opt">(留空表示不修改)</span></label>
       <input type="password" id="password" value="" placeholder="輸入新密碼(至少 8 字)" minlength="8">
     </div>
+  </div>
+
+  <!-- 登入方式綁定(共用):綁多種登入方式都進同一帳號;綁 Google 順便完成信箱驗證 -->
+  <div class="section-card">
+    <div class="section-title">
+      <svg><use href="#i-user"/></svg>登入方式
+      <span class="tag-shared">共用</span>
+    </div>
+    <div class="field-hint" style="margin-bottom:10px;">綁定多種登入方式後,哪一種都能登入同一個帳號。綁定 Google 還會自動完成信箱驗證。</div>
+    <div id="identity-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;"></div>
+    <button type="button" id="bind-google-btn" onclick="bindProvider('google')" style="width:100%;padding:0.85rem;border-radius:14px;border:1.5px solid var(--amber);background:#fff;color:var(--amber-deep);font-weight:600;font-family:inherit;font-size:0.95rem;cursor:pointer;">綁定 Google 登入</button>
+    <div class="field-hint" id="bind-msg" style="margin-top:8px;display:none;"></div>
   </div>
 
   <!-- ============ 順咖專屬區(client 隱藏) ============ -->
@@ -524,7 +543,7 @@ async function loadFromDB() {
   if (!user) { window.location.href = '13_login.html'; return; }
   DB.user = user;
 
-  var prof = await sb.from('users').select('display_name,phone,email,expected_rate,role_detail,has_caregiver_cert').eq('id', user.id).maybeSingle();
+  var prof = await sb.from('users').select('display_name,phone,email,id_number,expected_rate,role_detail,has_caregiver_cert').eq('id', user.id).maybeSingle();
   DB.profile = prof.data || {};
   avatarUrl = (DB.profile.role_detail && DB.profile.role_detail.avatar_url) || '';
 
@@ -535,6 +554,7 @@ async function loadFromDB() {
   });
 
   loadSharedProfile();
+  renderIdentities();
   if (role === 'staff') loadStaffProfile();
 }
 
@@ -1058,6 +1078,51 @@ function gotoField(elId, msg){
   alert(msg);
 }
 
+/* 登入方式:列出目前綁了哪些(getUserIdentities),已綁 Google 就隱藏綁定鈕 */
+async function renderIdentities() {
+  var box = document.getElementById('identity-list');
+  var btn = document.getElementById('bind-google-btn');
+  if (!box) return;
+  try {
+    var r = await sb.auth.getUserIdentities();
+    var ids = (r && r.data && r.data.identities) ? r.data.identities : [];
+    var NAMES = { google: 'Google', email: 'Email', line: 'LINE', phone: '手機' };
+    box.innerHTML = '';
+    if (!ids.length) { box.innerHTML = '<div style="font-size:0.85rem;color:var(--ink-light);">讀不到登入方式</div>'; }
+    ids.forEach(function (it) {
+      var label = NAMES[it.provider] || it.provider;
+      var sub = (it.identity_data && it.identity_data.email) ? (' · ' + it.identity_data.email) : '';
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:0.9rem;color:var(--ink);';
+      row.innerHTML = '<span style="color:var(--forest);font-weight:700;">✓</span>';
+      row.appendChild(document.createTextNode(label + sub));
+      box.appendChild(row);
+    });
+    var hasGoogle = ids.some(function (it) { return it.provider === 'google'; });
+    if (btn) btn.style.display = hasGoogle ? 'none' : '';
+  } catch (e) { box.innerHTML = '<div style="font-size:0.85rem;color:var(--ink-light);">登入方式讀取失敗</div>'; }
+}
+
+/* 綁定:把另一種登入方式接到「目前這個帳號」(linkIdentity)。成功會 redirect 出去再回來。
+   為什麼安全:必須先登入原帳號才綁得了,冒充者沒有原帳號的登入就接不進來。
+   限制:要綁的那個 Google 若已是另一個既有帳號,Supabase 會擋,跳提示。 */
+async function bindProvider(provider) {
+  try {
+    var r = await sb.auth.linkIdentity({ provider: provider, options: { redirectTo: window.location.href } });
+    if (r && r.error) { showBindMsg(r.error.message || '綁定失敗'); }
+    /* 成功會跳轉到授權頁,不會走到這 */
+  } catch (e) { showBindMsg(String((e && e.message) || e)); }
+}
+function showBindMsg(t) {
+  var msg = document.getElementById('bind-msg');
+  if (!msg) { alert(t); return; }
+  msg.style.display = 'block';
+  msg.style.color = 'var(--danger)';
+  msg.textContent = /already|exist|registered|linked|conflict/i.test(t)
+    ? '這個 Google 已經是另一個帳號,沒辦法綁過來。請改用你原本的方式登入。'
+    : ('綁定沒成功:' + t);
+}
+
 async function saveProfile() {
   var nick = document.getElementById('nickname').value.trim();
   var phone = document.getElementById('phone').value.trim();
@@ -1066,6 +1131,14 @@ async function saveProfile() {
   if (!nick) { gotoField('nickname','請填寫暱稱'); return; }
   if (!/^09\d{8}$/.test(phone)) { gotoField('phone','請輸入正確的手機號碼(09xx-xxx-xxx)'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { gotoField('email','請輸入正確的 Email'); return; }
+
+  /* 身分證號:已鎖定的不驗(不會送出);未鎖定(首次設定)若有填,用共用 QyxProfile 驗格式 */
+  if (!window._idLocked) {
+    var _idv = (document.getElementById('id-number').value || '').trim().toUpperCase();
+    if (_idv && window.QyxProfile && QyxProfile.validIdNumber && !QyxProfile.validIdNumber(_idv)) {
+      gotoField('id-number','身分證號格式不正確(本國身分證或居留證)'); return;
+    }
+  }
 
   var pwd = document.getElementById('password').value;
   if (pwd && pwd.length < 8) { gotoField('password','密碼至少 8 字'); return; }
@@ -1110,6 +1183,8 @@ async function saveProfile() {
     if (avatarUrl) rd.avatar_url = avatarUrl;
 
     var userUpdate = { display_name: nick, phone: phone, email: email, role_detail: rd };
+    /* 身分證號:只在「首次設定(未鎖定)且有填」時才寫入;寫了後端觸發器會鎖住,之後不能改 */
+    if (!window._idLocked) { var _idv2 = (document.getElementById('id-number').value || '').trim().toUpperCase(); if (_idv2) userUpdate.id_number = _idv2; }
     if (role === 'staff') { userUpdate.expected_rate = rate; }
 
     var uRes = await sb.from('users').update(userUpdate).eq('id', DB.user.id);
@@ -1197,6 +1272,20 @@ function loadSharedProfile() {
   document.getElementById('phone').value = p.phone || '';
   document.getElementById('lineid').value = rd.lineid || '';
   document.getElementById('email').value = p.email || rd.email || '';
+  /* 身分證號:已有號碼=鎖住不可改(業界做法,身分是根);還沒填的舊帳號可填一次,存了就鎖。後端觸發器 trg_protect_id_number 也擋,前端只是先講清楚 */
+  var idn = (p.id_number || '').toUpperCase();
+  var idEl = document.getElementById('id-number');
+  if (idEl) {
+    idEl.value = idn;
+    window._idLocked = !!idn;
+    if (idn) {
+      idEl.readOnly = true;
+      idEl.style.background = 'var(--champagne-soft)';
+      idEl.style.color = 'var(--ink-soft)';
+      var idTag = document.getElementById('id-lock-tag'); if (idTag) idTag.style.display = '';
+      var idHint = document.getElementById('id-hint'); if (idHint) idHint.textContent = '身分證號已設定,不可自行修改。如需更正請聯絡平台。';
+    }
+  }
   /* 案家預設地址放在 client 角色的 role_data.address */
   var addr = (DB.clientRole && DB.clientRole.role_data && DB.clientRole.role_data.address) || '';
   document.getElementById('address').value = addr;
