@@ -254,6 +254,7 @@ body.suncar .reveal-share{color:var(--forest);border-color:var(--mint);}
 var POOL = (new URLSearchParams(location.search).get('as') === 'suncar') ? 'suncar' : 'client';
 var TIER = 30;
 var _busy = false;
+var _need = false;    // true=點數不足,打賞鈕改成「去儲值」
 var _byId = {};       // seed_id → {id,name,emoji,rarity,weight}
 var _totalW = 0;      // 整池 weight 總和,算掉落機率用
 var _refCode = '';    // 我的推薦碼
@@ -288,11 +289,19 @@ async function loadAll(uid){
   _refCode = u.ref_code || '';
   document.getElementById('bal').textContent = bal;
   var btn = document.getElementById('donate-btn');
+  var note = document.getElementById('donate-note');
+  var seedIco = '<svg style="width:1.1em;height:1.1em;fill:currentColor;"><use href="#i-seed"/></svg> ';
   if(bal < 30){
-    btn.disabled = true;
-    document.getElementById('donate-note').innerHTML = '點數不足 30 點。<a href="16_buy_credits.html" onclick="try{sessionStorage.setItem(\'credits_pool\',\''+POOL+'\');}catch(e){}" style="color:inherit;font-weight:700;text-decoration:underline;">先去儲值</a>再回來打賞';
-  } else {
+    /* 點數不足:鈕不要灰掉,改成明顯的「先去儲值」金色 CTA,點了直接帶去儲值並設好回來的頁 */
+    _need = true;
     btn.disabled = false;
+    btn.innerHTML = seedIco + '點數不足 · 先去儲值';
+    note.textContent = '儲值後回到這頁,就能打賞 30 點抽一顆種子。';
+  } else {
+    _need = false;
+    btn.disabled = false;
+    btn.innerHTML = seedIco + '打賞 30 點 · 抽一顆種子';
+    note.textContent = '點數從你的帳戶扣除,打賞後立即掉一顆種子進收集庫';
   }
 
   var cat = await sb.from('seed_catalog').select('id,name,emoji,rarity,weight,sort').eq('tier', TIER).order('sort');
@@ -342,8 +351,14 @@ function renderDex(seeds, owned){
   document.getElementById('champ').classList.toggle('show', total > 0 && got >= total);
 }
 
+function goTopup(){
+  try{ sessionStorage.setItem('credits_pool', POOL); sessionStorage.setItem('credits_returnTo', '19_seeds.html?as=' + POOL); }catch(e){}
+  location.href = '16_buy_credits.html';
+}
+
 async function doDonate(){
   if(_busy) return;
+  if(_need){ goTopup(); return; }   /* 點數不足時這顆鈕是「去儲值」 */
   if(!confirm('確定打賞 30 點? 會從你的點數扣 30 點,隨機掉一顆種子。')) return;
   _busy = true;
   var btn = document.getElementById('donate-btn');

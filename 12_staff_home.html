@@ -435,8 +435,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <a class="sec-action" onclick="try{sessionStorage.setItem('credits_pool','suncar');sessionStorage.setItem('credits_returnTo','12_staff_home.html');}catch(e){}window.location.href='16_buy_credits.html'">儲值<svg><use href="#i-arrow-right"/></svg></a>
   </div>
   <div class="income-detail">
-    <div class="income-row">
-      <span>點數餘額</span>
+    <div class="income-row" onclick="goBuyForUnlock()" style="cursor:pointer;">
+      <span>點數餘額 <span style="font-size:0.62rem;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--mint),var(--forest));padding:1px 7px;border-radius:99px;vertical-align:1px;">去儲值 ›</span></span>
       <strong id="acct-points">0 點</strong>
     </div>
     <div class="income-row">

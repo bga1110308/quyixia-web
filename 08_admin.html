@@ -882,7 +882,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
           <div class="msc"><div class="msc-l">平均任務時長</div><div class="msc-v" id="ds-avgdur">—</div><div class="msc-s" style="color:var(--ink-light);">已完成單均值</div></div>
           <div class="msc"><div class="msc-l">正式會員數</div><div class="msc-v" id="ds-members">—</div><div class="msc-s" style="color:var(--ink-light);">有會員編號</div></div>
         </div>
-        <div style="font-size:11.5px;color:var(--ink-light);margin:-4px 2px 14px;line-height:1.6;">瀏覽人次／在線人數／打賞收入目前尚無資料來源(平台未裝流量統計、未開放打賞功能),待相關功能上線後才會有真數字,故先不顯示。</div>
+        <div style="font-size:11.5px;color:var(--ink-light);margin:-4px 2px 14px;line-height:1.6;">瀏覽人次／在線人數目前尚無資料來源(平台未裝流量統計),待相關功能上線後才會有真數字。打賞收入見下方「本月打賞紀錄」。</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="chart-card">
@@ -894,8 +894,8 @@ textarea.form-input{min-height:80px;resize:vertical;}
             <div id="ds-pooldist" style="font-size:12.5px;color:var(--ink-soft);">載入中…</div>
           </div>
           <div class="chart-card">
-            <div class="chart-title">本月打賞紀錄</div>
-            <div style="font-size:12.5px;color:var(--ink-light);padding:10px 0;">尚無資料。平台目前未開放打賞功能,待上線後接入。</div>
+            <div class="chart-title">本月打賞紀錄 <span id="ds-tiptotal" style="font-size:11.5px;color:var(--amber-deep);font-weight:700;margin-left:6px;">—</span></div>
+            <div id="ds-tiplog" style="font-size:12px;color:var(--ink-soft);max-height:210px;overflow:auto;">載入中…</div>
           </div>
           <div class="chart-card">
             <div class="chart-title">推薦人數排行</div>
@@ -2282,8 +2282,28 @@ async function loadDataReport(){
   var certN=(cRes && cRes.data) ? cRes.data.length : 0;
   var ps=document.getElementById('ds-poolstaff');
   if(ps) ps.innerHTML='目前有照服員證、可接照服員池(身體照顧)的順咖:<strong style="color:var(--warn);">'+certN+'</strong> 位。一般池所有 active 順咖都能接;照服員池只有這 '+certN+' 位能接。';
+
+  /* 打賞紀錄:point_transactions RLS 只給本人讀,管理員撈別人要走 security definer 函式 get_donation_log */
+  var tipRes=await sb.rpc('get_donation_log', { p_limit: 50 });
+  dsRenderTips((tipRes && tipRes.data) ? tipRes.data : [], mStart);
 }
 function dsSet(id,v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+function dsRenderTips(list, mStart){
+  var box=document.getElementById('ds-tiplog'); if(!box) return;
+  var monthTotal=0, monthCnt=0;
+  list.forEach(function(t){ if(t.created_at && t.created_at>=mStart){ monthTotal+=(t.points||0); monthCnt++; } });
+  var tt=document.getElementById('ds-tiptotal'); if(tt) tt.textContent='本月 '+monthTotal+' 點 · '+monthCnt+' 筆';
+  if(!list.length){ box.innerHTML='<div style="color:var(--ink-light);padding:8px 0;">目前還沒有人打賞</div>'; return; }
+  box.innerHTML=list.slice(0,30).map(function(t){
+    var who=esc(t.display_name||t.member_no||'(未命名)');
+    var pool=(t.pool==='suncar')?'順咖':'案家';
+    var dt=t.created_at?String(t.created_at).slice(0,10):'';
+    return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-soft);">'
+      +'<span>'+who+' <span style="color:var(--ink-light);">·'+pool+'</span></span>'
+      +'<span style="white-space:nowrap;"><strong style="color:var(--amber-deep);">'+(t.points||0)+' 點</strong> <span style="color:var(--ink-light);">'+dt+'</span></span>'
+      +'</div>';
+  }).join('');
+}
 function dsPoolRow(label,n,pct,color){
   return '<div style="margin-bottom:11px;"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;"><span>'+label+'</span><strong style="color:'+color+';">'+n+' 筆 · '+pct+'%</strong></div><div class="prog-bar" style="height:8px;"><div class="prog-fill" style="width:'+pct+'%;background:'+color+';"></div></div></div>';
 }
