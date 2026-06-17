@@ -94,6 +94,8 @@ body.suncar .prog-fill{background:linear-gradient(90deg,var(--mint),var(--forest
 .seedshape .emj{transform:rotate(-45deg);line-height:1;}
 .seedshape.locked{background:linear-gradient(150deg,#F2ECDD,#E6DCC6);border-color:#D8CBAE;box-shadow:inset 0 -2px 6px rgba(0,0,0,0.04);}
 .seedshape.locked .emj{color:var(--ink-light);opacity:0.55;}
+.seedshape.fine{border-color:#7FB0D8;background:linear-gradient(150deg,#EAF3FB,#CFE4F5);box-shadow:inset 0 -2px 6px rgba(58,124,184,0.12),0 3px 9px rgba(58,124,184,0.18);}
+.seedshape.rare{border-color:#B79AD8;background:linear-gradient(150deg,#F3ECFB,#E0CFF3);box-shadow:inset 0 -2px 6px rgba(138,82,201,0.14),0 3px 9px rgba(138,82,201,0.22);}
 .seedshape.gold{border-color:var(--gold);background:linear-gradient(150deg,#FFF3CF,#FFD980);box-shadow:inset 0 -2px 7px rgba(186,117,23,0.18),0 4px 12px rgba(224,169,60,0.35);}
 .sprout{position:absolute;left:50%;transform:translateX(-50%);z-index:2;color:var(--mint);pointer-events:none;}
 .sprout svg{fill:currentColor;display:block;}
@@ -132,6 +134,16 @@ body.suncar .dex-title::before{background:linear-gradient(180deg,var(--mint),var
 .reveal-tag.new{background:var(--mint-pale);color:var(--forest);}
 .reveal-tag.dup{background:var(--champagne);color:var(--amber-deep);}
 .reveal-tag.gold{background:var(--gold);color:#fff;}
+.reveal-tag.tag-normal{background:var(--champagne);color:var(--amber-deep);}
+.reveal-tag.tag-fine{background:#E8F1F8;color:#3A7CB8;}
+.reveal-tag.tag-rare{background:#F0E8FA;color:#8A52C9;}
+.reveal-tag.tag-gold{background:var(--gold);color:#fff;}
+.prog-levels{display:flex;flex-wrap:wrap;gap:6px;margin-top:0.6rem;}
+.lvchip{font-size:0.72rem;font-weight:700;padding:2px 9px;border-radius:99px;}
+.lv-normal{background:var(--champagne);color:var(--amber-deep);}
+.lv-fine{background:#E8F1F8;color:#3A7CB8;}
+.lv-rare{background:#F0E8FA;color:#8A52C9;}
+.lv-gold{background:var(--gold-soft);color:var(--gold);}
 .reveal-name{font-size:1.5rem;font-weight:700;color:var(--ink);margin-top:0.6rem;}
 .reveal-meta{font-size:0.8rem;color:var(--ink-soft);margin-top:0.4rem;font-weight:600;}
 .reveal-desc{font-size:0.82rem;color:var(--ink-soft);margin-top:0.45rem;line-height:1.6;}
@@ -196,8 +208,8 @@ body.suncar .reveal-share{color:var(--forest);border-color:var(--mint);}
       <div class="prog-cnt"><b id="got-cnt">0</b> / <span id="tot-cnt">0</span> 種</div>
     </div>
     <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
-    <div class="prog-gold">✨ 金種子 <span id="gold-cnt">0</span> / <span id="gold-tot">0</span>(超難掉,集滿全靠它)</div>
-    <div class="prog-legend">等級分兩種:普通種子(較常見) 與 ✨金種子(超稀有)。每顆種子的掉落機率會標在格子上。</div>
+    <div class="prog-levels" id="prog-levels"></div>
+    <div class="prog-legend">等級由常見到稀有:普通 → 高級 → 稀有 → ✨金,越後面越難掉。每顆的掉落機率標在格子上,集滿整池就制霸。</div>
     <div class="champ-banner" id="champ">🏆 制霸! 你已集滿 30 點種子庫,拿到制霸徽章</div>
   </div>
 
@@ -304,7 +316,7 @@ async function loadAll(uid){
     note.textContent = '點數從你的帳戶扣除,打賞後立即掉一顆種子進收集庫';
   }
 
-  var cat = await sb.from('seed_catalog').select('id,name,emoji,rarity,weight,sort').eq('tier', TIER).order('sort');
+  var cat = await sb.from('seed_catalog').select('id,name,emoji,rarity,weight,sort').eq('tier', TIER).eq('pool', POOL).order('sort');
   var seeds = (cat && cat.data) ? cat.data : [];
   _byId = {}; _totalW = 0;
   seeds.forEach(function(s){ _byId[s.id] = s; _totalW += (s.weight || 0); });
@@ -321,23 +333,33 @@ function rateStr(weight){
   return (weight / _totalW * 100).toFixed(1) + '%';
 }
 var SPROUT = '<span class="sprout"><svg><use href="#i-sprout"/></svg></span>';
+/* 四等級:普通→高級→稀有→金,cls 對應種子造型與色票 */
+var RARITY = {
+  normal: { label: '普通', cls: '' },
+  fine:   { label: '高級', cls: 'fine' },
+  rare:   { label: '稀有', cls: 'rare' },
+  gold:   { label: '金',   cls: 'gold' }
+};
+var RARITY_ORDER = ['normal', 'fine', 'rare', 'gold'];
 
 function renderDex(seeds, owned){
-  var got = 0, total = seeds.length, goldGot = 0, goldTot = 0, html = '';
+  var got = 0, total = seeds.length, html = '';
+  var coll = { normal:[0,0], fine:[0,0], rare:[0,0], gold:[0,0] };   // 各等級 [已收,總數]
   seeds.forEach(function(s){
-    var isGold = (s.rarity === 'gold');
-    if(isGold) goldTot++;
+    var r = RARITY[s.rarity] ? s.rarity : 'normal';
+    var cls = RARITY[r].cls;
     var have = owned[s.id] || 0;
     var hasIt = have > 0;
-    if(hasIt){ got++; if(isGold) goldGot++; }
-    var shapeCls = 'seedshape' + (isGold ? ' gold' : '') + (hasIt ? '' : ' locked');
+    coll[r][1]++;
+    if(hasIt){ got++; coll[r][0]++; }
+    var shapeCls = 'seedshape' + (cls ? ' ' + cls : '') + (hasIt ? '' : ' locked');
     var emj = hasIt ? s.emoji : '?';
     var nm  = hasIt ? esc(s.name) : '？？？';
     var sprout = hasIt ? SPROUT : '';   /* 收集到才冒綠芽 */
     var meta = hasIt
       ? '<div class="rate">' + rateStr(s.weight) + (have > 1 ? ' <span class="xn">×' + have + '</span>' : '') + '</div>'
       : '<div class="rate">&nbsp;</div>';
-    html += '<div class="cell ' + (hasIt ? 'got' : 'locked') + (isGold ? ' gold' : '') + '">'
+    html += '<div class="cell ' + (hasIt ? 'got' : 'locked') + (cls ? ' ' + cls : '') + '">'
           +   '<div class="seedwrap">' + sprout + '<div class="' + shapeCls + '"><span class="emj">' + emj + '</span></div></div>'
           +   '<div class="nm">' + nm + '</div>' + meta
           + '</div>';
@@ -345,10 +367,11 @@ function renderDex(seeds, owned){
   document.getElementById('dex').innerHTML = html;
   document.getElementById('got-cnt').textContent = got;
   document.getElementById('tot-cnt').textContent = total;
-  document.getElementById('gold-cnt').textContent = goldGot;
-  document.getElementById('gold-tot').textContent = goldTot;
   document.getElementById('prog-fill').style.width = (total ? Math.round(got/total*100) : 0) + '%';
   document.getElementById('champ').classList.toggle('show', total > 0 && got >= total);
+  document.getElementById('prog-levels').innerHTML = RARITY_ORDER.map(function(k){
+    return '<span class="lvchip lv-' + k + '">' + RARITY[k].label + ' ' + coll[k][0] + '/' + coll[k][1] + '</span>';
+  }).join('');
 }
 
 function goTopup(){
@@ -388,19 +411,19 @@ async function doDonate(){
 
 function showReveal(d){
   var box = document.getElementById('reveal-box');
-  var isGold = (d.rarity === 'gold');
-  box.classList.toggle('gold', isGold);
+  var r = RARITY[d.rarity] ? d.rarity : 'normal';
+  var info = RARITY[r];
+  box.classList.toggle('gold', r === 'gold');
   var shape = document.getElementById('rv-shape');
-  shape.className = 'seedshape' + (isGold ? ' gold' : '');
+  shape.className = 'seedshape' + (info.cls ? ' ' + info.cls : '');
   document.getElementById('rv-emj').textContent = d.emoji || '🌱';
   document.getElementById('rv-name').textContent = d.name || '種子';
   var tag = document.getElementById('rv-tag');
-  if(isGold){ tag.className = 'reveal-tag gold'; tag.textContent = '✨ 金種子!'; }
-  else if(d.is_new){ tag.className = 'reveal-tag new'; tag.textContent = '新種子!'; }
-  else { tag.className = 'reveal-tag dup'; tag.textContent = '又掉一顆'; }
+  tag.className = 'reveal-tag tag-' + r;
+  tag.textContent = (r === 'gold' ? '✨' : r === 'rare' ? '💜' : '') + info.label + '種子';
   var seed = _byId[d.seed_id];
   document.getElementById('rv-meta').textContent =
-    (isGold ? '✨金種子' : '普通種子') + (seed ? (' · 掉落機率 ' + rateStr(seed.weight)) : '');
+    (seed ? ('掉落機率 ' + rateStr(seed.weight) + ' · ') : '') + (d.is_new ? '新種子!' : '又掉一顆');
   var desc = '已收集 ' + (d.collected || 0) + ' / ' + (d.total || 0) + ' 種';
   if(d.tier_complete) desc = '🏆 集滿了! 你制霸了這一池';
   document.getElementById('rv-desc').textContent = desc;

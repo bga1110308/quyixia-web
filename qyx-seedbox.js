@@ -136,7 +136,7 @@
   /* ---- 抓資料:6 顆種子當霧樣本 + 我已收集幾種 ---- */
   function loadData() {
     if (typeof window.sb === 'undefined') return;
-    sb.from('seed_catalog').select('emoji').eq('tier', 30).order('sort').limit(6)
+    sb.from('seed_catalog').select('emoji').eq('tier', 30).eq('pool', POOL).order('sort').limit(6)
       .then(function (r) { if (r && r.data && r.data.length) fillCells(r.data.map(function (x) { return x.emoji; })); });
     sb.auth.getSession().then(function (s) {
       var u = s && s.data && s.data.session ? s.data.session.user : null;
