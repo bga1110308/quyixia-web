@@ -425,6 +425,7 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-whoami.js"></script>
 <script>
 var chosenAuthMethod = '';
 var chosenRole = 'client'; // 這頁是找順咖入口，角色固定 client
@@ -774,91 +775,4 @@ async function completeSignup() {
       return d ? { user_id: user.id, doc_key: k, agreed_version: d.version, agreed_at: now } : null;
     }).filter(Boolean);
     if (consentRows.length) {
-      var cs = await sb.from('user_consents').upsert(consentRows, { onConflict: 'user_id,doc_key' });
-      if (cs.error && window.console) console.error('[signup] 同意紀錄寫入失敗,改由首頁閘門補簽', cs.error);
-    }
-  }
-
-  localStorage.removeItem('signup_role');
-  alert('註冊完成!即將進入會員主頁');
-  window.location.href = '11_client_home.html';
-}
-
-/* === 條款閱讀視窗(單一通用 modal,內容讀後台) === */
-function openDocModal(key){
-  var d = legalDocs[key]; if(!d) return;
-  currentDocKey = key;
-  document.getElementById('modal-doc-title').textContent = d.title;
-  var body = document.getElementById('modal-doc-body');
-  document.getElementById('modal-doc').classList.add('show'); // 先顯示,body 才有版面,scrollTop 才設得進去
-  document.body.style.overflow = 'hidden';
-  body.textContent = d.content || '';
-  body.scrollTop = 0;
-  resetDocConfirm();
-  // textContent 換新內容後版面要重排,等一個影格再強制回到最頂並重算進度,
-  // 否則會沿用上一份捲到底的位置,一進來就被當成已讀 100%。
-  setTimeout(function(){ body.scrollTop = 0; trackDocScroll(body); }, 30); // 內容太短不需捲動的,直接算讀完
-}
-
-function closeDocModal(){
-  document.getElementById('modal-doc').classList.remove('show');
-  document.body.style.overflow = '';
-}
-
-// 依現在這份是否讀過,重設確認鈕與進度條(再次打開已讀過的不用重拉)
-function resetDocConfirm(){
-  var done = !!(currentDocKey && readStatus[currentDocKey]);
-  var btn = document.getElementById('doc-confirm');
-  btn.classList.toggle('ready', done);
-  btn.innerHTML = done ? '<svg><use href="#i-check"/></svg>我已讀完,確認同意' : '請將內容拉至最底才能確認';
-  document.getElementById('doc-progress').style.width = done ? '100%' : '0%';
-  var pt = document.getElementById('doc-progress-text');
-  pt.textContent = done ? '100%' : '0%';
-  pt.classList.toggle('done', done);
-}
-
-function trackDocScroll(el){
-  var pct = el.scrollHeight > el.clientHeight
-    ? Math.min(100, Math.round((el.scrollTop + el.clientHeight) / el.scrollHeight * 100))
-    : 100;
-  document.getElementById('doc-progress').style.width = pct + '%';
-  document.getElementById('doc-progress-text').textContent = pct + '%';
-  if (pct >= 95) {
-    document.getElementById('doc-progress-text').classList.add('done');
-    var btn = document.getElementById('doc-confirm');
-    if (!btn.classList.contains('ready')) {
-      btn.classList.add('ready');
-      btn.innerHTML = '<svg><use href="#i-check"/></svg>我已讀完,確認同意';
-    }
-  }
-}
-
-function confirmDocRead(){
-  var btn = document.getElementById('doc-confirm');
-  if(!btn.classList.contains('ready')) return;
-  if(currentDocKey){
-    readStatus[currentDocKey] = true;
-    var link = document.getElementById('legal-link-' + currentDocKey);
-    if(link) link.classList.add('read');
-  }
-  closeDocModal();
-  // 三份都讀完才開放勾選同意
-  var allRead = LEGAL_KEYS.every(function(k){ return readStatus[k]; });
-  if(allRead){
-    document.getElementById('agree').disabled = false;
-    document.getElementById('unread-hint').classList.add('hide');
-  }
-}
-
-function handleAgreeChange(cb) {
-  var allRead = LEGAL_KEYS.every(function(k){ return readStatus[k]; });
-  if (cb.checked && !allRead) {
-    cb.checked = false;
-    alert('請先點開並閱讀完所有文件');
-    return;
-  }
-  document.getElementById('submit-btn').disabled = !cb.checked;
-}
-</script>
-</body>
-</html>
+      var

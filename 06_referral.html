@@ -382,6 +382,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-whoami.js"></script>
 <script>
 var staffPts = 0, clientPts = 0;   // 順咖金幣 / 案家金幣(真值,載入後填)
 var myRefCode = '';
@@ -562,27 +563,4 @@ function fmtExpiry(s) {
 function copyScript(btn, type) {
   var card = btn.closest('.script-card');
   var text = card.querySelector('.script-text').textContent;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(function(){
-      var orig = btn.innerHTML;
-      btn.innerHTML = '<svg><use href="#i-check"/></svg>已複製';
-      btn.style.background = 'linear-gradient(135deg,var(--mint),var(--forest))';
-      btn.style.color = '#fff';
-      btn.style.borderColor = 'transparent';
-      setTimeout(function(){
-        btn.innerHTML = orig;
-        btn.style.background = '';
-        btn.style.color = '';
-        btn.style.borderColor = '';
-      }, 2000);
-    });
-  } else {
-    var ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    alert('話術已複製!');
-  }
-}
-</script>
-</body>
-</html>
+  if (navig

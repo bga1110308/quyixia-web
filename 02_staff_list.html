@@ -174,6 +174,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
+<script src="qyx-whoami.js"></script>
 <script src="qyx-load-guard.js"></script>
 </head>
 <body>
@@ -535,47 +536,4 @@ function renderStaff() {
 }
 
 /* 信用分等級:高 80 以上 / 中 50–79 / 低 50 以下(同 01 第七點規則) */
-function creditBand(score){ var n = (score==null?100:score); if(n>=80) return '高'; if(n>=50) return '中'; return '低'; }
-
-/* 排序用:達3則門檻才拿平均星等當分數,否則 -1,讓沒評價的沉到最後 */
-function ratingVal(s){ var rv = reviewMap[s.id]; return (rv && rv.enough && rv.avg != null) ? Number(rv.avg) : -1; }
-
-/* 解鎖視窗:帶入要解鎖的順咖 id,顯示案家點數餘額與兩種方案價格 */
-function openUnlockModal(suncarId){
-  var U = window.UNLOCK || { single:5, month:50, points:0 };
-  U.target = suncarId;
-  document.getElementById('ul-balance').textContent = U.points;
-  document.getElementById('ul-cost-single').textContent = U.single;
-  document.getElementById('ul-cost-month').textContent = U.month;
-  document.getElementById('unlock-modal').classList.add('show');
-  document.body.style.overflow = 'hidden';
-}
-function closeUnlockModal(){
-  document.getElementById('unlock-modal').classList.remove('show');
-  document.body.style.overflow = '';
-}
-/* 鎖頭旁「去儲值」:記住要加值的是案家池、回來回這頁,再導到買點數頁 */
-function goBuyForUnlock(){
-  try { sessionStorage.setItem('credits_pool','client'); sessionStorage.setItem('credits_returnTo','02_staff_list.html'); } catch(e){}
-  window.location.href = '16_buy_credits.html';
-}
-/* 扣點解鎖:single 解這一位順咖、month 開 30 天看全部。扣點與發權限全在後台 redeem_info 做,前端只呼叫,守伺服器端驗紅線 */
-async function doRedeem(kind){
-  if (typeof window.sb === 'undefined') { alert('系統載入中,請稍候再試'); return; }
-  var target = (kind === 'single') ? (window.UNLOCK && window.UNLOCK.target) : null;
-  if (kind === 'single' && !target) { alert('找不到要解鎖的順咖,請重開卡片再試'); return; }
-  var r = await sb.rpc('redeem_info', { p_kind: kind, p_as: 'client', p_target: target });
-  if (r.error) {
-    var msg = r.error.message || '解鎖失敗';
-    if (msg.indexOf('點數不足') >= 0) { if (confirm(msg + '\n\n要去儲值嗎?')) goBuyForUnlock(); return; }
-    alert('解鎖失敗:' + msg);
-    return;
-  }
-  alert(kind === 'month' ? '已開通月票,30 天內可看全部順咖資訊' : '已解鎖這位順咖的資訊');
-  location.reload(); /* 重整讓鎖頭變成已解鎖內容,單一來源不另外手動改畫面 */
-}
-
-document.addEventListener('DOMContentLoaded', function(){ qyxGuard(loadStaff, { color: '#EF9F27' }); }); /* 載入逾時保護 */
-</script>
-</body>
-</html>
+function creditBand(score){ var n = (score==null?100:score); if(n>=80) ret
