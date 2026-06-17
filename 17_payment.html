@@ -130,7 +130,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   <div class="demo-banner">
     <svg><use href="#i-warn"/></svg>
-    <span><strong>匯款加值:</strong>目前採人工匯款對帳。請依下方資訊轉帳,並填寫「我已完成匯款」,平台核對入帳後會把點數加給你(通常 1 個工作天內)。</span>
+    <span><strong>匯款加值:</strong>目前採人工匯款對帳。請依下方資訊轉帳,並填寫「我已完成匯款」,平台核對入帳後會把點數加給你(通常 3~5 個工作天)。</span>
   </div>
 
   <!-- 訂單摘要 -->
@@ -196,7 +196,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   <div class="security-note">
     <svg><use href="#i-shield"/></svg>
-    本頁不收信用卡卡號;點數由平台確認入帳後發放,通常 1 個工作天內
+    本頁不收信用卡卡號;點數由平台確認入帳後發放,通常 3~5 個工作天
   </div>
 
   <div class="back-link">
@@ -299,7 +299,7 @@ async function submitTopup() {
     try { sessionStorage.removeItem('credits_returnTo'); } catch(e){}
     try { sessionStorage.removeItem('pending_order'); } catch(e){}
 
-    alert('匯款回報已送出!平台核對入帳後會把 ' + currentPlan.received + ' 點加給你(通常 1 個工作天內)並通知你。點數入帳後再回來下單即可。');
+    alert('匯款回報已送出!平台核對入帳後會把 ' + currentPlan.received + ' 點加給你(通常 3~5 個工作天)並通知你。點數入帳後再回來下單即可。');
     window.location.href = isSuncar ? '12_staff_home.html' : '11_client_home.html';
   } catch (e) {
     console.error(e);
