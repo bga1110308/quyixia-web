@@ -344,7 +344,7 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
         <span class="contact-icon call-icon"><svg><use href="#i-phone"/></svg></span>
         <span>撥打電話</span>
       </a>
-      <a class="contact-btn line" href="https://line.me/R/ti/p/~quyixia_demo" target="_blank">
+      <a class="contact-btn line" href="#" onclick="openLineRelay();return false;">
         <span class="contact-icon">💬</span>
         <span>LINE 聯絡</span>
       </a>
@@ -698,6 +698,19 @@ function renderTimeline(o){
   sec.style.display = '';
 }
 
+/* LINE 聯絡:按了先告訴後台「我這張單要聯絡對方」(set_line_relay_context),再開官方帳號加好友頁。
+   為什麼要先設情境:LINE 官方帳號收到訊息時只知道「誰傳的」,不知道「要轉給誰」;
+   靠這張單把案家↔順咖配對起來,之後對方傳訊息 webhook 才轉得對,且全程走官方帳號中轉、不交換私人 LINE(守平台中轉定案)。
+   後台會驗你是不是這張單的案家/順咖、訂單是否進行中,不符就回錯誤、不開啟。 */
+async function openLineRelay(){
+  var oid = window._orderId;
+  if(!oid){ alert('找不到訂單,請重新整理頁面再試'); return; }
+  var r = await sb.rpc('set_line_relay_context', { p_order_id: oid });
+  if(r && r.error){ alert('目前無法開啟 LINE 聯絡:' + (r.error.message || '請稍後再試')); return; }
+  /* 開官方帳號加好友頁(新分頁)。加好友後在官方帳號內傳訊息,即會中轉給這張單的對方。 */
+  window.open('https://line.me/R/ti/p/@303hceml', '_blank');
+}
+
 async function init(){
   if(typeof window.sb === 'undefined'){ alert('系統未就緒,請重新整理頁面'); return; }
 
@@ -725,6 +738,9 @@ async function init(){
     document.getElementById('status-desc').textContent = '訂單不存在,或你沒有權限查看';
     return;
   }
+
+  /* 全頁共用:把訂單 id 記到 window,讓 LINE 聯絡鈕(openLineRelay)等全域函式拿得到 */
+  window._orderId = o.id;
 
   // 看的人是不是「可看精確值/摘要」的特權身分:後台管理員,或推廣期全免費,或資訊會員還沒過期
   // info_member_until 是資訊會員到期日;大於現在就算已付費。月費與輕量包共用這一個欄位。跟 12 同一套判斷
@@ -855,8 +871,6 @@ async function init(){
   } else if(viewerRole === 'suncar'){
     /* 順咖看案家:顯示案家姓名電話,訂單成立後(待服務/服務中)開放聯絡 */
     var secT = document.querySelector('#staff-section .sec-title'); if(secT) secT.textContent = '案家';
-    var lineBtn = document.querySelector('#staff-contact-actions .contact-btn.line');
-    if(lineBtn) lineBtn.style.display = 'none'; // LINE 尚未串接,先只開放電話
     var cres = await sb.from('users').select('display_name,phone,member_no').eq('id', o.client_id).maybeSingle();
     var c = (cres && cres.data) ? cres.data : {};
     var cname = c.display_name || '案家';
@@ -912,7 +926,6 @@ async function init(){
         var sp = await sb.from('users').select('phone').eq('id', o.suncar_id).maybeSingle();
         var sphone = (sp && sp.data) ? sp.data.phone : null;
         if(sphone){
-          var lb = document.querySelector('#staff-contact-actions .contact-btn.line'); if(lb) lb.style.display = 'none';
           var cb2 = document.querySelector('#staff-contact-actions .contact-btn.call'); if(cb2) cb2.href = 'tel:' + sphone;
           document.getElementById('staff-contact-actions').style.display = '';
           document.getElementById('contact-hint-msg').style.display = 'none';
