@@ -26,7 +26,7 @@
   function injectStyle() {
     var css = ''
       + '.qyx-seedbox{position:fixed;z-index:60;width:66px;user-select:none;-webkit-user-select:none;'
-      + 'touch-action:none;cursor:grab;border-radius:15px;overflow:hidden;'
+      + 'touch-action:none;cursor:grab;border-radius:15px;overflow:visible;'
       + 'background:linear-gradient(160deg,#FFFDF7,#FFF4DD);border:1.5px solid ' + C.frame + ';'
       + 'box-shadow:0 8px 22px ' + C.shadow + ';animation:qsbGlow 3.4s ease-in-out infinite;'
       + 'transition:transform .18s,box-shadow .18s;}'
@@ -34,7 +34,10 @@
       + '.qyx-seedbox.qsb-drag{cursor:grabbing;animation:none;transform:none;box-shadow:0 14px 30px ' + C.shadowHi + ';}'
       + '@keyframes qsbGlow{0%,100%{box-shadow:0 8px 22px ' + C.shadow + ';}50%{box-shadow:0 11px 26px ' + C.shadowHi + ';}}'
       + '.qsb-head{font-size:9px;font-weight:700;letter-spacing:2px;text-align:center;color:#fff;'
-      + 'padding:3px 0 3px;background:' + C.head + ';}'
+      + 'padding:3px 0 3px;background:' + C.head + ';border-radius:13px 13px 0 0;}'
+      + '.qsb-sprout{position:absolute;top:-14px;left:50%;transform:translateX(-50%);z-index:1;'
+      + 'color:#5FB58E;filter:drop-shadow(0 2px 2px rgba(47,96,72,0.22));pointer-events:none;}'
+      + '.qsb-sprout svg{width:30px;height:22px;fill:currentColor;display:block;}'
       + '.qsb-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:5px;}'
       + '.qsb-drawer{position:relative;height:19px;border-radius:5px;overflow:hidden;'
       + 'background:linear-gradient(180deg,#fff,#FBF3E0);border:1px solid ' + C.frame + ';'
@@ -60,7 +63,9 @@
     for (var i = 0; i < 6; i++) {
       drawers += '<div class="qsb-drawer"><span class="e">🌱</span><span class="k"></span></div>';
     }
-    el.innerHTML = '<div class="qsb-head">種子櫃</div>'
+    el.innerHTML =
+      '<span class="qsb-sprout"><svg viewBox="0 0 24 24"><path d="M11.2 19c0-3 .2-5 .8-7 .6 2 .8 4 .8 7zM12 12C9.5 7.2 5.2 6 1.8 7.4 2.7 12.2 7.6 13.8 12 12zM12 11.2c2-4.8 6.3-6.2 9.7-4.8C20.9 11 16 12.9 12 11.2z"/></svg></span>'
+      + '<div class="qsb-head">種子櫃</div>'
       + '<div class="qsb-grid">' + drawers + '</div>'
       + '<span class="qsb-badge"></span>';
     return el;

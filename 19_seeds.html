@@ -15,10 +15,10 @@
   --border:#FFE9B8;--border-soft:#F5EBD8;
   --warn:#E89544;--warn-pale:#FFF1E0;--danger:#D9534F;--danger-pale:#FCE8E7;
   --info:#3A7CB8;--info-pale:#E8F1F8;--gold:#E0A93C;--gold-soft:#FFF6E0;
+  --line-green:#06C755;
 }
 body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;
   background:var(--champagne-soft);color:var(--ink);min-height:100vh;line-height:1.6;}
-/* 順咖端改綠色點綴 */
 body.suncar{background:#F2F7F4;}
 
 .brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
@@ -50,7 +50,6 @@ body.suncar .hero{background:linear-gradient(135deg,var(--mint) 0%,var(--forest)
 .hero-bal{margin-top:1.1rem;font-size:0.82rem;opacity:0.95;}
 .hero-bal b{font-size:1.05rem;font-weight:700;}
 
-/* 打賞鈕 */
 .donate-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
   background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;
   padding:1.1rem;border-radius:16px;font-size:1.1rem;font-weight:700;cursor:pointer;
@@ -59,6 +58,12 @@ body.suncar .hero{background:linear-gradient(135deg,var(--mint) 0%,var(--forest)
 .donate-btn:disabled{opacity:0.55;cursor:not-allowed;transform:none;box-shadow:none;}
 body.suncar .donate-btn{background:linear-gradient(135deg,var(--mint),var(--forest));box-shadow:0 8px 24px rgba(47,96,72,0.3);}
 .donate-note{font-size:0.76rem;color:var(--ink-soft);text-align:center;margin-top:0.7rem;line-height:1.6;}
+.share-link-btn{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:0.9rem;
+  background:#fff;color:var(--amber-deep);border:1.5px solid var(--amber);border-radius:13px;
+  padding:0.8rem;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.share-link-btn:hover{background:var(--champagne);transform:translateY(-1px);}
+body.suncar .share-link-btn{color:var(--forest);border-color:var(--mint);}
+body.suncar .share-link-btn:hover{background:var(--mint-pale);}
 
 /* 進度 */
 .prog-card{background:#fff;border:1.5px solid var(--border-soft);border-radius:18px;padding:1.25rem;margin-top:1.25rem;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
@@ -72,52 +77,89 @@ body.suncar .prog-bar{background:var(--mint-pale);}
 .prog-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--honey),var(--amber));transition:width 0.4s;}
 body.suncar .prog-fill{background:linear-gradient(90deg,var(--mint),var(--forest));}
 .prog-gold{font-size:0.78rem;color:var(--gold);font-weight:600;margin-top:0.6rem;display:flex;align-items:center;gap:5px;}
+.prog-legend{font-size:0.74rem;color:var(--ink-light);margin-top:0.5rem;line-height:1.6;}
 
-/* 制霸橫幅 */
 .champ-banner{display:none;margin-top:1rem;padding:1rem 1.1rem;border-radius:16px;
   background:linear-gradient(135deg,var(--gold-soft),#FFEFC2);border:1.5px solid var(--gold);
   color:var(--amber-darker);font-weight:700;font-size:0.95rem;text-align:center;
   box-shadow:0 6px 18px rgba(224,169,60,0.25);}
 .champ-banner.show{display:block;}
 
+/* === 種子造型(emoji 外框做成一顆種子,上面冒綠芽) === */
+.seedwrap{position:relative;display:inline-flex;align-items:center;justify-content:center;}
+.seedshape{display:flex;align-items:center;justify-content:center;
+  border-radius:50% 50% 50% 0;transform:rotate(45deg);
+  background:linear-gradient(150deg,#FFF7E4,#FFE3AC);border:1.6px solid var(--gold);
+  box-shadow:inset 0 -2px 6px rgba(186,117,23,0.12),0 3px 8px rgba(186,117,23,0.12);}
+.seedshape .emj{transform:rotate(-45deg);line-height:1;}
+.seedshape.locked{background:linear-gradient(150deg,#F2ECDD,#E6DCC6);border-color:#D8CBAE;box-shadow:inset 0 -2px 6px rgba(0,0,0,0.04);}
+.seedshape.locked .emj{color:var(--ink-light);opacity:0.55;}
+.seedshape.gold{border-color:var(--gold);background:linear-gradient(150deg,#FFF3CF,#FFD980);box-shadow:inset 0 -2px 7px rgba(186,117,23,0.18),0 4px 12px rgba(224,169,60,0.35);}
+.sprout{position:absolute;left:50%;transform:translateX(-50%);z-index:2;color:var(--mint);pointer-events:none;}
+.sprout svg{fill:currentColor;display:block;}
+
 /* 圖鑑格子 */
 .dex-title{font-size:0.95rem;font-weight:600;color:var(--ink);margin:1.6rem 0 0.9rem;display:flex;align-items:center;gap:8px;}
 .dex-title::before{content:'';display:block;width:4px;height:18px;background:linear-gradient(180deg,var(--honey),var(--amber));border-radius:2px;}
 body.suncar .dex-title::before{background:linear-gradient(180deg,var(--mint),var(--forest));}
-.dex-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.dex-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 10px;}
 @media(min-width:480px){.dex-grid{grid-template-columns:repeat(5,1fr);}}
-.cell{aspect-ratio:1/1;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  border:1.5px solid var(--border-soft);background:var(--champagne-soft);padding:4px;text-align:center;position:relative;}
-.cell .emj{font-size:1.7rem;line-height:1;}
-.cell .nm{font-size:0.62rem;color:var(--ink-soft);font-weight:600;line-height:1.15;}
-.cell .xn{position:absolute;top:4px;right:5px;font-size:0.58rem;color:var(--ink-light);font-weight:600;}
-/* 未收集:暗格 */
-.cell.locked{background:#F3EEE3;border-style:dashed;border-color:var(--border-soft);}
-.cell.locked .emj{filter:grayscale(1);opacity:0.32;}
+.cell{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;}
+.cell .seedwrap{width:50px;height:50px;}
+.cell .seedshape{width:40px;height:40px;}
+.cell .seedshape .emj{font-size:1.45rem;}
+.cell .sprout{top:-6px;}
+.cell .sprout svg{width:15px;height:15px;}
+.cell .nm{font-size:0.66rem;color:var(--ink);font-weight:600;line-height:1.15;}
+.cell .rate{font-size:0.6rem;color:var(--ink-light);font-weight:600;}
 .cell.locked .nm{color:var(--ink-light);}
-/* 已收集 */
-.cell.got{background:#fff;border-color:var(--border);box-shadow:0 2px 8px rgba(186,117,23,0.06);}
-/* 金種子 */
-.cell.gold{border-color:var(--gold);background:var(--gold-soft);}
-.cell.gold.locked{background:#F6EFDD;border-color:rgba(224,169,60,0.45);}
-.cell.gold .nm{color:var(--gold);}
+.cell.got.gold .nm{color:var(--amber-deep);}
+.cell .xn{font-size:0.58rem;color:var(--gold);font-weight:700;}
 
 /* 揭曉彈窗 */
 .reveal-mask{position:fixed;inset:0;background:rgba(61,41,20,0.5);z-index:9999;display:none;align-items:center;justify-content:center;padding:1.5rem;}
 .reveal-mask.show{display:flex;}
-.reveal-box{background:#fff;border-radius:24px;padding:2rem 1.75rem 1.6rem;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(186,117,23,0.3);}
+.reveal-box{background:#fff;border-radius:24px;padding:2rem 1.75rem 1.5rem;max-width:340px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(186,117,23,0.3);}
 .reveal-box.gold{background:linear-gradient(160deg,#fff,var(--gold-soft));}
-.reveal-emj{font-size:4.5rem;line-height:1;animation:pop 0.5s ease;}
-@keyframes pop{0%{transform:scale(0.3) rotate(-15deg);opacity:0;}60%{transform:scale(1.15) rotate(5deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
-.reveal-tag{display:inline-block;margin-top:0.9rem;font-size:0.72rem;font-weight:700;padding:3px 12px;border-radius:99px;}
+.reveal-seed{margin:0 auto;animation:pop 0.5s ease;}
+.reveal-seed .seedwrap{width:104px;height:104px;}
+.reveal-seed .seedshape{width:84px;height:84px;}
+.reveal-seed .seedshape .emj{font-size:3.3rem;}
+.reveal-seed .sprout{top:-12px;}
+.reveal-seed .sprout svg{width:30px;height:30px;}
+@keyframes pop{0%{transform:scale(0.3) rotate(-12deg);opacity:0;}60%{transform:scale(1.12) rotate(4deg);}100%{transform:scale(1) rotate(0);opacity:1;}}
+.reveal-tag{display:inline-block;margin-top:1rem;font-size:0.72rem;font-weight:700;padding:3px 12px;border-radius:99px;}
 .reveal-tag.new{background:var(--mint-pale);color:var(--forest);}
 .reveal-tag.dup{background:var(--champagne);color:var(--amber-deep);}
 .reveal-tag.gold{background:var(--gold);color:#fff;}
-.reveal-name{font-size:1.5rem;font-weight:700;color:var(--ink);margin-top:0.7rem;}
-.reveal-desc{font-size:0.84rem;color:var(--ink-soft);margin-top:0.5rem;line-height:1.6;}
-.reveal-close{margin-top:1.3rem;width:100%;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;
-  padding:0.9rem;border-radius:14px;font-size:0.95rem;font-weight:600;cursor:pointer;font-family:inherit;}
+.reveal-name{font-size:1.5rem;font-weight:700;color:var(--ink);margin-top:0.6rem;}
+.reveal-meta{font-size:0.8rem;color:var(--ink-soft);margin-top:0.4rem;font-weight:600;}
+.reveal-desc{font-size:0.82rem;color:var(--ink-soft);margin-top:0.45rem;line-height:1.6;}
+.reveal-btns{display:flex;gap:9px;margin-top:1.25rem;}
+.reveal-share{flex:1;background:#fff;color:var(--amber-deep);border:1.5px solid var(--amber);
+  padding:0.85rem;border-radius:13px;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit;}
+.reveal-share:hover{background:var(--champagne);}
+.reveal-close{flex:1;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;
+  padding:0.85rem;border-radius:13px;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit;}
 body.suncar .reveal-close{background:linear-gradient(135deg,var(--mint),var(--forest));}
+body.suncar .reveal-share{color:var(--forest);border-color:var(--mint);}
+
+/* 分享彈窗 */
+.share-mask{position:fixed;inset:0;background:rgba(61,41,20,0.5);z-index:10000;display:none;align-items:flex-end;justify-content:center;}
+.share-mask.show{display:flex;}
+.share-box{background:#fff;border-radius:22px 22px 0 0;padding:1.5rem 1.4rem 1.7rem;max-width:560px;width:100%;box-shadow:0 -10px 40px rgba(0,0,0,0.18);}
+@media(min-width:560px){.share-mask{align-items:center;}.share-box{border-radius:22px;}}
+.share-title{font-size:1.05rem;font-weight:700;color:var(--ink);}
+.share-desc{font-size:0.8rem;color:var(--ink-soft);margin-top:0.5rem;line-height:1.65;}
+.share-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:1.1rem;}
+.sh-btn{padding:0.9rem;border-radius:13px;border:none;font-size:0.92rem;font-weight:600;cursor:pointer;font-family:inherit;color:#fff;transition:all 0.2s;}
+.sh-btn:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.15);}
+.sh-btn.fb{background:#1877F2;}
+.sh-btn.th{background:#000;}
+.sh-btn.ig{background:linear-gradient(135deg,#F58529,#DD2A7B,#8134AF);}
+.sh-btn.cp{background:#fff;color:var(--amber-deep);border:1.5px solid var(--amber);}
+.share-close{width:100%;margin-top:1rem;background:#fff;color:var(--ink-soft);border:1.5px solid var(--border);
+  padding:0.85rem;border-radius:13px;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:inherit;}
 
 .foot-hint{font-size:0.74rem;color:var(--ink-light);text-align:center;margin-top:1.6rem;line-height:1.7;}
 </style>
@@ -128,6 +170,7 @@ body.suncar .reveal-close{background:linear-gradient(135deg,var(--mint),var(--fo
 <defs>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
   <symbol id="i-seed" viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 2-8 2.25-13 3.25S2 11.5 2 13.5 3.75 17.25 3.75 17.25C7 8 17 8 17 8z"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M11.3 21.5c-.05-3.3.05-5.3.5-7.2-2.6.2-4.9-.4-6.6-2-1.4-1.3-2-3-2-4.8 2.6-.2 4.9.4 6.6 2 .9.85 1.5 1.85 1.85 3 .35-1.6 1.15-2.95 2.4-4.05 1.9-1.65 4.45-2.2 7-2-.15 2.6-1 4.85-2.9 6.5-1.65 1.45-3.8 2-6 1.95-.5 1.85-.6 3.85-.55 6.6h-.3z"/></symbol>
 </defs>
 </svg>
 
@@ -144,6 +187,7 @@ body.suncar .reveal-close{background:linear-gradient(135deg,var(--mint),var(--fo
       打賞 30 點 · 抽一顆種子
     </button>
     <div class="donate-note" id="donate-note">點數從你的帳戶扣除,打賞後立即掉一顆種子進收集庫</div>
+    <button class="share-link-btn" onclick="openShare(null)">📣 分享給朋友 · 自動帶我的推薦碼</button>
   </div>
 
   <div class="prog-card">
@@ -153,7 +197,8 @@ body.suncar .reveal-close{background:linear-gradient(135deg,var(--mint),var(--fo
     </div>
     <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
     <div class="prog-gold">✨ 金種子 <span id="gold-cnt">0</span> / <span id="gold-tot">0</span>(超難掉,集滿全靠它)</div>
-    <div class="champ-banner" id="champ"><svg style="width:1.05em;height:1.05em;fill:var(--gold);vertical-align:-0.15em;"><use href="#i-seed"/></svg> 制霸! 你已集滿 30 點種子庫,拿到制霸徽章</div>
+    <div class="prog-legend">等級分兩種:普通種子(較常見) 與 ✨金種子(超稀有)。每顆種子的掉落機率會標在格子上。</div>
+    <div class="champ-banner" id="champ">🏆 制霸! 你已集滿 30 點種子庫,拿到制霸徽章</div>
   </div>
 
   <div class="dex-title">種子圖鑑</div>
@@ -162,13 +207,38 @@ body.suncar .reveal-close{background:linear-gradient(135deg,var(--mint),var(--fo
   <div class="foot-hint">收集庫目前只有你自己看得到。之後會開放在你的名片上秀給別人看。</div>
 </div>
 
+<!-- 揭曉彈窗 -->
 <div class="reveal-mask" id="reveal" onclick="if(event.target===this)closeReveal()">
   <div class="reveal-box" id="reveal-box">
-    <div class="reveal-emj" id="rv-emj">🌱</div>
+    <div class="reveal-seed">
+      <div class="seedwrap">
+        <span class="sprout"><svg><use href="#i-sprout"/></svg></span>
+        <div class="seedshape" id="rv-shape"><span class="emj" id="rv-emj">🌱</span></div>
+      </div>
+    </div>
     <div><span class="reveal-tag" id="rv-tag">新種子</span></div>
     <div class="reveal-name" id="rv-name">種子</div>
+    <div class="reveal-meta" id="rv-meta"></div>
     <div class="reveal-desc" id="rv-desc"></div>
-    <button class="reveal-close" onclick="closeReveal()">收下</button>
+    <div class="reveal-btns">
+      <button class="reveal-share" onclick="openShareFromReveal()">炫耀 · 分享</button>
+      <button class="reveal-close" onclick="closeReveal()">收下</button>
+    </div>
+  </div>
+</div>
+
+<!-- 分享彈窗 -->
+<div class="share-mask" id="share-mask" onclick="if(event.target===this)closeShare()">
+  <div class="share-box">
+    <div class="share-title">分享給朋友</div>
+    <div class="share-desc" id="share-desc">朋友點連結進來註冊會自動帶入你的推薦碼,雙方都有推薦獎勵。</div>
+    <div class="share-btns">
+      <button class="sh-btn fb" onclick="shareTo('fb')">分享到 Facebook</button>
+      <button class="sh-btn th" onclick="shareTo('th')">分享到 Threads(脆)</button>
+      <button class="sh-btn ig" onclick="shareTo('native')">分享到 IG / 其他</button>
+      <button class="sh-btn cp" onclick="shareTo('copy')">複製連結</button>
+    </div>
+    <button class="share-close" onclick="closeShare()">關閉</button>
   </div>
 </div>
 
@@ -176,12 +246,19 @@ body.suncar .reveal-close{background:linear-gradient(135deg,var(--mint),var(--fo
 <script src="supabase-init.js"></script>
 <script src="qyx-load-guard.js"></script>
 <script>
-/* 種子打賞收集庫(最小驗證版)
-   pool 由進來的網址參數 as 決定:案家(client)扣 client_points、順咖(suncar)扣 suncar_points,
-   收集庫依雙池分開(符合點數雙池完全分開的紅線)。本版只做 30 點一個級距。 */
+/* 種子打賞收集庫
+   pool 由網址參數 as 決定:案家(client)扣 client_points、順咖(suncar)扣 suncar_points,
+   收集庫依雙池分開(守點數雙池完全分開的紅線)。本版只做 30 點一個級距。
+   等級＝普通/金;掉落機率＝該種子 weight ÷ 整池 weight 總和。
+   分享連結帶自己的 ref_code(users.ref_code),朋友從 14_signup.html?ref= 進來會自動綁推薦。 */
 var POOL = (new URLSearchParams(location.search).get('as') === 'suncar') ? 'suncar' : 'client';
 var TIER = 30;
 var _busy = false;
+var _byId = {};       // seed_id → {id,name,emoji,rarity,weight}
+var _totalW = 0;      // 整池 weight 總和,算掉落機率用
+var _refCode = '';    // 我的推薦碼
+var _lastReveal = null;
+var _shareSeed = null;
 
 function setupTheme(){
   if(POOL === 'suncar'){
@@ -203,11 +280,12 @@ async function init(){
   await loadAll(user.id);
 }
 
-/* 一次抓:餘額、整份圖鑑、我的收集,畫出來 */
+/* 一次抓:餘額、我的推薦碼、整份圖鑑(含 weight)、我的收集,畫出來 */
 async function loadAll(uid){
-  var col = (POOL === 'client') ? 'client_points' : 'suncar_points';
-  var ur = await sb.from('users').select(col).eq('id', uid).maybeSingle();
-  var bal = (ur && ur.data && ur.data[col] != null) ? ur.data[col] : 0;
+  var ur = await sb.from('users').select('client_points,suncar_points,ref_code').eq('id', uid).maybeSingle();
+  var u = (ur && ur.data) ? ur.data : {};
+  var bal = ((POOL === 'client') ? u.client_points : u.suncar_points) || 0;
+  _refCode = u.ref_code || '';
   document.getElementById('bal').textContent = bal;
   var btn = document.getElementById('donate-btn');
   if(bal < 30){
@@ -217,8 +295,11 @@ async function loadAll(uid){
     btn.disabled = false;
   }
 
-  var cat = await sb.from('seed_catalog').select('id,name,emoji,rarity,sort').eq('tier', TIER).order('sort');
+  var cat = await sb.from('seed_catalog').select('id,name,emoji,rarity,weight,sort').eq('tier', TIER).order('sort');
   var seeds = (cat && cat.data) ? cat.data : [];
+  _byId = {}; _totalW = 0;
+  seeds.forEach(function(s){ _byId[s.id] = s; _totalW += (s.weight || 0); });
+
   var mine = await sb.from('user_seeds').select('seed_id,cnt').eq('pool', POOL);
   var owned = {};
   if(mine && mine.data){ mine.data.forEach(function(r){ owned[r.seed_id] = r.cnt; }); }
@@ -226,20 +307,31 @@ async function loadAll(uid){
   renderDex(seeds, owned);
 }
 
+function rateStr(weight){
+  if(!_totalW) return '';
+  return (weight / _totalW * 100).toFixed(1) + '%';
+}
+var SPROUT = '<span class="sprout"><svg><use href="#i-sprout"/></svg></span>';
+
 function renderDex(seeds, owned){
-  var got = 0, total = seeds.length, goldGot = 0, goldTot = 0;
-  var html = '';
+  var got = 0, total = seeds.length, goldGot = 0, goldTot = 0, html = '';
   seeds.forEach(function(s){
     var isGold = (s.rarity === 'gold');
     if(isGold) goldTot++;
     var have = owned[s.id] || 0;
     var hasIt = have > 0;
     if(hasIt){ got++; if(isGold) goldGot++; }
-    var cls = 'cell' + (isGold ? ' gold' : '') + (hasIt ? ' got' : ' locked');
-    var emj = hasIt ? s.emoji : (isGold ? '✨' : '❔');
+    var shapeCls = 'seedshape' + (isGold ? ' gold' : '') + (hasIt ? '' : ' locked');
+    var emj = hasIt ? s.emoji : '?';
     var nm  = hasIt ? esc(s.name) : '？？？';
-    var xn  = (hasIt && have > 1) ? '<span class="xn">×'+have+'</span>' : '';
-    html += '<div class="'+cls+'">'+xn+'<div class="emj">'+emj+'</div><div class="nm">'+nm+'</div></div>';
+    var sprout = hasIt ? SPROUT : '';   /* 收集到才冒綠芽 */
+    var meta = hasIt
+      ? '<div class="rate">' + rateStr(s.weight) + (have > 1 ? ' <span class="xn">×' + have + '</span>' : '') + '</div>'
+      : '<div class="rate">&nbsp;</div>';
+    html += '<div class="cell ' + (hasIt ? 'got' : 'locked') + (isGold ? ' gold' : '') + '">'
+          +   '<div class="seedwrap">' + sprout + '<div class="' + shapeCls + '"><span class="emj">' + emj + '</span></div></div>'
+          +   '<div class="nm">' + nm + '</div>' + meta
+          + '</div>';
   });
   document.getElementById('dex').innerHTML = html;
   document.getElementById('got-cnt').textContent = got;
@@ -283,18 +375,64 @@ function showReveal(d){
   var box = document.getElementById('reveal-box');
   var isGold = (d.rarity === 'gold');
   box.classList.toggle('gold', isGold);
+  var shape = document.getElementById('rv-shape');
+  shape.className = 'seedshape' + (isGold ? ' gold' : '');
   document.getElementById('rv-emj').textContent = d.emoji || '🌱';
   document.getElementById('rv-name').textContent = d.name || '種子';
   var tag = document.getElementById('rv-tag');
   if(isGold){ tag.className = 'reveal-tag gold'; tag.textContent = '✨ 金種子!'; }
   else if(d.is_new){ tag.className = 'reveal-tag new'; tag.textContent = '新種子!'; }
   else { tag.className = 'reveal-tag dup'; tag.textContent = '又掉一顆'; }
+  var seed = _byId[d.seed_id];
+  document.getElementById('rv-meta').textContent =
+    (isGold ? '✨金種子' : '普通種子') + (seed ? (' · 掉落機率 ' + rateStr(seed.weight)) : '');
   var desc = '已收集 ' + (d.collected || 0) + ' / ' + (d.total || 0) + ' 種';
   if(d.tier_complete) desc = '🏆 集滿了! 你制霸了這一池';
   document.getElementById('rv-desc').textContent = desc;
+  _lastReveal = { name: d.name, emoji: d.emoji, rarity: d.rarity };
   document.getElementById('reveal').classList.add('show');
 }
 function closeReveal(){ document.getElementById('reveal').classList.remove('show'); }
+
+/* ---- 分享 ---- */
+function openShare(seed){ _shareSeed = seed || null; document.getElementById('share-mask').classList.add('show'); }
+function openShareFromReveal(){ openShare(_lastReveal); }
+function closeShare(){ document.getElementById('share-mask').classList.remove('show'); }
+function shareUrl(){
+  return _refCode
+    ? ('https://quyixia-web.vercel.app/14_signup.html?ref=' + encodeURIComponent(_refCode))
+    : 'https://quyixia-web.vercel.app/';
+}
+function shareText(){
+  var t = '我在「去一下」打賞平台';
+  if(_shareSeed && _shareSeed.name){ t += '抽到種子【' + _shareSeed.name + '】' + (_shareSeed.emoji || ''); }
+  t += '! 一起來收集種子、支持平台 🌱';
+  return t;
+}
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t).catch(function(){ fallbackCopy(t); }); }
+  else { fallbackCopy(t); }
+}
+function fallbackCopy(t){
+  var ta = document.createElement('textarea');
+  ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+}
+function shareTo(kind){
+  var url = shareUrl(), text = shareText();
+  if(kind === 'fb'){
+    window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url), '_blank');
+  } else if(kind === 'th'){
+    window.open('https://www.threads.net/intent/post?text=' + encodeURIComponent(text + '\n' + url), '_blank');
+  } else if(kind === 'native'){
+    if(navigator.share){ navigator.share({ title: '去一下', text: text, url: url }).catch(function(){}); }
+    else { copyText(text + '\n' + url); alert('已複製連結,貼到 IG 限動或私訊就行。'); }
+  } else {
+    copyText(text + '\n' + url); alert('已複製連結,可貼到任何地方分享。');
+  }
+}
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
   return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
