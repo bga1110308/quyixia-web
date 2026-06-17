@@ -1313,10 +1313,12 @@ async function customCertAct(subId, decision, btnEl){
    reviews 表沒有「管理員可讀」政策(只有本人讀自己的),所以這裡不能直接 select reviews,
    改走後台函式 get_flag_reports()(security definer,內含 is_admin 檢查,順咖/案家名字也在後台 join 好)。
    此頁唯讀,只負責讓負責人看得到每一筆回報。 ===== */
-// 嚴重項(跟 05 評價頁 SEVERE_FLAG_KEYS 同一份字串):勾這兩項紅底、優先處理。05 改字串時這裡要一起改
+// 嚴重項(跟 05 評價頁 SEVERE_FLAG_KEYS / FLAGS_CLIENT 同一份字串):勾這幾項紅底、優先處理。05 改字串時這裡要一起改
+// 前兩條=順咖檢舉案家;第三條=案家檢舉順咖「冒用帳號」(身分問題,列為嚴重)
 var SEVERE_FLAGS = [
   '長輩有不自主或踰矩的肢體、言語接觸(常見於失智或疾病)',
-  '服務中曾發生肢體衝突或人身威脅狀況'
+  '服務中曾發生肢體衝突或人身威脅狀況',
+  '來服務的順咖與資料上的不同(疑似冒用他人帳號)'
 ];
 
 async function loadFlagReports(){
@@ -1374,7 +1376,11 @@ function renderFlagCards(list, handled, memberMap){
     var isH=!!handled[r.review_id];
     var flags=r.flags||{};
     var notes=r.flag_notes||{};
-    // 勾起來的每一項列一條:嚴重項紅底、其餘香檳底;順咖有寫描述就接在下面
+    // 紅旗方向:被檢舉者=subject、檢舉者=reporter。順咖檢舉案家(subject=案家) vs 案家檢舉順咖(subject=順咖)
+    var clientReportsSuncar = (r.mode === 'client_reviews_suncar'); // 案家檢舉順咖(含冒用帳號)
+    var subjectLabel = clientReportsSuncar ? '順咖' : '案家';
+    var reporterLabel = clientReportsSuncar ? '回報案家' : '回報順咖';
+    // 勾起來的每一項列一條:嚴重項紅底、其餘香檳底;有寫描述就接在下面
     var keys=Object.keys(flags).filter(function(k){ return flags[k]; });
     var rows=keys.map(function(k){
       var severe=SEVERE_FLAGS.indexOf(k)>=0;
@@ -1392,12 +1398,13 @@ function renderFlagCards(list, handled, memberMap){
     return '<div class="applicant-card" style="align-items:flex-start;'+(hasSevere&&!isH?'border-left:4px solid #E5484D;':'')+(isH?'opacity:0.55;':'')+'">'+
       '<div style="flex:1;">'+
         '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">'+
-          '<span style="font-size:14.5px;font-weight:600;color:var(--ink);">案家:'+esc(r.subject_name||'未填姓名')+noText(r.subject_id)+'</span>'+
+          '<span style="font-size:14.5px;font-weight:600;color:var(--ink);">'+esc(subjectLabel)+':'+esc(r.subject_name||'未填姓名')+noText(r.subject_id)+'</span>'+
           (hasSevere?'<span class="badge-mini" style="background:#FCE8E7;color:#D9534F;">嚴重</span>':'')+
           (isH?'<span class="badge-mini" style="background:var(--mint-pale);color:var(--forest);">已處理</span>':'')+
         '</div>'+
-        '<div class="card-meta"><span>回報順咖:'+esc(r.reporter_name||'未填姓名')+noText(r.reporter_id)+'</span><span>'+esc(fmtDate(r.created_at))+'</span>'+(orderLine?'<span>'+esc(orderLine)+'</span>':'')+'</div>'+
+        '<div class="card-meta"><span>'+esc(reporterLabel)+':'+esc(r.reporter_name||'未填姓名')+noText(r.reporter_id)+'</span><span>'+esc(fmtDate(r.created_at))+'</span>'+(orderLine?'<span>'+esc(orderLine)+'</span>':'')+'</div>'+
         '<div style="margin-top:9px;">'+rows+'</div>'+
+        (clientReportsSuncar?'<div style="font-size:12px;color:var(--ink-soft);margin-top:7px;">查證屬實要停權這位順咖,請至左側「帳號管理」搜尋姓名或編號操作。</div>':'')+
       '</div>'+
       '<div style="display:flex;align-items:flex-start;">'+actionBtn+'</div>'+
     '</div>';
