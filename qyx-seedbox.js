@@ -103,7 +103,7 @@
     var saved = loadPos();
     if (saved) { setPos(saved.left, saved.top); return; }
     var w = box.offsetWidth || 66;
-    setPos(window.innerWidth - w - 18, Math.round(window.innerHeight * 0.40)); /* 預設:右側中間偏上 */
+    setPos(window.innerWidth - w - 70, Math.round(window.innerHeight * 0.40)); /* 預設:右側偏內、垂直偏上(她指定往內、維持高度,不貼右緣) */
   }
 
   /* ---- 拖曳 vs 點擊:移動超過 4px 算拖曳,否則算點擊去打賞 ---- */

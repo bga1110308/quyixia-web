@@ -69,9 +69,6 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
 .btn-email{background:#fff;color:var(--amber-deep);border:1.5px solid var(--amber);}
 .btn-email:hover{background:var(--champagne);}
 
-.btn-disabled{background:#FBF5E7;color:var(--ink-light);border:1.5px dashed var(--border);cursor:not-allowed;position:relative;}
-.btn-disabled:hover{transform:none;box-shadow:none;}
-.btn-disabled .lock-tag{position:absolute;right:14px;font-size:0.66rem;background:var(--ink-light);color:#fff;padding:3px 8px;border-radius:99px;font-weight:600;}
 
 .divider{display:flex;align-items:center;gap:10px;margin:1rem 0;color:var(--ink-light);font-size:0.75rem;}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
@@ -145,11 +142,10 @@ body::after{content:'';position:absolute;bottom:-120px;left:-100px;width:320px;h
       用 Email 登入
     </button>
 
-    <!-- 手機驗證:後台暫關 -->
-    <button class="social-btn btn-disabled" disabled title="此功能尚未開放">
-      <svg viewBox="0 0 24 24" fill="currentColor"><use href="#i-phone"/></svg>
-      用手機號碼登入
-      <span class="lock-tag">未開放</span>
+    <!-- 加去一下官方好友:加了官方帳號才收得到「訂單聯絡」的 LINE 中轉訊息(同官方帳號 @303hceml) -->
+    <button class="social-btn btn-line" onclick="window.open('https://line.me/R/ti/p/@303hceml','_blank')">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738S0 4.935 0 10.304c0 4.81 4.27 8.84 10.035 9.608.391.084.923.258 1.058.592.122.303.08.778.039 1.085 0 0-.141.846-.171 1.027-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967h-.001c1.739-1.907 2.572-3.843 2.572-5.992zM7.66 13.4H5.3c-.32 0-.58-.26-.58-.58V8.14c0-.32.26-.58.58-.58.32 0 .58.26.58.58v4.16h1.78c.32 0 .58.26.58.58 0 .32-.26.58-.58.58zm2.4-.58c0 .32-.26.58-.58.58s-.58-.26-.58-.58V8.14c0-.32.26-.58.58-.58.32 0 .58.26.58.58v4.68zm5.16 0c0 .32-.26.58-.58.58-.19 0-.36-.09-.46-.23l-2.2-2.99v2.64c0 .32-.26.58-.58.58s-.58-.26-.58-.58V8.14c0-.32.26-.58.58-.58.18 0 .36.09.46.23l2.2 2.99V8.14c0-.32.26-.58.58-.58.32 0 .58.26.58.58v4.68zm3.66-2.97h-1.6v.81h1.6c.32 0 .58.26.58.58s-.26.58-.58.58h-1.6v.81h1.6c.32 0 .58.26.58.58 0 .32-.26.58-.58.58h-2.18c-.32 0-.58-.26-.58-.58V8.14c0-.32.26-.58.58-.58h2.18c.32 0 .58.26.58.58s-.26.58-.58.58h-1.6v.81h1.6c.32 0 .58.26.58.58s-.26.58-.58.58z"/></svg>
+      加入去一下官方好友
     </button>
   </div>
 

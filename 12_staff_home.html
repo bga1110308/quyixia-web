@@ -143,10 +143,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .rs-pill.on{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;font-weight:600;box-shadow:0 3px 10px rgba(47,96,72,0.3);}
 .rs-pill svg{width:1em;height:1em;fill:currentColor;}
 
-/* DEMO 區 */
-.demo-toggle{margin-top:0.85rem;font-size:0.72rem;color:var(--ink-soft);text-align:right;display:flex;justify-content:flex-end;align-items:center;gap:6px;flex-wrap:wrap;}
-.demo-toggle span:not(:first-child){background:rgba(255,255,255,0.85);padding:4px 10px;border-radius:99px;border:1px dashed var(--border);cursor:pointer;font-weight:500;}
-.demo-toggle .lbl-demo{font-size:0.62rem;color:var(--ink-light);letter-spacing:1px;font-weight:600;background:transparent!important;border:none!important;padding:0!important;cursor:default!important;}
+/* (已移除未使用的 DEMO 區樣式 .demo-toggle:body 沒用到的死樣式) */
 
 /* === 主區 === */
 .wrap{max-width:720px;margin:0 auto;padding:1.5rem 1.25rem 3rem;}
@@ -1039,7 +1036,7 @@ function toggleOnline() {
 }
 
 /* 皇冠等級 11 級制 — 與 crown_all_levels.html 對齊
- * 依推薦人數決定等級。推薦人數由 init 帶入(目前推薦資料尚未建表,先帶 0)。 */
+ * 依推薦人數決定等級。init 已帶入真實推薦人數(users.referred_by = 本人 的帳號數,同 06_referral)。 */
 var crownLevels = [
   { cls: 'lv0',    min: 0,  label: 'LV 0 未啟動' },
   { cls: 'lv1',    min: 2,  label: 'LV 1 入門' },

@@ -877,8 +877,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 })();
 
 /* 皇冠等級 11 級制 — 與 crown_all_levels.html 對齊
- * 依推薦人數決定等級。推薦人數由 init 帶入。
- * 推薦資料目前尚未建表,init 先帶 0(顯示 LV 0);06_referral 接後端後改帶真實人數即可。 */
+ * 依推薦人數決定等級。init 已帶入真實推薦人數(users.referred_by = 本人 的帳號數,同 06_referral)。 */
 var crownLevels = [
   { cls: 'lv0',    min: 0,  label: 'LV 0 未啟動' },
   { cls: 'lv1',    min: 2,  label: 'LV 1 入門' },
