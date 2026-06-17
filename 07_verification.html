@@ -704,32 +704,44 @@ function uploadCert(card, key, isRequired) {
   }
 }
 
-/* 信箱「真驗證」:不寄碼,改讀登入方式。
+/* 信箱「真驗證」:不寄碼,改走後台函式 verify_my_email()。
    為什麼這樣是真的:用 Google 登入=Google 已驗過該信箱;用 Email(magic link)登入=已點過寄到該信箱的連結。
-   兩者的信箱在登入當下就被驗證,直接顯示已驗證即可。只用 LINE 登入拿不到信箱,引導改用 Google/Email。 */
+   為什麼要走後台:這會變成案家看得到的公開徽章,不能讓前端自己說了算(前端可竄改)。verify_my_email 在後台讀 auth 端、
+   authoritative,並把結果寫進 users.is_email_verified(被觸發器鎖住,只有這支函式能改),02 案家名單才畫得出徽章。
+   只用 LINE 登入拿不到信箱,函式回 verified:false,引導改用 Google/Email。 */
 function applyEmailLoginState(user) {
-  var em = (user && user.email ? String(user.email) : '').trim();
-  var confirmed = !!(user && (user.email_confirmed_at || user.confirmed_at));
-  var provs = (user && user.app_metadata && user.app_metadata.providers) || [];
-  var fromEmailProvider = provs.indexOf('google') >= 0 || provs.indexOf('email') >= 0;
-  var verified = em.indexOf('@') >= 0 && (confirmed || fromEmailProvider);
   var box = document.getElementById('email-verified');
   var need = document.getElementById('email-needlogin');
-  if (verified) {
+  var provs = (user && user.app_metadata && user.app_metadata.providers) || [];
+  function showVerified(em) {
     emailVerified = true;
-    window._verifiedEmail = em;
-    var methodEl = document.getElementById('email-method');
-    if (methodEl) methodEl.textContent = (provs.indexOf('google') >= 0) ? 'Google' : 'Email';
-    var addrEl = document.getElementById('email-addr');
-    if (addrEl) addrEl.textContent = em;
+    window._verifiedEmail = em || '';
+    var m = document.getElementById('email-method'); if (m) m.textContent = (provs.indexOf('google') >= 0) ? 'Google' : 'Email';
+    var a = document.getElementById('email-addr'); if (a) a.textContent = em || '';
     if (box) box.style.display = 'block';
     if (need) need.style.display = 'none';
-  } else {
+    updateProgress();
+  }
+  function showNeed() {
     emailVerified = false;
     window._verifiedEmail = '';
     if (box) box.style.display = 'none';
     if (need) need.style.display = 'block';
+    updateProgress();
   }
+  // 退路:後台函式叫不動時(理論上不會),用前端登入資訊判斷,至少順咖自己頁面顯示正確(只是沒寫 DB、案家端徽章要等下次)
+  function frontendFallback() {
+    var em = (user && user.email ? String(user.email) : '').trim();
+    var ok = em.indexOf('@') >= 0 && ((user && (user.email_confirmed_at || user.confirmed_at)) || provs.indexOf('google') >= 0 || provs.indexOf('email') >= 0);
+    if (ok) showVerified(em); else showNeed();
+  }
+  if (!window.sb) { frontendFallback(); return; }
+  window.sb.rpc('verify_my_email').then(function (res) {
+    var d = (res && res.data) ? res.data : null;
+    if (d && d.ok && d.verified) showVerified(d.email || (user && user.email) || '');
+    else if (d && d.ok) showNeed();
+    else frontendFallback();
+  }).catch(function () { frontendFallback(); });
 }
 
 function sendPhoneOTP() {

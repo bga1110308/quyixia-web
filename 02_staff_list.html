@@ -137,6 +137,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .b-senior{background:#FCE4F2;color:#A8367C;}
 .b-custom{background:var(--champagne-soft);color:var(--ink-soft);border:1px solid var(--border-soft);}
 .b-ref{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;}
+.b-email{background:var(--info-pale);color:var(--info);}
 
 .mini-tags{position:relative;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:10px;z-index:1;}
 .mtag{font-size:0.68rem;background:var(--champagne-soft);color:var(--ink-soft);padding:3px 9px;border-radius:99px;border:1px solid var(--border-soft);}
@@ -183,6 +184,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
 <defs>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-1.5 16L6 12.5l1.4-1.4 3.1 3.1 6.1-6.1L18 9.5l-7.5 7.5z"/></symbol>
   <symbol id="i-heart-cross" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
@@ -352,7 +354,8 @@ var badgeMap = {
   safe: {cls:'b-safe', icon:'i-shield', name:'良民'},
   cpr: {cls:'b-cpr', icon:'i-heart-cross', name:'急救'},
   cna: {cls:'b-cna', icon:'i-star', name:'照服員'},
-  senior: {cls:'b-senior', icon:'i-crown', name:'資深照服'}
+  senior: {cls:'b-senior', icon:'i-crown', name:'資深照服'},
+  email: {cls:'b-email', icon:'i-mail', name:'信箱'}
 };
 
 async function loadStaff() {
@@ -387,6 +390,7 @@ async function loadStaff() {
     if (r.has_caregiver_cert && r.show_caregiver !== false) badges.push('cna');        /* 照服員證過審 */
     if (r.has_good_conduct && r.show_good_conduct !== false) badges.push('safe');      /* 良民證過審 */
     if (r.has_cpr && r.show_cpr !== false) badges.push('cpr');                         /* CPR/AED 急救證過審 */
+    if (r.is_email_verified) badges.push('email');                                     /* 信箱已驗證(Google/Email 登入,後台 verify_my_email 寫入 users.is_email_verified) */
     var areas = Array.isArray(p.areas) ? p.areas : [];
     return {
       id: r.id,
