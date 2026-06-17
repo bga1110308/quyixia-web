@@ -705,10 +705,14 @@ function renderTimeline(o){
 async function openLineRelay(){
   var oid = window._orderId;
   if(!oid){ alert('找不到訂單,請重新整理頁面再試'); return; }
-  var r = await sb.rpc('set_line_relay_context', { p_order_id: oid });
-  if(r && r.error){ alert('目前無法開啟 LINE 聯絡:' + (r.error.message || '請稍後再試')); return; }
-  /* 開官方帳號加好友頁(新分頁)。加好友後在官方帳號內傳訊息,即會中轉給這張單的對方。 */
-  window.open('https://line.me/R/ti/p/@303hceml', '_blank');
+  try{
+    var r = await sb.rpc('set_line_relay_context', { p_order_id: oid });
+    if(r && r.error){ alert('目前無法開啟 LINE 聯絡:' + (r.error.message || '請稍後再試')); return; }
+  }catch(e){ alert('連線異常,請稍後再試'); return; }
+  /* 用同一分頁直接前往官方帳號加好友頁,不要用 window.open 開新分頁:
+     手機瀏覽器在 await(等後台回應)之後再開新分頁會被彈窗攔截、按了沒反應。
+     加好友後在官方帳號內傳訊息,即會中轉給這張單的對方。 */
+  location.href = 'https://line.me/R/ti/p/@303hceml';
 }
 
 async function init(){
