@@ -130,7 +130,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   <div class="demo-banner">
     <svg><use href="#i-warn"/></svg>
-    <span><strong>Demo 模式:</strong>本頁為展示用,按下「確認付款」不會真正扣款。正式上線將串接 PAYUNi 金流,所有付款方式都會真實運作。</span>
+    <span><strong>匯款加值:</strong>目前採人工匯款對帳。請依下方資訊轉帳,並填寫「我已完成匯款」,平台核對入帳後會把點數加給你(通常 1 個工作天內)。</span>
   </div>
 
   <!-- 訂單摘要 -->
@@ -156,86 +156,47 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="price"><span class="tw">NT$</span><span id="sum-price">0</span></div>
   </div>
 
-  <!-- 付款方式 -->
-  <div class="section-title">選擇付款方式</div>
-  <div class="pay-methods">
-
-    <div class="pay-method" data-method="apple" onclick="pickPay(this)">
-      <div class="pay-icon apple"></div>
-      <div class="pay-info">
-        <div class="pay-name">Apple Pay</div>
-        <div class="pay-desc">用 Touch ID / Face ID 一鍵付款</div>
-      </div>
-      <div class="pay-check"><svg><use href="#i-check"/></svg></div>
-    </div>
-
-    <div class="pay-method" data-method="linepay" onclick="pickPay(this)">
-      <div class="pay-icon linepay">LINE</div>
-      <div class="pay-info">
-        <div class="pay-name">LINE Pay</div>
-        <div class="pay-desc">用你的 LINE 帳號付款</div>
-      </div>
-      <div class="pay-check"><svg><use href="#i-check"/></svg></div>
-    </div>
-
-    <div class="pay-method" data-method="card" onclick="pickPay(this)">
-      <div class="pay-icon card">VISA</div>
-      <div class="pay-info">
-        <div class="pay-name">信用卡 / 金融卡</div>
-        <div class="pay-desc">VISA、Mastercard、JCB</div>
-      </div>
-      <div class="pay-check"><svg><use href="#i-check"/></svg></div>
-    </div>
-
-    <div class="pay-method" data-method="jko" onclick="pickPay(this)">
-      <div class="pay-icon jko">JKO</div>
-      <div class="pay-info">
-        <div class="pay-name">街口支付</div>
-        <div class="pay-desc">JKO Pay 一鍵付款</div>
-      </div>
-      <div class="pay-check"><svg><use href="#i-check"/></svg></div>
-    </div>
-
-    <div class="pay-method" data-method="gpay" onclick="pickPay(this)">
-      <div class="pay-icon gpay">
-        <svg viewBox="0 0 24 24" style="width:28px;height:28px;"><path fill="#4285f4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34a853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fbbc05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#ea4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      </div>
-      <div class="pay-info">
-        <div class="pay-name">Google Pay</div>
-        <div class="pay-desc">用你的 Google 帳號付款</div>
-      </div>
-      <div class="pay-check"><svg><use href="#i-check"/></svg></div>
-    </div>
-
+  <!-- 匯款資訊(平台官方收款帳號,不顯示戶名) -->
+  <div class="section-title">匯款資訊</div>
+  <div class="order-card">
+    <div class="order-row"><span class="label">銀行</span><span class="val">中國信託商業銀行 (822)</span></div>
+    <div class="order-row"><span class="label">分行</span><span class="val">瑞光分行 (0716)</span></div>
+    <div class="order-row"><span class="label">帳號</span><span class="val" id="bank-acct">716540155877</span></div>
+    <div class="order-row highlight"><span class="label">應匯金額</span><span class="val">NT$ <span id="sum-price2">0</span></span></div>
+  </div>
+  <div class="demo-banner" style="background:var(--mint-pale);border-color:var(--mint);color:var(--forest);">
+    <svg><use href="#i-shield"/></svg>
+    <span>這是去一下平台官方收款帳號。用 ATM／網銀轉帳上面金額後,<strong>務必填寫下方回報</strong>,平台核對入帳後就會把點數加給你。</span>
   </div>
 
-  <!-- 信用卡欄位 -->
-  <div class="card-fields" id="card-fields">
+  <!-- 我已完成匯款回報 -->
+  <div class="section-title">我已完成匯款</div>
+  <div class="card-fields show">
     <div class="cf-field">
-      <label>卡號</label>
-      <input type="text" id="card-num" placeholder="1234 5678 9012 3456" maxlength="19" inputmode="numeric">
+      <label>匯款人姓名</label>
+      <input type="text" id="payer-name" placeholder="例:王小明" maxlength="20">
     </div>
     <div class="cf-row">
       <div class="cf-field">
-        <label>到期日</label>
-        <input type="text" id="card-exp" placeholder="MM/YY" maxlength="5">
+        <label>匯款帳號後五碼</label>
+        <input type="text" id="bank-last5" placeholder="12345" maxlength="5" inputmode="numeric">
       </div>
       <div class="cf-field">
-        <label>安全碼 CVV</label>
-        <input type="text" id="card-cvv" placeholder="123" maxlength="4" inputmode="numeric">
+        <label>匯款時間</label>
+        <input type="datetime-local" id="transfer-at">
       </div>
     </div>
   </div>
 
-  <!-- 確認付款 -->
-  <button class="pay-btn" id="pay-btn" onclick="confirmPay()" disabled>
-    <svg><use href="#i-lock"/></svg>
-    <span>確認付款 <span style="opacity:0.88;font-weight:500;">NT$<span id="btn-price">0</span></span></span>
+  <!-- 送出回報 -->
+  <button class="pay-btn" id="pay-btn" onclick="submitTopup()">
+    <svg><use href="#i-check"/></svg>
+    <span>送出匯款回報</span>
   </button>
 
   <div class="security-note">
     <svg><use href="#i-shield"/></svg>
-    交易加密 256-bit SSL 安全傳輸
+    本頁不收信用卡卡號;點數由平台確認入帳後發放,通常 1 個工作天內
   </div>
 
   <div class="back-link">
@@ -276,39 +237,13 @@ function loadPlan() {
   document.getElementById('sum-bonus').textContent = currentPlan.bonus;
   document.getElementById('sum-total-pts').textContent = currentPlan.received;
   document.getElementById('sum-price').textContent = currentPlan.price;
-  document.getElementById('btn-price').textContent = currentPlan.price;
+  var sp2 = document.getElementById('sum-price2'); if (sp2) sp2.textContent = currentPlan.price;
   if (currentPlan.bonus === 0) {
     document.getElementById('bonus-row').style.display = 'none';
   }
 }
 
-function pickPay(el) {
-  document.querySelectorAll('.pay-method').forEach(function(m){ m.classList.remove('selected'); });
-  el.classList.add('selected');
-  currentMethod = el.getAttribute('data-method');
-  var cf = document.getElementById('card-fields');
-  if (currentMethod === 'card') cf.classList.add('show');
-  else cf.classList.remove('show');
-  /* 解除確認按鈕的 disabled */
-  document.getElementById('pay-btn').disabled = false;
-}
-
-/* 信用卡卡號自動加空格 */
-document.getElementById('card-num').addEventListener('input', function(e){
-  var v = e.target.value.replace(/\s/g,'').replace(/\D/g,'');
-  v = v.replace(/(.{4})/g,'$1 ').trim();
-  e.target.value = v;
-});
-
-/* 到期日自動加 / */
-document.getElementById('card-exp').addEventListener('input', function(e){
-  var v = e.target.value.replace(/\D/g,'');
-  if (v.length >= 3) v = v.slice(0,2) + '/' + v.slice(2,4);
-  e.target.value = v;
-});
-
-/* 驗證失敗統一處理:提醒 + 捲到該欄位置中 + 紅框閃一下 + 聚焦。全站共用做法。
-   信用卡欄位只做捲動與紅框提示,絕不自動填入任何值 */
+/* 驗證失敗統一處理:提醒 + 捲到該欄位 + 紅框閃 + 聚焦 */
 function fail(el, msg) {
   alert(msg);
   if (el) {
@@ -320,38 +255,21 @@ function fail(el, msg) {
   }
 }
 
-async function confirmPay() {
+/* 送出匯款回報:不直接加點(金流紅線:前端不可自己改點數),只建一筆 topup_requests(待確認)。
+   管理員在 08 對帳頁看到真的入帳後,呼叫 admin_confirm_topup 才在伺服器端發點。 */
+async function submitTopup() {
   if (!currentPlan) return;
-
-  if (!currentMethod) {
-    return fail(document.querySelector('.pay-methods'), '請先選擇付款方式');
-  }
-
-  if (currentMethod === 'card') {
-    var num = document.getElementById('card-num').value.replace(/\s/g,'');
-    var exp = document.getElementById('card-exp').value;
-    var cvv = document.getElementById('card-cvv').value;
-    if (num.length < 13) {
-      return fail(document.getElementById('card-num'), '請輸入正確的卡號');
-    }
-    if (!/^\d{2}\/\d{2}$/.test(exp)) {
-      return fail(document.getElementById('card-exp'), '請輸入到期日(MM/YY)');
-    }
-    if (cvv.length < 3) {
-      return fail(document.getElementById('card-cvv'), '請輸入安全碼');
-    }
-  }
-
-  var methodName = {
-    apple:'Apple Pay', linepay:'LINE Pay', card:'信用卡', jko:'街口支付', gpay:'Google Pay'
-  }[currentMethod];
-
-  if (!confirm('【Demo 模擬付款】\n\n付款方式:' + methodName + '\n實得點數:' + currentPlan.received + ' 點\n應付金額:NT$ ' + currentPlan.price + '\n\n按下確定後將模擬付款成功(實際不會扣款)')) return;
-
-  if (typeof window.sb === 'undefined') { alert('系統未就緒,請重新整理頁面'); return; }
+  var name = (document.getElementById('payer-name').value || '').trim();
+  var last5 = (document.getElementById('bank-last5').value || '').trim();
+  var tat = document.getElementById('transfer-at').value;
+  if (!name) return fail(document.getElementById('payer-name'), '請填寫匯款人姓名');
+  if (!/^\d{5}$/.test(last5)) return fail(document.getElementById('bank-last5'), '請填寫匯款帳號後五碼(5 個數字)');
+  if (!tat) return fail(document.getElementById('transfer-at'), '請選擇匯款時間');
+  if (typeof window.sb === 'undefined') { alert('系統未就緒,請重新整理'); return; }
 
   var btn = document.getElementById('pay-btn');
   btn.disabled = true;
+  var btnSpan = btn.querySelector('span'); if (btnSpan) btnSpan.textContent = '送出中…';
 
   try {
     var user = null;
@@ -361,48 +279,32 @@ async function confirmPay() {
     if (!user) { window.location.href = '13_login.html'; return; }
 
     var isSuncar = (currentPlan.pool === 'suncar');
-    var col = isSuncar ? 'suncar_points' : 'client_points';
-    var poolName = isSuncar ? '順咖' : '案家';
-
-    /* 讀目前餘額,加上實得點數 */
-    var pr = await sb.from('users').select(col).eq('id', user.id).maybeSingle();
-    var cur = (pr.data && pr.data[col] != null) ? pr.data[col] : 0;
-    var newBal = cur + currentPlan.received;
-
-    /* 更新餘額 */
-    var upd = {};
-    upd[col] = newBal;
-    var ru = await sb.from('users').update(upd).eq('id', user.id);
-    if (ru.error) { alert('加值失敗:' + ru.error.message); btn.disabled = false; return; }
-
-    /* 寫點數明細(只進不改) */
-    var rt = await sb.from('point_transactions').insert({
+    var ins = await sb.from('topup_requests').insert({
       user_id: user.id,
       pool: isSuncar ? 'suncar' : 'client',
-      change: currentPlan.received,
-      reason: '點數加值',
-      order_id: null
+      points: currentPlan.received,
+      amount: currentPlan.price,
+      bank_last5: last5,
+      transfer_at: new Date(tat).toISOString(),
+      payer_name: name
     });
-    if (rt.error) console.error('point_transactions:', rt.error);
-
-    try { sessionStorage.removeItem('pendingPlan'); } catch(e){}
-    try { sessionStorage.setItem('credits_lastTopupAt', String(Date.now())); } catch(e){}
-
-    alert('儲值成功!' + poolName + '點數共獲得 ' + currentPlan.received + ' 點');
-
-    /* 有 returnTo(下單途中來加值):回原頁繼續完成訂單;否則回 16 顯示成功 */
-    var back = currentPlan.returnTo || '';
-    if (back) {
-      try { sessionStorage.removeItem('credits_returnTo'); } catch(e){}
-      var sep = back.indexOf('?') >= 0 ? '&' : '?';
-      window.location.href = back + sep + 'paid=1';
+    if (ins.error) {
+      alert('送出失敗:' + ins.error.message);
+      btn.disabled = false; if (btnSpan) btnSpan.textContent = '送出匯款回報';
       return;
     }
-    window.location.href = '16_buy_credits.html?success=1&pool=' + (isSuncar ? 'suncar' : 'client') + '&add=' + currentPlan.received;
-  } catch(e) {
+
+    /* 人工對帳:點數此刻還沒入帳,不能回原訂單頁自動完成。清掉暫存、回首頁,提示入帳後再下單 */
+    try { sessionStorage.removeItem('pendingPlan'); } catch(e){}
+    try { sessionStorage.removeItem('credits_returnTo'); } catch(e){}
+    try { sessionStorage.removeItem('pending_order'); } catch(e){}
+
+    alert('匯款回報已送出!平台核對入帳後會把 ' + currentPlan.received + ' 點加給你(通常 1 個工作天內)並通知你。點數入帳後再回來下單即可。');
+    window.location.href = isSuncar ? '12_staff_home.html' : '11_client_home.html';
+  } catch (e) {
     console.error(e);
-    alert('加值時發生錯誤,請稍後再試');
-    btn.disabled = false;
+    alert('送出時發生錯誤,請稍後再試');
+    btn.disabled = false; if (btnSpan) btnSpan.textContent = '送出匯款回報';
   }
 }
 

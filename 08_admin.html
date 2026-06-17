@@ -332,6 +332,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <div class="nav-item" onclick="go('certreview',this)"><svg class="icon"><use href="#i-badge-check"/></svg>證件審核<span class="cnt" id="nav-cert-count">0</span></div>
       <div class="nav-item" onclick="go('orders',this)"><svg class="icon"><use href="#i-clipboard"/></svg>訂單總覽</div>
       <div class="nav-item" onclick="go('flags',this)"><svg class="icon"><use href="#i-shield"/></svg>紅旗回報<span class="cnt" id="nav-flag-count">0</span></div>
+      <div class="nav-item" onclick="go('topup',this)"><svg class="icon"><use href="#i-clipboard"/></svg>加值對帳<span class="cnt" id="nav-topup-count">0</span></div>
       <div class="nav-section">設定 / 報表</div>
       <div class="nav-item" onclick="go('announce',this)"><svg class="icon"><use href="#i-speaker"/></svg>公告管理</div>
       <div class="nav-item" onclick="go('settings',this)"><svg class="icon"><use href="#i-settings"/></svg>系統設定</div>
@@ -441,6 +442,15 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
         <!-- 紅旗卡由 loadFlagReports() 填入此處 -->
         <div id="flag-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
+      </div>
+
+      <!-- 加值對帳:使用者在 17 回報的匯款申請(topup_requests)。對照銀行入帳後按「確認入帳」由後台函式 admin_confirm_topup 發點 -->
+      <div class="page" id="page-topup">
+        <div class="sec-header">
+          <div style="display:flex;align-items:center;gap:9px;"><span class="sec-title">加值對帳</span><span id="topup-count" style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-size:11.5px;padding:3px 10px;border-radius:99px;font-weight:700;box-shadow:0 3px 8px rgba(239,159,39,0.3);">0</span></div>
+          <div style="font-size:12.5px;color:var(--ink-soft);">使用者匯款後的加值申請。請對照銀行實際入帳(金額＋後五碼)再按「確認入帳」,系統才會發點。發點不可撤回。</div>
+        </div>
+        <div id="topup-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
       </div>
 
       <!-- 訂單總覽 -->
@@ -1321,6 +1331,62 @@ var SEVERE_FLAGS = [
   '來服務的順咖與資料上的不同(疑似冒用他人帳號)'
 ];
 
+/* ===== 加值對帳:使用者在 17 回報的匯款申請(topup_requests)。管理員對照銀行入帳後確認發點。
+   發點走後台函式 admin_confirm_topup(伺服器端發點,前端不能自己加點=金流紅線)。退回直接 update status。 ===== */
+async function loadTopups(){
+  var box=document.getElementById('topup-list');
+  if(!box) return;
+  var res=await sb.from('topup_requests').select('id,user_id,pool,points,amount,bank_last5,transfer_at,payer_name,status,created_at').order('created_at',{ascending:false});
+  if(res.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(res.error.message)+'</div>'; return; }
+  var list=res.data||[];
+  var uids=list.map(function(r){return r.user_id;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;});
+  var umap={};
+  if(uids.length){ var ur=await sb.from('users').select('id,display_name,member_no').in('id',uids); if(!ur.error)(ur.data||[]).forEach(function(u){umap[u.id]=u;}); }
+  renderTopups(list,umap);
+}
+function renderTopups(list,umap){
+  var box=document.getElementById('topup-list');
+  var pending=list.filter(function(r){return r.status==='pending';}).length;
+  var nav=document.getElementById('nav-topup-count'); if(nav) nav.textContent=pending;
+  var badge=document.getElementById('topup-count'); if(badge) badge.textContent=pending;
+  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有加值申請</div>'; return; }
+  var ordered=list.slice().sort(function(a,b){ return (a.status==='pending'?0:1)-(b.status==='pending'?0:1); });
+  box.innerHTML=ordered.map(function(r){
+    var u=umap[r.user_id]||{};
+    var who=esc(u.display_name||'未命名')+(u.member_no?' ('+esc(u.member_no)+')':'');
+    var poolName=r.pool==='suncar'?'順咖':'案家';
+    var done=r.status!=='pending';
+    var tag = r.status==='confirmed'?'<span class="badge-mini" style="background:var(--mint-pale);color:var(--forest);">已入帳</span>'
+            : r.status==='rejected'?'<span class="badge-mini" style="background:#FCE8E7;color:#D9534F;">已退回</span>':'';
+    var act = done ? '' :
+      '<button class="btn-approve" onclick="confirmTopup('+r.id+',this)">確認入帳·發 '+r.points+' 點</button>'+
+      '<button class="btn-reject" onclick="rejectTopup('+r.id+',this)">退回</button>';
+    return '<div class="applicant-card" style="align-items:flex-start;'+(done?'opacity:0.6;':'')+'">'+
+      '<div style="flex:1;">'+
+        '<div style="font-size:14.5px;font-weight:600;color:var(--ink);margin-bottom:4px;">'+who+' · 加值'+poolName+'點 '+tag+'</div>'+
+        '<div class="card-meta"><span>金額 NT$'+r.amount+' → '+r.points+' 點</span><span>後五碼 '+esc(r.bank_last5||'-')+'</span><span>匯款人 '+esc(r.payer_name||'-')+'</span><span>匯款時間 '+esc(fmtDate(r.transfer_at))+'</span></div>'+
+      '</div>'+
+      (act?'<div style="display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px;justify-content:flex-end;">'+act+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+async function confirmTopup(id,btn){
+  if(!confirm('確認已在銀行看到這筆入帳,要發點給對方嗎?\n發出後不可撤回。')) return;
+  if(btn) btn.disabled=true;
+  var r=await sb.rpc('admin_confirm_topup',{p_request_id:id});
+  if(r.error){ alert('發點失敗:'+r.error.message); if(btn) btn.disabled=false; return; }
+  var d=r.data||{};
+  if(!d.ok){ alert('發點未成功:'+(d.reason||'未知')); if(btn) btn.disabled=false; return; }
+  alert('已確認入帳,發了 '+d.points+' 點'); loadTopups();
+}
+async function rejectTopup(id,btn){
+  if(!confirm('確定退回這筆加值申請嗎?(查無入帳或資料有誤時用)')) return;
+  if(btn) btn.disabled=true;
+  var r=await sb.from('topup_requests').update({status:'rejected'}).eq('id',id);
+  if(r.error){ alert('退回失敗:'+r.error.message); if(btn) btn.disabled=false; return; }
+  loadTopups();
+}
+
 async function loadFlagReports(){
   var box=document.getElementById('flag-list');
   if(!box) return;
@@ -1784,6 +1850,7 @@ async function initAdmin(){
   loadCertReview();
   loadCustomCertReview(); // 自訂證件待審清單
   loadFlagReports(); // 紅旗回報:順咖回報的案家風險狀況
+  loadTopups(); // 加值對帳:使用者匯款回報,管理員確認後發點
   loadAccounts(); // 帳號管理:會員清單與分身分停權
   loadOrders();   // 訂單總覽:全部訂單統計與清單
   loadAnnounce(); // 公告管理:從 announcements 表撈真資料

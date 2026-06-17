@@ -341,11 +341,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <input type="text" id="address" value="" placeholder="例:新北市板橋區中山路一段 88 號 5 樓">
       <div class="field-hint">下單時可快速代入,可隨時修改</div>
     </div>
-
-    <div class="field">
-      <label class="field-label">密碼 <span class="opt">(留空表示不修改)</span></label>
-      <input type="password" id="password" value="" placeholder="輸入新密碼(至少 8 字)" minlength="8">
-    </div>
   </div>
 
   <!-- 登入方式綁定(共用):綁多種登入方式都進同一帳號;綁 Google 順便完成信箱驗證 -->
@@ -1139,9 +1134,6 @@ async function saveProfile() {
       gotoField('id-number','身分證號格式不正確(本國身分證或居留證)'); return;
     }
   }
-
-  var pwd = document.getElementById('password').value;
-  if (pwd && pwd.length < 8) { gotoField('password','密碼至少 8 字'); return; }
 
   /* 順咖額外驗證 */
   if (role === 'staff') {
