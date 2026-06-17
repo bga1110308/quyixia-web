@@ -171,9 +171,9 @@ async function handlePostback(ev) {
   } else if (result.action === 'reply') {
     await lineReply(ev.replyToken, result.text);
   } else if (result.action === 'deliver') {
-    // 送一份給對方、回一句確認給寄件者
+    // 只把訊息送給對方，不再回確認句給寄件者
+    // 為什麼：點按鈕當下聊天室已顯示「傳給：…」當確認，再補一句會干擾對話
     await linePush(result.to, result.text);
-    await lineReply(ev.replyToken, result.confirm);
   }
 }
 
