@@ -423,6 +423,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
         <span class="qtag qtag-neg" onclick="this.classList.toggle('on')">遲到</span>
         <span class="qtag qtag-neg" onclick="this.classList.toggle('on')">態度冷漠</span>
         <span class="qtag qtag-neg" onclick="this.classList.toggle('on')">需要改進</span>
+        <span class="qtag qtag-neg" data-flag="來服務的順咖與資料上的不同(疑似冒用他人帳號)" onclick="this.classList.toggle('on')">與資料不符·疑冒用帳號</span>
       </div>
 
       <div class="sec-title" style="margin-top:1.25rem;">想說的話(選填)</div>
@@ -443,19 +444,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div class="tip-note">打賞會全額轉給順咖,平台不抽成</div>
     </div>
 
-    <!-- 案家回報順咖狀況(紅旗):預設沒有,選有才展開。冒用帳號等問題寫進 reviews.flags,只進後台、不公開 -->
-    <div class="card">
-      <div class="sec-title">這次有沒有狀況要回報?</div>
-      <div class="choice" data-q="has_issue_c" id="issue-switch-c">
-        <button type="button" class="choice-btn on" data-v="no" onclick="setIssueC(false)">沒有,一切正常</button>
-        <button type="button" class="choice-btn" data-v="yes" onclick="setIssueC(true)">有,要回報</button>
-      </div>
-      <div id="flag-panel-c" style="display:none;margin-top:0.95rem;">
-        <div class="flag-tip">勾選實際發生的狀況。描述發生的事就好,不用寫姓名或情緒字眼。這段只有平台看得到,不會公開。</div>
-        <div id="flag-checklist-c"></div>
-        <div class="flag-warn" id="flag-warn-c" style="display:none;">冒用帳號是嚴重的身分問題。平台會優先人工審核,查證屬實將停權該順咖帳號。若涉及金錢或人身安全,請另行報警 110。</div>
-      </div>
-    </div>
+    <!-- 案家評順咖的紅旗(冒用帳號)已改成「有可以改進的地方」裡可直接點的標籤(data-flag),不再用獨立回報面板 -->
 
     <button class="submit-btn" onclick="submitReview('client')">送出評價</button>
   </div>
@@ -578,11 +567,6 @@ var FLAGS_STAFF = [
 // 嚴重項(勾了提醒報警 110):取最後兩項(性騷擾、肢體衝突)
 var SEVERE_FLAG_KEYS = [FLAGS_STAFF[5], FLAGS_STAFF[6]];
 
-// 案家評順咖的紅旗題(目前一項:冒用帳號)。中文字串同時當顯示文字與 flags 的 key
-var FLAGS_CLIENT = [
-  '來服務的順咖與資料上的不同(疑似冒用他人帳號)'
-];
-var hasIssueC = false;
 
 var subRatings = {};   // { 中文key: 1~5 }
 var choiceAns = {};    // { would_serve_again:'yes'|'no', service_as_ordered, needs_assist_actual }
@@ -687,7 +671,6 @@ async function showWriteClient(o) {
     '</div>';
 
   bindStars('staff');
-  renderClientFlags();
 }
 
 // 產生分項星等列與紅旗清單(順咖評案家)
@@ -760,35 +743,6 @@ function onFlagToggle(cb) {
   if (warn) warn.style.display = anySevere ? 'block' : 'none';
 }
 
-/* 案家端紅旗(獨立一套,class 跟順咖端 .flag-cb 區隔,避免兩個寫評價模式 DOM 衝突) */
-function renderClientFlags() {
-  var box = document.getElementById('flag-checklist-c');
-  if (!box) return;
-  box.innerHTML = FLAGS_CLIENT.map(function(k){
-    return '<label class="flag-item">' +
-      '<input type="checkbox" class="flag-cb-c" data-key="' + k + '" onchange="onFlagToggleC()">' +
-      '<span class="flag-item-label">' + k + '</span>' +
-      '<input type="text" class="flag-note-c" data-key="' + k + '" placeholder="簡單描述發生的事(選填)" maxlength="100" style="display:none;">' +
-    '</label>';
-  }).join('');
-}
-function setIssueC(on) {
-  hasIssueC = on;
-  var sw = document.getElementById('issue-switch-c');
-  sw.querySelectorAll('.choice-btn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-v') === (on ? 'yes' : 'no')); });
-  document.getElementById('flag-panel-c').style.display = on ? 'block' : 'none';
-  if (!on) { document.querySelectorAll('.flag-cb-c').forEach(function(cb){ cb.checked = false; }); }
-  onFlagToggleC();
-}
-function onFlagToggleC() {
-  document.querySelectorAll('.flag-cb-c').forEach(function(cb){
-    var note = cb.parentNode.querySelector('.flag-note-c');
-    if (note) note.style.display = cb.checked ? 'block' : 'none';
-  });
-  var any = Array.prototype.some.call(document.querySelectorAll('.flag-cb-c'), function(c){ return c.checked; });
-  var warn = document.getElementById('flag-warn-c');
-  if (warn) warn.style.display = any ? 'block' : 'none';
-}
 
 /* 本人真實評價:讀 reviews 裡 reviewee_id = 登入者(=我收到的評價)。本人看自己一律免解鎖,分項/行為/信用全開。
  * reviews 欄位:reviewer_id, reviewee_id, order_id, mode, ratings(jsonb), flags(jsonb), comment, is_public, created_at
@@ -1047,17 +1001,11 @@ async function submitReview() {
   } else {
     // === 案家評順咖:沿用原星等+留言,接成真寫入(最小版) ===
     if (ratings.staff === 0) { focusMissing(document.querySelector('.stars-input[data-target="staff"]'), '請先給順咖評分'); return; }
+    // 案家在「有可以改進的地方」勾的、帶 data-flag 的標籤→寫進 reviews.flags(目前:冒用帳號),08 紅旗頁看得到
     var flagsC = {}, flagNotesC = {};
-    if (hasIssueC) {
-      document.querySelectorAll('.flag-cb-c').forEach(function(cb){
-        if (cb.checked) {
-          var k = cb.getAttribute('data-key');
-          flagsC[k] = true;
-          var note = cb.parentNode.querySelector('.flag-note-c');
-          if (note && note.value.trim()) flagNotesC[k] = note.value.trim();
-        }
-      });
-    }
+    document.querySelectorAll('#mode-write-client .qtag[data-flag].on').forEach(function(t){
+      var k = t.getAttribute('data-flag'); if (k) flagsC[k] = true;
+    });
     doInsertReview({
       order_id: R.orderId,
       reviewer_id: R.me,
