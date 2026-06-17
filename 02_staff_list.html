@@ -184,7 +184,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
 <defs>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
-  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-1.5 16L6 12.5l1.4-1.4 3.1 3.1 6.1-6.1L18 9.5l-7.5 7.5z"/></symbol>
   <symbol id="i-heart-cross" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
@@ -192,6 +191,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <symbol id="i-people" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></symbol>
   <symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M19 8c-1.66 0-3 1.34-3 3 0 1.31.84 2.41 2 2.83V15c0 2.21-1.79 4-4 4s-4-1.79-4-4v-.18c2.84-.48 5-2.94 5-5.92V3h-4v2h2v4c0 2.21-1.79 4-4 4S4 11.21 4 9V5h2V3H2v6c0 2.98 2.16 5.44 5 5.92V15c0 3.31 2.69 6 6 6s6-2.69 6-6v-1.17c1.16-.42 2-1.52 2-2.83 0-1.66-1.34-3-3-3z"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.51 4.51 0 0 1 9.5 14z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></symbol>
 </defs>
 </svg>
 
@@ -389,8 +389,8 @@ async function loadStaff() {
     if (r.is_realname && r.show_realname !== false) badges.push('verified');           /* 身分證過審 */
     if (r.has_caregiver_cert && r.show_caregiver !== false) badges.push('cna');        /* 照服員證過審 */
     if (r.has_good_conduct && r.show_good_conduct !== false) badges.push('safe');      /* 良民證過審 */
-    if (r.has_cpr && r.show_cpr !== false) badges.push('cpr');                         /* CPR/AED 急救證過審 */
-    if (r.is_email_verified) badges.push('email');                                     /* 信箱已驗證(Google/Email 登入,後台 verify_my_email 寫入 users.is_email_verified) */
+    if (r.has_cpr && r.show_cpr !== false) badges.push('cpr');
+    if (r.is_email_verified) badges.push('email');                         /* CPR/AED 急救證過審 */
     var areas = Array.isArray(p.areas) ? p.areas : [];
     return {
       id: r.id,
@@ -540,4 +540,47 @@ function renderStaff() {
 }
 
 /* 信用分等級:高 80 以上 / 中 50–79 / 低 50 以下(同 01 第七點規則) */
-function creditBand(score){ var n = (score==null?100:score); if(n>=80) ret
+function creditBand(score){ var n = (score==null?100:score); if(n>=80) return '高'; if(n>=50) return '中'; return '低'; }
+
+/* 排序用:達3則門檻才拿平均星等當分數,否則 -1,讓沒評價的沉到最後 */
+function ratingVal(s){ var rv = reviewMap[s.id]; return (rv && rv.enough && rv.avg != null) ? Number(rv.avg) : -1; }
+
+/* 解鎖視窗:帶入要解鎖的順咖 id,顯示案家點數餘額與兩種方案價格 */
+function openUnlockModal(suncarId){
+  var U = window.UNLOCK || { single:5, month:50, points:0 };
+  U.target = suncarId;
+  document.getElementById('ul-balance').textContent = U.points;
+  document.getElementById('ul-cost-single').textContent = U.single;
+  document.getElementById('ul-cost-month').textContent = U.month;
+  document.getElementById('unlock-modal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeUnlockModal(){
+  document.getElementById('unlock-modal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+/* 鎖頭旁「去儲值」:記住要加值的是案家池、回來回這頁,再導到買點數頁 */
+function goBuyForUnlock(){
+  try { sessionStorage.setItem('credits_pool','client'); sessionStorage.setItem('credits_returnTo','02_staff_list.html'); } catch(e){}
+  window.location.href = '16_buy_credits.html';
+}
+/* 扣點解鎖:single 解這一位順咖、month 開 30 天看全部。扣點與發權限全在後台 redeem_info 做,前端只呼叫,守伺服器端驗紅線 */
+async function doRedeem(kind){
+  if (typeof window.sb === 'undefined') { alert('系統載入中,請稍候再試'); return; }
+  var target = (kind === 'single') ? (window.UNLOCK && window.UNLOCK.target) : null;
+  if (kind === 'single' && !target) { alert('找不到要解鎖的順咖,請重開卡片再試'); return; }
+  var r = await sb.rpc('redeem_info', { p_kind: kind, p_as: 'client', p_target: target });
+  if (r.error) {
+    var msg = r.error.message || '解鎖失敗';
+    if (msg.indexOf('點數不足') >= 0) { if (confirm(msg + '\n\n要去儲值嗎?')) goBuyForUnlock(); return; }
+    alert('解鎖失敗:' + msg);
+    return;
+  }
+  alert(kind === 'month' ? '已開通月票,30 天內可看全部順咖資訊' : '已解鎖這位順咖的資訊');
+  location.reload(); /* 重整讓鎖頭變成已解鎖內容,單一來源不另外手動改畫面 */
+}
+
+document.addEventListener('DOMContentLoaded', function(){ qyxGuard(loadStaff, { color: '#EF9F27' }); }); /* 載入逾時保護 */
+</script>
+</body>
+</html>

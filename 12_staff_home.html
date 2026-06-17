@@ -998,4 +998,149 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       $('stat-open').textContent = openOrders.length;
       $('open-badge').textContent = openOrders.length + ' 筆';
       if(openOrders.length){
-        $('open-list').i
+        $('open-list').innerHTML = openOrders.map(function(o){ return openCard(o, orderPerks[o.id]); }).join('');
+      } else {
+        $('open-empty').style.display = '';
+      }
+    } else {
+      $('stat-open').textContent = 0;
+      $('open-badge').textContent = '0 筆';
+      $('open-empty').textContent = '審核通過後才會看到可接任務';
+      $('open-empty').style.display = '';
+    }
+
+    // 清單都畫好後,背景補上每張卡的案家信任資訊(不 await:避免查詢拖久觸發載入逾時重試;付費才查,非會員是靜態鎖頭)
+    fillClientTrust();
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){ qyxGuard(init, { color: '#5FB58E' }); }); /* 載入逾時保護:8 秒沒載完或載入出錯就顯示重試 */
+  document.addEventListener('DOMContentLoaded', function(){ qyxConsentGate({ color: '#5FB58E' }); }); /* 條款有更新時擋下,要求重新閱讀並同意 */
+})();
+
+/* 上線開關 */
+var isOnline = true;
+function toggleOnline() {
+  if (!canAcceptJobs) { alert('你的順咖申請審核中,通過後才能開放接單'); return; }
+  isOnline = !isOnline;
+  document.getElementById('online-toggle').classList.toggle('on', isOnline);
+  document.getElementById('online-dot').classList.toggle('on', isOnline);
+  document.getElementById('online-label').textContent = isOnline
+    ? '目前上線 · 開放接單'
+    : '目前離線 · 不接新單';
+}
+
+/* 皇冠等級 11 級制 — 與 crown_all_levels.html 對齊
+ * 依推薦人數決定等級。推薦人數由 init 帶入(目前推薦資料尚未建表,先帶 0)。 */
+var crownLevels = [
+  { cls: 'lv0',    min: 0,  label: 'LV 0 未啟動' },
+  { cls: 'lv1',    min: 2,  label: 'LV 1 入門' },
+  { cls: 'lv2',    min: 4,  label: 'LV 2 小有名氣' },
+  { cls: 'lv3',    min: 8,  label: 'LV 3 推薦達人' },
+  { cls: 'lv4 k1', min: 12, label: '王者 I' },
+  { cls: 'lv4 k2', min: 17, label: '王者 II' },
+  { cls: 'lv4 k3', min: 22, label: '王者 III' },
+  { cls: 'lv4 k4', min: 27, label: '王者 IV' },
+  { cls: 'lv4 k5', min: 35, label: '王者 V' },
+  { cls: 'lv4 k6', min: 45, label: '王者 VI' },
+  { cls: 'lv4 k7', min: 58, label: '王者 VII 完全體' }
+];
+
+function renderCrown(count) {
+  count = count || 0;
+  var lv = crownLevels[0];
+  for (var i = 0; i < crownLevels.length; i++) { if (count >= crownLevels[i].min) lv = crownLevels[i]; }
+  var btn = document.getElementById('crown-btn');
+  if (!btn) return;
+  btn.className = 'crown-btn ' + lv.cls;
+  btn.href = 'crown_all_levels.html?count=' + count;
+  document.getElementById('crown-count').textContent = count;
+  btn.querySelector('.crown-tooltip').textContent = count === 0
+    ? '尚未開始推薦 · 點看等級'
+    : '已推薦 ' + count + ' 人 · 點看等級';
+}
+
+/* 資訊會員狀態:單一來源 info_member_until。推廣期全免費優先顯示;否則看到期日算剩餘天數。
+   首月免費已由後台在審核通過時寫進 info_member_until,所以這裡不用再自己 +30 天。 */
+function renderTrial(memberUntil, promoFree) {
+  var el = document.getElementById('acct-trial');
+  if (!el) return;
+  if (promoFree) { el.textContent = '推廣期免費中'; return; }
+  if (!memberUntil) { el.textContent = '未開通'; return; }
+  var daysLeft = Math.ceil((new Date(memberUntil).getTime() - Date.now()) / 86400000);
+  el.textContent = daysLeft > 0 ? ('剩 ' + daysLeft + ' 天') : '已到期';
+}
+
+/* 鎖頭旁「去買點數」:先記住要加值的是順咖池、回來要回這頁,再導到買點數頁 */
+function goBuyForUnlock() {
+  try { sessionStorage.setItem('credits_pool', 'suncar'); sessionStorage.setItem('credits_returnTo', '12_staff_home.html'); } catch (e) {}
+  window.location.href = '16_buy_credits.html';
+}
+
+/* 解鎖視窗:帶入要解鎖的案家 id,顯示餘額與兩種方案價格 */
+function openUnlockModal(clientId) {
+  var U = window.UNLOCK || { single: 10, month: 80, points: 0 };
+  U.target = clientId;
+  document.getElementById('ul-balance').textContent = U.points;
+  document.getElementById('ul-cost-single').textContent = U.single;
+  document.getElementById('ul-cost-month').textContent = U.month;
+  document.getElementById('unlock-modal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeUnlockModal() {
+  document.getElementById('unlock-modal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+/* 扣點解鎖:single 解這一位案家、month 開 30 天看全部。扣點與發權限全在後台 redeem_info 做,前端只呼叫 */
+async function doRedeem(kind) {
+  if (typeof window.sb === 'undefined') { alert('系統載入中,請稍候再試'); return; }
+  var target = (kind === 'single') ? (window.UNLOCK && window.UNLOCK.target) : null;
+  if (kind === 'single' && !target) { alert('找不到要解鎖的案家,請重開卡片再試'); return; }
+  var r = await sb.rpc('redeem_info', { p_kind: kind, p_as: 'suncar', p_target: target });
+  if (r.error) {
+    var msg = r.error.message || '解鎖失敗';
+    if (msg.indexOf('點數不足') >= 0) { if (confirm(msg + '\n\n要去儲值嗎?')) goBuyForUnlock(); return; }
+    alert('解鎖失敗:' + msg);
+    return;
+  }
+  alert(kind === 'month' ? '已開通月票,30 天內可看全部案家資訊' : '已解鎖這位案家的資訊');
+  location.reload(); // 重整讓鎖頭變成已解鎖的內容,單一來源不另外手動改畫面
+}
+
+/* 篩選 */
+function filterToggle(el) {
+  el.closest('.filter-bar').querySelectorAll('.filter-tag').forEach(function(t){ t.classList.remove('on'); });
+  el.classList.add('on');
+
+  var filter = el.getAttribute('data-filter');
+  var cards = document.querySelectorAll('#history-list .order-card');
+
+  cards.forEach(function(c){
+    if (filter === 'all') {
+      c.style.display = '';
+    } else {
+      var status = c.getAttribute('data-status') || '';
+      c.style.display = status.indexOf(filter) > -1 ? '' : 'none';
+    }
+  });
+}
+
+/* 聯絡彈窗 */
+function openContactModal(name, phone, lineId, memberNo) {
+  // 名字後面接會員編號(撞名辨認用);沒編號就只顯示名字
+  document.getElementById('cm-name').textContent = name + (memberNo ? '（' + memberNo + '）' : '');
+  document.getElementById('cm-call').href = 'tel:' + phone;
+  document.getElementById('cm-line').href = 'https://line.me/R/ti/p/~' + lineId;
+  document.getElementById('contact-modal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeContactModal() {
+  document.getElementById('contact-modal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+/* 期望時薪改由上方 init 從 users.expected_rate 讀取 */
+</script>
+
+</body>
+</html>

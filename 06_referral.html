@@ -563,4 +563,27 @@ function fmtExpiry(s) {
 function copyScript(btn, type) {
   var card = btn.closest('.script-card');
   var text = card.querySelector('.script-text').textContent;
-  if (navig
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function(){
+      var orig = btn.innerHTML;
+      btn.innerHTML = '<svg><use href="#i-check"/></svg>已複製';
+      btn.style.background = 'linear-gradient(135deg,var(--mint),var(--forest))';
+      btn.style.color = '#fff';
+      btn.style.borderColor = 'transparent';
+      setTimeout(function(){
+        btn.innerHTML = orig;
+        btn.style.background = '';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 2000);
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    alert('話術已複製!');
+  }
+}
+</script>
+</body>
+</html>
