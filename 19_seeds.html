@@ -174,6 +174,24 @@ body.suncar .reveal-share{color:var(--forest);border-color:var(--mint);}
   padding:0.85rem;border-radius:13px;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:inherit;}
 
 .foot-hint{font-size:0.74rem;color:var(--ink-light);text-align:center;margin-top:1.6rem;line-height:1.7;}
+
+/* 金額切換列 */
+.amt-bar{display:flex;gap:7px;overflow-x:auto;padding:6px 0 2px;margin-top:1.1rem;}
+.amt-chip{flex:0 0 auto;border:1.5px solid var(--border);background:#fff;color:var(--amber-deep);border-radius:99px;padding:7px 14px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s;}
+.amt-chip.on{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;}
+body.suncar .amt-chip{color:var(--forest);border-color:var(--border-mint);}
+body.suncar .amt-chip.on{background:linear-gradient(135deg,var(--mint),var(--forest));}
+
+/* 引擎種子:微動畫(輕輕浮動,金種子發光呼吸) */
+.qsa-wrap{display:block;width:100%;height:100%;}
+.qsa{display:block;width:100%;height:100%;}
+@keyframes qsaBob{0%,100%{transform:translateY(0);}50%{transform:translateY(-3px);}}
+@keyframes qsaGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,210,80,0));}50%{filter:drop-shadow(0 0 5px rgba(255,210,80,0.85));}}
+.cell.got .qsa-wrap{animation:qsaBob 3s ease-in-out infinite;}
+.cell.got.gold .qsa-wrap{animation:qsaBob 3s ease-in-out infinite, qsaGlow 2.4s ease-in-out infinite;}
+.reveal-seed .qsa-wrap{animation:qsaBob 2.6s ease-in-out infinite;}
+.seed-img{width:100%;height:100%;object-fit:contain;display:block;}
+.seed-img.locked{filter:grayscale(1) brightness(1.05);opacity:0.4;}
 </style>
 </head>
 <body>
@@ -202,6 +220,8 @@ body.suncar .reveal-share{color:var(--forest);border-color:var(--mint);}
     <button class="share-link-btn" onclick="openShare(null)">📣 分享給朋友 · 自動帶我的推薦碼</button>
   </div>
 
+  <div class="amt-bar" id="amt-bar"></div>
+
   <div class="prog-card">
     <div class="prog-top">
       <div class="prog-name">30 點種子收集庫</div>
@@ -222,12 +242,7 @@ body.suncar .reveal-share{color:var(--forest);border-color:var(--mint);}
 <!-- 揭曉彈窗 -->
 <div class="reveal-mask" id="reveal" onclick="if(event.target===this)closeReveal()">
   <div class="reveal-box" id="reveal-box">
-    <div class="reveal-seed">
-      <div class="seedwrap">
-        <span class="sprout"><svg><use href="#i-sprout"/></svg></span>
-        <div class="seedshape" id="rv-shape"><span class="emj" id="rv-emj">🌱</span></div>
-      </div>
-    </div>
+    <div class="reveal-seed" id="rv-art"></div>
     <div><span class="reveal-tag" id="rv-tag">新種子</span></div>
     <div class="reveal-name" id="rv-name">種子</div>
     <div class="reveal-meta" id="rv-meta"></div>
@@ -257,6 +272,7 @@ body.suncar .reveal-share{color:var(--forest);border-color:var(--mint);}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
 <script src="qyx-load-guard.js"></script>
+<script src="qyx-seed-art.js"></script>
 <script>
 /* 種子打賞收集庫
    pool 由網址參數 as 決定:案家(client)扣 client_points、順咖(suncar)扣 suncar_points,
@@ -264,7 +280,10 @@ body.suncar .reveal-share{color:var(--forest);border-color:var(--mint);}
    等級＝普通/金;掉落機率＝該種子 weight ÷ 整池 weight 總和。
    分享連結帶自己的 ref_code(users.ref_code),朋友從 14_signup.html?ref= 進來會自動綁推薦。 */
 var POOL = (new URLSearchParams(location.search).get('as') === 'suncar') ? 'suncar' : 'client';
-var TIER = 30;
+var AMOUNTS = [30, 50, 100, 500, 1000, 5000, 10000];   // 七個金額級距,各自一個收集庫
+var TIER = 30;        // 目前選的金額(預設 30)
+var _uid = null;      // 記住登入者,切金額時重抓
+var _empty = false;   // 這個金額還沒建種子
 var _busy = false;
 var _need = false;    // true=點數不足,打賞鈕改成「去儲值」
 var _byId = {};       // seed_id → {id,name,emoji,rarity,weight}
@@ -290,7 +309,35 @@ async function init(){
   var s = await sb.auth.getSession();
   var user = s && s.data && s.data.session ? s.data.session.user : null;
   if(!user){ location.href = '13_login.html'; return; }
-  await loadAll(user.id);
+  _uid = user.id;
+  renderAmtBar();
+  await loadAll(_uid);
+}
+
+/* 金額切換列:七個級距,點了換收集庫重抓 */
+function renderAmtBar(){
+  var bar = document.getElementById('amt-bar'); if(!bar) return;
+  bar.innerHTML = AMOUNTS.map(function(t){
+    return '<button class="amt-chip' + (t === TIER ? ' on' : '') + '" onclick="switchAmount(' + t + ')">' + t + ' 點</button>';
+  }).join('');
+}
+function switchAmount(t){
+  if(t === TIER || _busy) return;
+  TIER = t;
+  renderAmtBar();
+  if(_uid) loadAll(_uid);
+}
+
+/* 一顆種子的畫面:有圖片路徑就顯示圖片(未收集轉灰),否則用引擎畫向量 */
+function seedMarkup(s, got, size){
+  var art = s.art || {};
+  if(typeof art === 'string'){ try{ art = JSON.parse(art); }catch(e){ art = {}; } }
+  if(art && art.img){
+    return '<img class="seed-img' + (got ? '' : ' locked') + '" src="' + esc(art.img) + '" alt="">';
+  }
+  if(typeof window.QyxSeedArt === 'undefined'){ return got ? esc(s.emoji || '🌱') : '?'; }
+  if(!got) return QyxSeedArt.svg({ art:{ b:(art && art.b) || 'seed' }, rarity:s.rarity, pool:POOL, tier:TIER, size:size, got:false });
+  return '<span class="qsa-wrap">' + QyxSeedArt.svg({ art:art, rarity:s.rarity, pool:POOL, tier:TIER, size:size, got:true }) + '</span>';
 }
 
 /* 一次抓:餘額、我的推薦碼、整份圖鑑(含 weight)、我的收集,畫出來 */
@@ -300,32 +347,38 @@ async function loadAll(uid){
   var bal = ((POOL === 'client') ? u.client_points : u.suncar_points) || 0;
   _refCode = u.ref_code || '';
   document.getElementById('bal').textContent = bal;
-  var btn = document.getElementById('donate-btn');
-  var note = document.getElementById('donate-note');
-  var seedIco = '<svg style="width:1.1em;height:1.1em;fill:currentColor;"><use href="#i-seed"/></svg> ';
-  if(bal < 30){
-    /* 點數不足:鈕不要灰掉,改成明顯的「先去儲值」金色 CTA,點了直接帶去儲值並設好回來的頁 */
-    _need = true;
-    btn.disabled = false;
-    btn.innerHTML = seedIco + '點數不足 · 先去儲值';
-    note.textContent = '儲值後回到這頁,就能打賞 30 點抽一顆種子。';
-  } else {
-    _need = false;
-    btn.disabled = false;
-    btn.innerHTML = seedIco + '打賞 30 點 · 抽一顆種子';
-    note.textContent = '點數從你的帳戶扣除,打賞後立即掉一顆種子進收集庫';
-  }
 
-  var cat = await sb.from('seed_catalog').select('id,name,emoji,rarity,weight,sort').eq('tier', TIER).eq('pool', POOL).order('sort');
+  var pn = document.querySelector('.prog-name'); if(pn) pn.textContent = TIER + ' 點種子收集庫';
+
+  /* 先抓這個金額的種子圖鑑(含 art 造型代碼) */
+  var cat = await sb.from('seed_catalog').select('id,name,emoji,rarity,weight,sort,art').eq('tier', TIER).eq('pool', POOL).order('sort');
   var seeds = (cat && cat.data) ? cat.data : [];
   _byId = {}; _totalW = 0;
   seeds.forEach(function(s){ _byId[s.id] = s; _totalW += (s.weight || 0); });
+  _empty = (seeds.length === 0);
 
   var mine = await sb.from('user_seeds').select('seed_id,cnt').eq('pool', POOL);
   var owned = {};
   if(mine && mine.data){ mine.data.forEach(function(r){ owned[r.seed_id] = r.cnt; }); }
-
   renderDex(seeds, owned);
+
+  /* 打賞鈕狀態:沒種子→即將推出;點數不足→去儲值;否則→打賞 */
+  var btn = document.getElementById('donate-btn');
+  var note = document.getElementById('donate-note');
+  var seedIco = '<svg style="width:1.1em;height:1.1em;fill:currentColor;"><use href="#i-seed"/></svg> ';
+  if(_empty){
+    _need = false; btn.disabled = true;
+    btn.innerHTML = seedIco + TIER + ' 點 · 種子即將推出';
+    note.textContent = '這個金額的種子寶寶正在準備中,先試試其他金額。';
+  } else if(bal < TIER){
+    _need = true; btn.disabled = false;
+    btn.innerHTML = seedIco + '點數不足 · 先去儲值';
+    note.textContent = '儲值後回到這頁,就能打賞 ' + TIER + ' 點抽一顆種子。';
+  } else {
+    _need = false; btn.disabled = false;
+    btn.innerHTML = seedIco + '打賞 ' + TIER + ' 點 · 抽一顆種子';
+    note.textContent = '點數從你的帳戶扣除,打賞後立即掉一顆種子進收集庫';
+  }
 }
 
 function rateStr(weight){
@@ -352,15 +405,12 @@ function renderDex(seeds, owned){
     var hasIt = have > 0;
     coll[r][1]++;
     if(hasIt){ got++; coll[r][0]++; }
-    var shapeCls = 'seedshape' + (cls ? ' ' + cls : '') + (hasIt ? '' : ' locked');
-    var emj = hasIt ? s.emoji : '?';
     var nm  = hasIt ? esc(s.name) : '？？？';
-    var sprout = hasIt ? SPROUT : '';   /* 收集到才冒綠芽 */
     var meta = hasIt
       ? '<div class="rate">' + rateStr(s.weight) + (have > 1 ? ' <span class="xn">×' + have + '</span>' : '') + '</div>'
       : '<div class="rate">&nbsp;</div>';
     html += '<div class="cell ' + (hasIt ? 'got' : 'locked') + (cls ? ' ' + cls : '') + '">'
-          +   '<div class="seedwrap">' + sprout + '<div class="' + shapeCls + '"><span class="emj">' + emj + '</span></div></div>'
+          +   '<div class="seedwrap">' + seedMarkup(s, hasIt, 50) + '</div>'
           +   '<div class="nm">' + nm + '</div>' + meta
           + '</div>';
   });
@@ -380,13 +430,13 @@ function goTopup(){
 }
 
 async function doDonate(){
-  if(_busy) return;
+  if(_busy || _empty) return;
   if(_need){ goTopup(); return; }   /* 點數不足時這顆鈕是「去儲值」 */
-  if(!confirm('確定打賞 30 點? 會從你的點數扣 30 點,隨機掉一顆種子。')) return;
+  if(!confirm('確定打賞 ' + TIER + ' 點? 會從你的點數扣 ' + TIER + ' 點,隨機掉一顆種子。')) return;
   _busy = true;
   var btn = document.getElementById('donate-btn');
   btn.disabled = true;
-  var r = await sb.rpc('donate_seed', { p_pool: POOL, p_tier: TIER, p_amount: 30 });
+  var r = await sb.rpc('donate_seed', { p_pool: POOL, p_tier: TIER, p_amount: TIER });
   _busy = false;
   if(r.error){ alert('打賞失敗,請稍後再試。'); btn.disabled = false; return; }
   var d = r.data || {};
@@ -414,9 +464,7 @@ function showReveal(d){
   var r = RARITY[d.rarity] ? d.rarity : 'normal';
   var info = RARITY[r];
   box.classList.toggle('gold', r === 'gold');
-  var shape = document.getElementById('rv-shape');
-  shape.className = 'seedshape' + (info.cls ? ' ' + info.cls : '');
-  document.getElementById('rv-emj').textContent = d.emoji || '🌱';
+  document.getElementById('rv-art').innerHTML = seedMarkup({ art:d.art, rarity:d.rarity, emoji:d.emoji, name:d.name }, true, 104);
   document.getElementById('rv-name').textContent = d.name || '種子';
   var tag = document.getElementById('rv-tag');
   tag.className = 'reveal-tag tag-' + r;
