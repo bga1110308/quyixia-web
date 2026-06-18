@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>順咖介紹 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;--amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;--champagne-soft:#FFFCF5;--cream:#FAEEDA;
+  --forest:#2F6048;--forest-deep:#1F4A36;--mint:#5FB58E;--mint-pale:#E8F5EE;--border-mint:rgba(95,181,142,0.3);
+  --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+  --border:#FFE9B8;--border-soft:#F5EBD8;
+  --warn:#E89544;--warn-pale:#FFF1E0;--danger:#D9534F;--danger-pale:#FCE8E7;--info:#3A7CB8;--info-pale:#E8F1F8;
+  --gold:#E0A93C;--gold-soft:#FFF6E0;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--champagne-soft);color:var(--ink);line-height:1.55;padding-bottom:90px;}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.wrap{max-width:480px;margin:0 auto;padding:0 1.1rem;}
+
+/* 頁頭 */
+.profile-head{position:relative;text-align:center;padding:3.2rem 1.25rem 1.6rem;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 60%,var(--mint-pale) 100%);overflow:hidden;}
+.profile-head::before{content:'';position:absolute;top:-80px;right:-90px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.16) 0%,transparent 70%);}
+.profile-head > *{position:relative;z-index:1;}
+.pf-avatar{position:relative;width:84px;height:84px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:2.1rem;color:var(--forest);box-shadow:0 4px 14px rgba(47,96,72,0.2),inset 0 0 0 1.5px var(--border-mint);overflow:hidden;}
+.pf-avatar.cna{color:var(--amber-deep);box-shadow:0 4px 14px rgba(186,117,23,0.2),inset 0 0 0 1.5px var(--border);}
+.pf-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.pf-avatar.crowned{box-shadow:0 4px 14px rgba(224,169,60,0.35),inset 0 0 0 2px var(--gold);}
+.crown-topper{position:absolute;top:-16px;left:50%;transform:translateX(-50%);color:var(--gold);}
+.crown-topper svg{width:24px;height:24px;fill:currentColor;}
+.pf-name{font-size:1.5rem;font-weight:600;color:var(--ink);margin-top:0.7rem;letter-spacing:-0.3px;}
+.pf-member{font-size:0.72rem;color:var(--ink-light);margin-top:2px;letter-spacing:0.3px;}
+.pf-meta-row{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:0.6rem;flex-wrap:wrap;}
+.pf-pool{font-size:0.72rem;font-weight:600;padding:3px 12px;border-radius:99px;}
+.pf-pool.a{background:var(--mint-pale);color:var(--forest);}
+.pf-pool.b{background:var(--warn-pale);color:var(--warn);}
+.pf-online{display:inline-flex;align-items:center;gap:5px;font-size:0.74rem;color:var(--ink-soft);}
+.pf-online .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px rgba(95,181,142,0.2);}
+.pf-online.off .dot{background:var(--ink-light);box-shadow:0 0 0 3px rgba(184,164,133,0.2);}
+
+/* 徽章列 */
+.badge-row{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:0.9rem;}
+.bm{font-size:0.7rem;padding:4px 10px;border-radius:99px;font-weight:600;display:inline-flex;align-items:center;gap:4px;}
+.bm svg{width:0.9em;height:0.9em;fill:currentColor;}
+.b-verified,.b-safe{background:var(--mint-pale);color:var(--forest);}
+.b-cna{background:var(--warn-pale);color:var(--warn);}
+.b-cpr{background:var(--danger-pale);color:var(--danger);}
+.b-email{background:var(--champagne);color:var(--amber-deep);}
+.b-custom{background:var(--info-pale);color:var(--info);}
+.b-ref{background:#FCE4F2;color:#A8367C;}
+
+/* 數據三格 */
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:1.2rem 0 0.4rem;}
+.stat-box{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:0.9rem 0.5rem;text-align:center;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.stat-box .lbl{font-size:0.68rem;color:var(--ink-light);font-weight:600;margin-bottom:4px;}
+.stat-box .val{font-size:1.05rem;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:3px;}
+.stat-box .val svg{width:0.95em;height:0.95em;fill:var(--amber);}
+.stat-box .sub{font-size:0.66rem;color:var(--ink-soft);font-weight:500;margin-top:1px;}
+.trust-unlock{background:none;border:none;color:var(--amber-deep);font-size:0.72rem;font-weight:600;cursor:pointer;text-decoration:underline;font-family:inherit;padding:0;}
+
+/* 區塊卡 */
+.section-card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.2rem;margin-top:1rem;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.sec-title{font-size:0.92rem;font-weight:600;color:var(--ink);margin-bottom:0.9rem;display:flex;align-items:center;gap:8px;}
+.sec-title::before{content:'';display:block;width:4px;height:17px;background:linear-gradient(180deg,var(--honey),var(--amber));border-radius:2px;}
+.sec-title svg{width:15px;height:15px;fill:var(--amber);}
+.bio-text{font-size:0.9rem;color:var(--ink);line-height:1.75;white-space:pre-wrap;}
+
+/* 生活照 */
+.gallery{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+.gallery::-webkit-scrollbar{height:6px;}
+.gallery::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px;}
+.gallery img{width:130px;height:130px;object-fit:cover;border-radius:14px;flex-shrink:0;border:1px solid var(--border-soft);cursor:pointer;}
+
+/* chips */
+.chip-wrap{display:flex;flex-wrap:wrap;gap:7px;}
+.chip{font-size:0.78rem;padding:6px 13px;border-radius:99px;background:var(--champagne-soft);color:var(--ink);border:1.5px solid var(--border);font-weight:500;}
+.chip.area{border-color:var(--border-mint);background:var(--mint-pale);color:var(--forest);}
+.sub-label{font-size:0.72rem;color:var(--ink-light);font-weight:600;margin:0.2rem 0 0.5rem;letter-spacing:0.5px;}
+.sub-label:not(:first-child){margin-top:1rem;}
+
+/* 種子庫 */
+.seed-prog{font-size:0.78rem;color:var(--ink-soft);font-weight:600;margin-bottom:0.8rem;}
+.seed-prog b{color:var(--amber-darker);}
+.dex-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px 8px;}
+.cell{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;}
+.seedwrap{position:relative;display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;}
+.seedshape{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(45deg);background:linear-gradient(150deg,#FFF7E4,#FFE3AC);border:1.6px solid var(--gold);box-shadow:inset 0 -2px 6px rgba(186,117,23,0.12),0 3px 8px rgba(186,117,23,0.12);}
+.seedshape .emj{transform:rotate(-45deg);line-height:1;font-size:1.35rem;}
+.seedshape.locked{background:linear-gradient(150deg,#F2ECDD,#E6DCC6);border-color:#D8CBAE;box-shadow:inset 0 -2px 6px rgba(0,0,0,0.04);}
+.seedshape.locked .emj{color:var(--ink-light);opacity:0.55;}
+.seedshape.fine{border-color:#7FB0D8;background:linear-gradient(150deg,#EAF3FB,#CFE4F5);}
+.seedshape.rare{border-color:#B79AD8;background:linear-gradient(150deg,#F3ECFB,#E0CFF3);}
+.seedshape.gold{border-color:var(--gold);background:linear-gradient(150deg,#FFF3CF,#FFD980);}
+.sprout{position:absolute;left:50%;top:-6px;transform:translateX(-50%);z-index:2;color:var(--mint);pointer-events:none;}
+.sprout svg{width:14px;height:14px;fill:currentColor;display:block;}
+.cell .nm{font-size:0.6rem;color:var(--ink-soft);line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cell .xn{font-size:0.6rem;color:var(--amber-deep);font-weight:700;}
+
+/* 匿名評價 */
+.rv-item{padding:0.8rem 0;border-bottom:1px solid var(--border-soft);}
+.rv-item:last-child{border-bottom:none;}
+.rv-stars{color:var(--amber);font-size:0.82rem;letter-spacing:1px;}
+.rv-date{font-size:0.66rem;color:var(--ink-light);float:right;font-weight:500;margin-top:3px;}
+.rv-comment{font-size:0.85rem;color:var(--ink);line-height:1.6;margin-top:4px;}
+.rv-locked{font-size:0.72rem;color:var(--amber-deep);cursor:pointer;text-decoration:underline;}
+
+.empty-note{font-size:0.82rem;color:var(--ink-light);text-align:center;padding:1.5rem 1rem;}
+
+/* 底部 CTA */
+.cta-bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,252,245,0.96);backdrop-filter:blur(6px);border-top:1px solid var(--border);padding:0.8rem 1.1rem calc(0.8rem + env(safe-area-inset-bottom));z-index:40;}
+.cta-inner{max-width:480px;margin:0 auto;}
+.cta-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;padding:1rem;border-radius:14px;font-size:1.02rem;font-weight:600;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(239,159,39,0.35);transition:all 0.2s;text-decoration:none;}
+.cta-btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px rgba(239,159,39,0.45);}
+.cta-btn svg{width:1.1em;height:1.1em;fill:currentColor;}
+.cta-hint{font-size:0.68rem;color:var(--ink-light);text-align:center;margin-top:6px;}
+
+/* 解鎖視窗(沿用 02 的 redeem_info 流程) */
+.modal-overlay{position:fixed;inset:0;background:rgba(61,41,20,0.5);z-index:9999;display:none;align-items:center;justify-content:center;padding:1.5rem;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff;border-radius:22px;padding:1.6rem 1.4rem;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(186,117,23,0.3);}
+.modal-box h3{font-size:1.1rem;color:var(--ink);text-align:center;margin-bottom:0.4rem;}
+.modal-box .ul-bal{font-size:0.8rem;color:var(--ink-soft);text-align:center;margin-bottom:1.1rem;}
+.modal-box .ul-bal b{color:var(--amber-darker);}
+.ul-opt{display:flex;justify-content:space-between;align-items:center;width:100%;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:0.9rem 1.1rem;margin-bottom:0.7rem;font-size:0.92rem;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.ul-opt:hover{border-color:var(--amber);background:var(--champagne);}
+.ul-opt-month{border-color:var(--amber);background:var(--champagne);}
+.ul-opt .cost{color:var(--amber-deep);}
+.ul-topup{display:block;text-align:center;font-size:0.78rem;color:var(--amber-deep);margin:0.3rem 0 0.8rem;cursor:pointer;text-decoration:underline;}
+.cm-cancel{width:100%;background:none;border:none;color:var(--ink-soft);font-size:0.85rem;cursor:pointer;font-family:inherit;padding:0.4rem;}
+
+.load-note{text-align:center;color:var(--ink-soft);padding:3rem 1rem;font-size:0.9rem;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-1.5 16L6 12.5l1.4-1.4 3.1 3.1 6.1-6.1L18 9.5l-7.5 7.5z"/></symbol>
+  <symbol id="i-heart-cross" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></symbol>
+  <symbol id="i-tool" viewBox="0 0 24 24"><path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M11.3 21.5c-.05-3.3.05-5.3.5-7.2-2.6.2-4.9-.4-6.6-2-1.4-1.3-2-3-2-4.8 2.6-.2 4.9.4 6.6 2 .9.85 1.5 1.85 1.85 3 .35-1.6 1.15-2.95 2.4-4.05 1.9-1.65 4.45-2.2 7-2-.15 2.6-1 4.85-2.9 6.5-1.65 1.45-3.8 2-6 1.95-.5 1.85-.6 3.85-.55 6.6h-.3z"/></symbol>
+  <symbol id="i-seed" viewBox="0 0 24 24"><path d="M12 2C7 6 6 11 8 16c1.2 3 3.6 5 4 6 .4-1 2.8-3 4-6 2-5 1-10-4-14z"/></symbol>
+</defs>
+</svg>
+
+<a href="02_staff_list.html" class="home-fab" title="返回順咖名單"><svg><use href="#i-back"/></svg></a>
+
+<div id="page-body">
+  <div class="load-note" id="load-note">載入中…</div>
+</div>
+
+<!-- 解鎖視窗 -->
+<div class="modal-overlay" id="unlock-modal" onclick="if(event.target===this)closeUnlockModal()">
+  <div class="modal-box">
+    <h3>解鎖完整資訊</h3>
+    <div class="ul-bal">你目前有 <b id="ul-balance">0</b> 點</div>
+    <button class="ul-opt" onclick="doRedeem('single')"><span>只看這位順咖</span><span class="cost"><span id="ul-cost-single">5</span> 點</span></button>
+    <button class="ul-opt ul-opt-month" onclick="doRedeem('month')"><span>30 天看全部順咖</span><span class="cost"><span id="ul-cost-month">50</span> 點</span></button>
+    <span class="ul-topup" onclick="goBuyForUnlock()">點數不足？去儲值</span>
+    <button class="cm-cancel" onclick="closeUnlockModal()">取消</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
+<script src="qyx-load-guard.js"></script>
+<script>
+/* 順咖介紹頁(案家點 02 名片進來看)。資料來源:
+   public_suncars(徽章/期望時薪/信箱) + get_suncar_profile(自介/生活照/服務區域類型,跨權限)
+   + get_user_seeds(種子庫,跨權限,守雙池+隱藏開關) + 既有評價/信用分/編號/加值函式。
+   只呈現,不外送個資;信用分精確值仍走後台付費判斷。 */
+
+var TARGET = new URLSearchParams(location.search).get('id') || '';
+
+/* 服務類型代碼→中文(對照 15 編輯頁的服務清單,改清單時兩邊一起改) */
+var SVC_LABEL = {
+  'buy-food':'買便當/飲料/超商代購','buy-fresh':'生鮮採買/代買藥(非處方)/寵物用品',
+  'deliver':'代送文件/鑰匙/包裹','queue':'代排隊(掛號/領號/政府機關)',
+  'home-help':'倒垃圾/換燈泡/收包裹/澆花','furniture':'組裝家具/搬小東西',
+  'stand-by':'顧店/帶東西/拍照','pick-kid':'接小孩下課/遛狗',
+  'companion-elder':'陪同散步/陪聊/關懷探視','medical':'陪診/代領慢箋/陪同就醫',
+  'shopping-elder':'陪同採買/協助領藥/買菜','digital-help':'教手機/LINE/視訊/協助繳費',
+  'family-report':'到家拍照回報長輩狀況','body-care':'身體照顧(洗澡/翻身/服藥提醒)',
+  'teach':'教電腦/英文/手機','repair':'修腳踏車/家用維修',
+  'micro':'貼海報/跑銀行/送件','review-doc':'看履歷/文件初校',
+  'chat':'陪聊天/陪吃飯/陪逛街','sport':'陪運動/陪打遊戲',
+  'pet':'遛狗/餵貓/寵物照顧','kid-care':'陪寫作業/臨時托接/才藝陪同'
+};
+
+var RARITY = { normal:{label:'普通',cls:''}, fine:{label:'高級',cls:'fine'}, rare:{label:'稀有',cls:'rare'}, gold:{label:'金',cls:'gold'} };
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function firstChar(name){ var n=(name||'').trim(); return n ? n.charAt(0) : '順'; }
+function creditBand(score){ var n=(score==null?100:score); if(n>=80)return '高'; if(n>=50)return '中'; return '低'; }
+
+async function init(){
+  if(typeof window.sb==='undefined'){ showError('連線尚未載入'); return; }
+  var s = await sb.auth.getSession();
+  var user = s && s.data && s.data.session ? s.data.session.user : null;
+  if(!user){ location.href='13_login.html'; return; }
+  if(!TARGET){ showError('沒有指定要看哪位順咖'); return; }
+
+  /* 解鎖視窗要用的價目與案家點數餘額(同 02) */
+  var meRes = await sb.from('users').select('client_points').eq('id', user.id).maybeSingle();
+  var me = (meRes && meRes.data) ? meRes.data : {};
+  var cfgRes = await sb.from('app_config').select('price_client_single,price_client_month').eq('id',1).maybeSingle();
+  var cfg = (cfgRes && cfgRes.data) ? cfgRes.data : {};
+  window.UNLOCK = { single:(cfg.price_client_single==null?5:cfg.price_client_single), month:(cfg.price_client_month==null?50:cfg.price_client_month), points:(me.client_points||0), target:TARGET };
+
+  /* 公開視圖:這位順咖的基本欄位 */
+  var sunRes = await sb.from('public_suncars').select('*').eq('id', TARGET).maybeSingle();
+  if(sunRes.error || !sunRes.data){ showError('找不到這位順咖,可能已停用'); return; }
+  var sun = sunRes.data;
+
+  /* 其餘資料一次平行抓 */
+  var ids = [TARGET];
+  var results = await Promise.all([
+    sb.rpc('get_suncar_profile', { p_target: TARGET }),
+    sb.rpc('get_review_stats_batch', { p_targets: ids, p_mode: 'client_reviews_suncar' }),
+    sb.rpc('get_suncar_credits', { p_targets: ids }),
+    sb.rpc('get_suncar_custom_badges', { p_targets: ids }),
+    sb.rpc('get_suncar_member_nos', { p_targets: ids }),
+    sb.rpc('get_active_suncar_perks', { p_targets: ids }),
+    sb.rpc('get_user_seeds', { p_target: TARGET, p_pool: 'suncar' }),
+    sb.rpc('get_public_reviews', { p_reviewee: TARGET, p_mode: 'client_reviews_suncar' })
+  ]);
+
+  var data = {
+    sun: sun,
+    profile: pickOne(results[0]),
+    review: pickOne(results[1]),
+    credit: pickOne(results[2]),
+    customs: (results[3] && results[3].data) ? results[3].data : [],
+    member: pickOne(results[4]),
+    perks: (results[5] && results[5].data) ? results[5].data : [],
+    seeds: (results[6] && results[6].data) ? results[6].data : [],
+    publicReviews: (results[7] && results[7].data) ? results[7].data : []
+  };
+  render(data);
+}
+
+function pickOne(res){ return (res && res.data && res.data.length) ? res.data[0] : null; }
+
+function render(d){
+  var sun = d.sun;
+  var prof = d.profile || {};
+  var isCna = !!sun.has_caregiver_cert;
+  var perkMap = {};
+  d.perks.forEach(function(p){ perkMap[p.perk]=true; });
+  var hasCrown = !!perkMap.crown_frame;
+
+  var html = '';
+
+  /* 頁頭 */
+  var avatarInner = sun.avatar_url
+    ? '<img src="'+esc(sun.avatar_url)+'" alt="頭像">'
+    : esc(firstChar(sun.display_name));
+  var online = !(sun.profile && sun.profile.acceptingOrders === false);
+  html += '<div class="profile-head">';
+  html += '<div class="pf-avatar'+(isCna?' cna':'')+(hasCrown?' crowned':'')+'">'+(hasCrown?'<span class="crown-topper"><svg><use href="#i-crown"/></svg></span>':'')+avatarInner+'</div>';
+  html += '<div class="pf-name">'+esc(sun.display_name||'順咖')+'</div>';
+  if(d.member && d.member.member_no) html += '<div class="pf-member">'+esc(d.member.member_no)+'</div>';
+  html += '<div class="pf-meta-row">';
+  html += '<span class="pf-pool '+(isCna?'b':'a')+'">'+(isCna?'照服員池':'一般池')+'</span>';
+  html += '<span class="pf-online'+(online?'':' off')+'"><span class="dot"></span>'+(online?'目前可接單':'暫不接單')+'</span>';
+  html += '</div>';
+
+  /* 徽章列 */
+  var badges = '';
+  if(sun.is_realname && sun.show_realname!==false) badges += badge('b-verified','i-check','實名');
+  if(sun.has_caregiver_cert && sun.show_caregiver!==false) badges += badge('b-cna','i-star','照服員');
+  if(sun.has_good_conduct && sun.show_good_conduct!==false) badges += badge('b-safe','i-shield','良民');
+  if(sun.has_cpr && sun.show_cpr!==false) badges += badge('b-cpr','i-heart-cross','急救');
+  if(sun.is_email_verified) badges += badge('b-email','i-mail','信箱');
+  if(perkMap.referral_badge) badges += badge('b-ref','i-star','推薦達人');
+  d.customs.forEach(function(c){ badges += '<span class="bm b-custom">'+esc(c.name)+'</span>'; });
+  if(badges) html += '<div class="badge-row">'+badges+'</div>';
+  html += '</div>'; /* /profile-head */
+
+  html += '<div class="wrap">';
+
+  /* 數據三格:評價 / 信用分 / 期望時薪 */
+  html += '<div class="stat-row">';
+  var rv = d.review;
+  var ratingVal = (rv && rv.enough) ? '<svg><use href="#i-star"/></svg>'+Number(rv.overall_avg).toFixed(1) : '—';
+  var ratingSub = (rv && rv.enough) ? rv.cnt+' 則評價' : '尚無足夠評價';
+  html += '<div class="stat-box"><div class="lbl">評價</div><div class="val">'+ratingVal+'</div><div class="sub">'+ratingSub+'</div></div>';
+  var cs = d.credit;
+  if(cs && cs.credit_score!=null){
+    html += '<div class="stat-box"><div class="lbl">信用分</div><div class="val">'+cs.credit_score+'</div><div class="sub">'+creditBand(cs.credit_score)+'</div></div>';
+  } else {
+    html += '<div class="stat-box"><div class="lbl">信用分</div><div class="val">🔒</div><div class="sub"><button class="trust-unlock" onclick="openUnlockModal()">解鎖可看</button></div></div>';
+  }
+  var rate = sun.expected_rate ? '$'+sun.expected_rate : '面議';
+  html += '<div class="stat-box"><div class="lbl">期望時薪</div><div class="val">'+rate+'</div><div class="sub">'+(sun.expected_rate?'/ 小時':'可議')+'</div></div>';
+  html += '</div>';
+
+  /* 自我介紹 */
+  if(prof.bio){
+    html += card('i-user','自我介紹','<div class="bio-text">'+esc(prof.bio)+'</div>');
+  }
+
+  /* 生活照 */
+  var photos = Array.isArray(prof.photos) ? prof.photos : [];
+  if(photos.length){
+    var imgs = photos.map(function(u){ return '<img src="'+esc(u)+'" alt="生活照" onclick="openPhoto(\''+esc(u)+'\')">'; }).join('');
+    html += card('i-photo','生活照','<div class="gallery">'+imgs+'</div>');
+  }
+
+  /* 服務資訊 */
+  var areas = Array.isArray(prof.areas) ? prof.areas : [];
+  var svcs = Array.isArray(prof.services) ? prof.services : [];
+  var transport = Array.isArray(prof.transport) ? prof.transport : [];
+  if(areas.length || svcs.length || transport.length){
+    var body = '';
+    if(areas.length){
+      body += '<div class="sub-label">服務區域</div><div class="chip-wrap">'+areas.map(function(a){ return '<span class="chip area">'+esc(a)+'</span>'; }).join('')+'</div>';
+    }
+    if(svcs.length){
+      body += '<div class="sub-label">服務類型</div><div class="chip-wrap">'+svcs.map(function(k){ return '<span class="chip">'+esc(SVC_LABEL[k]||k)+'</span>'; }).join('')+'</div>';
+    }
+    if(transport.length){
+      body += '<div class="sub-label">交通方式</div><div class="chip-wrap">'+transport.map(function(t){ return '<span class="chip">'+esc(t)+'</span>'; }).join('')+'</div>';
+    }
+    html += card('i-map','服務資訊',body);
+  }
+
+  /* 種子庫(suncar 池)。隱藏或無圖鑑時 get_user_seeds 回空,整塊不顯示 */
+  if(d.seeds.length){
+    html += card('i-seed','種子庫', renderSeedbox(d.seeds));
+  }
+
+  /* 匿名評價留言 */
+  if(d.publicReviews.length){
+    html += card('i-chat','其他案家的評價', renderPublicReviews(d.publicReviews));
+  }
+
+  html += '</div>'; /* /wrap */
+
+  /* 底部指定下單 */
+  html += '<div class="cta-bar"><div class="cta-inner">'
+        + '<a class="cta-btn" href="04_order_form.html?staff='+encodeURIComponent(TARGET)+'"><svg><use href="#i-star"/></svg>指定他下單</a>'
+        + '<div class="cta-hint">指定下單會優先保留給這位順咖,逾時或他未接才開放其他人</div>'
+        + '</div></div>';
+
+  document.getElementById('page-body').innerHTML = html;
+}
+
+function badge(cls,icon,name){ return '<span class="bm '+cls+'"><svg><use href="#'+icon+'"/></svg>'+name+'</span>'; }
+function card(icon,title,body){
+  return '<div class="section-card"><div class="sec-title"><svg><use href="#'+icon+'"/></svg>'+title+'</div>'+body+'</div>';
+}
+
+function renderSeedbox(seeds){
+  var got=0, total=seeds.length, cells='';
+  seeds.forEach(function(s){
+    var r = RARITY[s.rarity] ? s.rarity : 'normal';
+    var cls = RARITY[r].cls;
+    var have = s.cnt || 0;
+    var hasIt = have > 0;
+    if(hasIt) got++;
+    var shapeCls = 'seedshape'+(cls?' '+cls:'')+(hasIt?'':' locked');
+    var emj = hasIt ? esc(s.emoji) : '?';
+    var nm = hasIt ? esc(s.name) : '？？？';
+    var sprout = hasIt ? '<span class="sprout"><svg><use href="#i-sprout"/></svg></span>' : '';
+    var xn = (have>1) ? '<span class="xn">×'+have+'</span>' : '';
+    cells += '<div class="cell">'
+           +   '<div class="seedwrap">'+sprout+'<div class="'+shapeCls+'"><span class="emj">'+emj+'</span></div></div>'
+           +   '<div class="nm">'+nm+' '+xn+'</div>'
+           + '</div>';
+  });
+  return '<div class="seed-prog">已收集 <b>'+got+'</b> / '+total+' 種</div><div class="dex-grid">'+cells+'</div>';
+}
+
+function renderPublicReviews(rows){
+  return rows.map(function(r){
+    var stars = avgStars(r.ratings);
+    var date = r.created_at ? String(r.created_at).slice(0,10) : '';
+    var comment = r.comment ? esc(r.comment) + (r.truncated ? ' <span class="rv-locked" onclick="openUnlockModal()">…解鎖看完整</span>' : '') : '<span style="color:var(--ink-light);">(無文字評價)</span>';
+    return '<div class="rv-item"><span class="rv-date">'+esc(date)+'</span><div class="rv-stars">'+stars+'</div><div class="rv-comment">'+comment+'</div></div>';
+  }).join('');
+}
+
+/* ratings 是 {項目:分數} 的 jsonb,取平均換成星星 */
+function avgStars(ratings){
+  if(!ratings || typeof ratings!=='object') return '★★★★★';
+  var vals=[]; for(var k in ratings){ if(typeof ratings[k]==='number') vals.push(ratings[k]); }
+  if(!vals.length) return '★★★★★';
+  var avg = Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length);
+  avg = Math.max(1, Math.min(5, avg));
+  return '★★★★★'.slice(0,avg) + '☆☆☆☆☆'.slice(0,5-avg);
+}
+
+function openPhoto(url){ window.open(url, '_blank'); }
+function showError(msg){ document.getElementById('page-body').innerHTML = '<div class="load-note">'+esc(msg)+'</div>'; }
+
+/* === 解鎖視窗(沿用 02 的 redeem_info 流程) === */
+function openUnlockModal(){
+  var U = window.UNLOCK || { single:5, month:50, points:0, target:TARGET };
+  document.getElementById('ul-balance').textContent = U.points;
+  document.getElementById('ul-cost-single').textContent = U.single;
+  document.getElementById('ul-cost-month').textContent = U.month;
+  document.getElementById('unlock-modal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeUnlockModal(){
+  document.getElementById('unlock-modal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function goBuyForUnlock(){
+  try { sessionStorage.setItem('credits_pool','client'); sessionStorage.setItem('credits_returnTo','20_suncar_profile.html?id='+encodeURIComponent(TARGET)); } catch(e){}
+  location.href = '16_buy_credits.html';
+}
+async function doRedeem(kind){
+  if(typeof window.sb==='undefined'){ alert('系統載入中,請稍候再試'); return; }
+  var target = (kind==='single') ? TARGET : null;
+  var r = await sb.rpc('redeem_info', { p_kind:kind, p_as:'client', p_target:target });
+  if(r.error){
+    var msg = r.error.message || '解鎖失敗';
+    if(msg.indexOf('點數不足')>=0){ if(confirm(msg+'\n\n要去儲值嗎?')) goBuyForUnlock(); return; }
+    alert('解鎖失敗:'+msg); return;
+  }
+  alert(kind==='month' ? '已開通月票,30 天內可看全部順咖資訊' : '已解鎖這位順咖的資訊');
+  location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', function(){ qyxGuard(init, { color:'#EF9F27' }); });
+</script>
+</body>
+</html>

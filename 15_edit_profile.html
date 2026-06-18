@@ -355,6 +355,21 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="field-hint" id="bind-msg" style="margin-top:8px;display:none;"></div>
   </div>
 
+  <!-- 種子庫公開(案家):只在案家視角顯示,控制 users.show_seedbox_client -->
+  <div class="section-card" id="client-seedbox-card">
+    <div class="section-title">
+      <svg><use href="#i-user"/></svg>種子庫公開
+    </div>
+    <div class="section-desc">打開後,你的案家介紹頁會顯示你收集的種子。關掉就完全不顯示,預設公開。</div>
+    <div class="status-toggle-wrap">
+      <div>
+        <div class="status-info">公開我的種子庫</div>
+        <div class="status-info-sub">顯示在案家介紹頁</div>
+      </div>
+      <div class="toggle on" id="seedbox-client-toggle" onclick="toggleSeed(this)"></div>
+    </div>
+  </div>
+
   <!-- ============ 順咖專屬區(client 隱藏) ============ -->
   <div class="staff-only" style="display:none;">
 
@@ -427,6 +442,22 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       <div id="gallery-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
       <input type="file" id="gallery-upload" accept="image/*" multiple style="display:none;" onchange="uploadGalleryPhotos(this)">
       <div class="field-hint" id="gallery-hint">點空格加照片,點照片右上角 × 移除。每張限 5MB</div>
+    </div>
+
+    <!-- 種子庫公開(順咖):控制 users.show_seedbox_suncar -->
+    <div class="section-card">
+      <div class="section-title">
+        <svg><use href="#i-user"/></svg>種子庫公開
+        <span class="tag-staff">順咖</span>
+      </div>
+      <div class="section-desc">打開後,案家在你的順咖介紹頁看得到你收集的種子。關掉就完全不顯示,預設公開。</div>
+      <div class="status-toggle-wrap">
+        <div>
+          <div class="status-info">公開我的種子庫</div>
+          <div class="status-info-sub">顯示在順咖介紹頁</div>
+        </div>
+        <div class="toggle on" id="seedbox-suncar-toggle" onclick="toggleSeed(this)"></div>
+      </div>
     </div>
 
     <!-- 服務班表 -->
@@ -538,7 +569,7 @@ async function loadFromDB() {
   if (!user) { window.location.href = '13_login.html'; return; }
   DB.user = user;
 
-  var prof = await sb.from('users').select('display_name,phone,email,id_number,expected_rate,role_detail,has_caregiver_cert').eq('id', user.id).maybeSingle();
+  var prof = await sb.from('users').select('display_name,phone,email,id_number,expected_rate,role_detail,has_caregiver_cert,show_seedbox_client,show_seedbox_suncar').eq('id', user.id).maybeSingle();
   DB.profile = prof.data || {};
   avatarUrl = (DB.profile.role_detail && DB.profile.role_detail.avatar_url) || '';
 
@@ -576,6 +607,7 @@ function applyRoleUI() {
     document.getElementById('home-link').href = '12_staff_home.html';
     document.querySelector('.staff-only').style.display = 'block';
     document.getElementById('default-addr-field').style.display = 'none';
+    document.getElementById('client-seedbox-card').style.display = 'none';
     /* 視角切換器 */
     document.getElementById('vs-client').classList.remove('on');
     document.getElementById('vs-staff').classList.add('on');
@@ -590,6 +622,7 @@ function applyRoleUI() {
     document.getElementById('home-link').href = '11_client_home.html';
     document.querySelector('.staff-only').style.display = 'none';
     document.getElementById('default-addr-field').style.display = 'block';
+    document.getElementById('client-seedbox-card').style.display = 'block';
     /* 視角切換器 */
     document.getElementById('vs-client').classList.add('on');
     document.getElementById('vs-staff').classList.remove('on');
@@ -700,6 +733,9 @@ function removeGalleryPhoto(i) {
   galleryPhotos.splice(i, 1);
   renderGallery();
 }
+
+/* 種子庫公開開關:單純切換 on,存檔時讀 on 狀態寫 users.show_seedbox_* */
+function toggleSeed(el) { el.classList.toggle('on'); }
 
 /* ============ 接案狀態切換 ============ */
 function toggleStatus() {
@@ -1178,6 +1214,11 @@ async function saveProfile() {
     /* 身分證號:只在「首次設定(未鎖定)且有填」時才寫入;寫了後端觸發器會鎖住,之後不能改 */
     if (!window._idLocked) { var _idv2 = (document.getElementById('id-number').value || '').trim().toUpperCase(); if (_idv2) userUpdate.id_number = _idv2; }
     if (role === 'staff') { userUpdate.expected_rate = rate; }
+    /* 種子庫公開開關:兩欄都依目前開關狀態寫回(不在受保護六欄,本人可改) */
+    var _sbS = document.getElementById('seedbox-suncar-toggle');
+    var _sbC = document.getElementById('seedbox-client-toggle');
+    if (_sbS) userUpdate.show_seedbox_suncar = _sbS.classList.contains('on');
+    if (_sbC) userUpdate.show_seedbox_client = _sbC.classList.contains('on');
 
     var uRes = await sb.from('users').update(userUpdate).eq('id', DB.user.id);
     if (uRes.error) { throw uRes.error; }
@@ -1281,6 +1322,11 @@ function loadSharedProfile() {
   /* 案家預設地址放在 client 角色的 role_data.address */
   var addr = (DB.clientRole && DB.clientRole.role_data && DB.clientRole.role_data.address) || '';
   document.getElementById('address').value = addr;
+  /* 種子庫公開開關:預設開,只有資料庫明確存 false 才關 */
+  var sbS = document.getElementById('seedbox-suncar-toggle');
+  if (sbS) sbS.classList.toggle('on', p.show_seedbox_suncar !== false);
+  var sbC = document.getElementById('seedbox-client-toggle');
+  if (sbC) sbC.classList.toggle('on', p.show_seedbox_client !== false);
   /* 大頭照:有照片顯示照片,否則用暱稱第一個字 */
   var av = document.getElementById('big-avatar');
   if (avatarUrl) {
