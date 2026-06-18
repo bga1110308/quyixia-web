@@ -490,7 +490,9 @@ var STATUS_UI = {
   active:   { cls:'active-banner', tagCls:'sb-active',   tag:'<svg><use href="#i-radio"/></svg>服務中',    title:'順咖服務中',     desc:'服務進行中,有問題可直接聯絡順咖' },
   await_confirm:{ cls:'',          tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>等待確認', title:'順咖已標記完成', desc:'請在下方確認服務是否如預期完成' },
   done:     { cls:'done-banner',   tagCls:'sb-done',     tag:'<svg><use href="#i-check-circle"/></svg>已完成', title:'服務完成',       desc:'感謝你使用去一下' },
-  cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }
+  cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' },
+  no_show:  { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>順咖未到',       title:'已回報順咖未到', desc:'你回報的未到已受理,媒合費點數已退回。平台處理中。' },
+  overdue_closed:{ cls:'',         tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>逾期已關閉',     title:'逾期已關閉',     desc:'此單超過期限仍未完成,系統已關閉並轉平台處理。' }
 };
 
 /* 順咖在預覽「還沒接的單」時的文案(站在順咖角度,鼓勵接單)。只會用到 matching */
@@ -505,7 +507,9 @@ var STATUS_UI_STAFF = {
   active:   { cls:'active-banner', tagCls:'sb-active',   tag:'<svg><use href="#i-radio"/></svg>服務中',    title:'服務進行中',     desc:'完成後請在順咖首頁按「標記完成」' },
   await_confirm:{ cls:'',          tagCls:'sb-matching', tag:'<svg><use href="#i-clock"/></svg>等待案家確認', title:'已標記完成',     desc:'等待案家確認,確認後即結案' },
   done:     { cls:'done-banner',   tagCls:'sb-done',     tag:'<svg><use href="#i-check-circle"/></svg>已完成', title:'服務已完成',     desc:'感謝你的服務' },
-  cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' }
+  cancelled:{ cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>已取消',         title:'訂單已取消',     desc:'此訂單已取消' },
+  no_show:  { cls:'',              tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>案家回報未到', title:'案家回報你未到', desc:'請到順咖首頁說明原因(可附照片)或確認;逾期未回應會視同確認、扣信用分。' },
+  overdue_closed:{ cls:'',         tagCls:'sb-matching', tag:'<svg><use href="#i-x"/></svg>逾期已關閉', title:'逾期已關閉',     desc:'此單超過期限未完成,系統已關閉並轉平台處理。' }
 };
 
 /* 信用分換算等級:高(80↑)、中(50到79)、低(50↓),跟取消率同一種摘要風格 */
@@ -666,12 +670,13 @@ function renderTimeline(o){
   var box = document.getElementById('timeline');
   if(!sec || !box) return;
   /* 已取消:只顯示下單 + 已取消,不畫完整階梯(避免畫出根本沒走到的步驟) */
-  if(o.status === 'cancelled'){
+  if(o.status === 'cancelled' || o.status === 'no_show' || o.status === 'overdue_closed'){
+    var endLabel = o.status === 'no_show' ? '順咖未到' : (o.status === 'overdue_closed' ? '逾期已關閉' : '訂單已取消');
     box.innerHTML =
       '<div class="tl-item done"><div class="tl-dot"><svg><use href="#i-check"/></svg></div>'+
       '<div class="tl-content">下單成立</div><div class="tl-time">'+fmtDT(o.created_at)+'</div></div>'+
       '<div class="tl-item current"><div class="tl-dot"><svg><use href="#i-x"/></svg></div>'+
-      '<div class="tl-content">訂單已取消</div></div>';
+      '<div class="tl-content">'+endLabel+'</div></div>';
     sec.style.display = '';
     return;
   }
