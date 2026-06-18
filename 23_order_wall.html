@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>服務牆 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;
+  --champagne:#FFF4DD;--champagne-soft:#FFFCF5;
+  --forest:#2F6048;--mint:#5FB58E;--mint-pale:#E8F5EE;--border-mint:rgba(95,181,142,0.3);
+  --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+  --border:#FFE9B8;--border-soft:#F5EBD8;
+  --warn:#E89544;--warn-pale:#FFF1E0;--info:#3A7CB8;--info-pale:#E8F1F8;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--champagne-soft);color:var(--ink);line-height:1.55;padding-bottom:40px;}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.head{text-align:center;padding:3rem 1.25rem 1.6rem;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 55%,var(--mint-pale) 100%);position:relative;overflow:hidden;}
+.head::before{content:'';position:absolute;top:-80px;right:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.16) 0%,transparent 70%);}
+.head > *{position:relative;z-index:1;}
+.head .pill{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);padding:6px 13px;border-radius:99px;font-size:0.74rem;color:var(--ink-soft);margin-bottom:0.9rem;box-shadow:0 2px 8px rgba(186,117,23,0.05);}
+.head .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px rgba(95,181,142,0.2);animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.35;}}
+.head h1{font-size:1.7rem;font-weight:700;color:var(--ink);letter-spacing:-0.5px;}
+.head p{font-size:0.85rem;color:var(--ink-soft);margin-top:0.5rem;}
+
+.wrap{max-width:760px;margin:0 auto;padding:1.2rem 1.1rem;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+
+.ord-card{position:relative;background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:16px 16px 14px;text-decoration:none;color:var(--ink);transition:all 0.22s;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.ord-card:hover{transform:translateY(-3px);border-color:var(--amber);box-shadow:0 12px 26px rgba(239,159,39,0.15);}
+.oc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.oc-title{font-size:1.02rem;font-weight:700;color:var(--ink);line-height:1.35;}
+.st{font-size:0.66rem;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}
+.st .d{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.st.matching{background:var(--warn-pale);color:var(--warn);}
+.st.matching .d{animation:blink 1.5s infinite;}
+.st.accepted{background:var(--mint-pale);color:var(--forest);}
+.st.active{background:#E3F2EA;color:var(--forest);}
+.st.await{background:var(--info-pale);color:var(--info);}
+.oc-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:0.74rem;color:var(--ink-soft);}
+.pool-chip{font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:99px;}
+.pool-chip.a{background:var(--mint-pale);color:var(--forest);}
+.pool-chip.b{background:var(--warn-pale);color:var(--warn);}
+.oc-bottom{display:flex;justify-content:space-between;align-items:flex-end;margin-top:2px;}
+.oc-amount{font-size:1.05rem;font-weight:700;color:var(--amber-deep);}
+.oc-amount span{font-size:0.7rem;color:var(--ink-light);font-weight:500;}
+.oc-lock{font-size:0.66rem;color:var(--ink-light);display:inline-flex;align-items:center;gap:3px;}
+
+.empty-note{text-align:center;color:var(--ink-light);padding:3rem 1rem;font-size:0.9rem;}
+.load-note{text-align:center;color:var(--ink-soft);padding:3rem 1rem;font-size:0.9rem;}
+.foot-hint{text-align:center;font-size:0.76rem;color:var(--ink-soft);margin-top:1.4rem;line-height:1.7;}
+.foot-hint a{color:var(--amber-deep);font-weight:600;text-decoration:none;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-4v-2h2V7h2v6z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><path d="M18 8h-1V6A5 5 0 007 6v2H6a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V10a2 2 0 00-2-2zM9 6a3 3 0 016 0v2H9z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="head">
+  <div class="pill"><span class="dot"></span>全站即時服務單</div>
+  <h1>服務牆</h1>
+  <p>大家正在找順咖幫忙的單，看看有哪些任務正在進行</p>
+</div>
+
+<div class="wrap">
+  <div id="list"><div class="load-note">載入中…</div></div>
+  <div class="foot-hint" id="foot-hint"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
+<script>
+/* 服務牆(公開,不用登入)。資料走 get_order_wall(security definer,grant anon):
+   只吐安全欄位(標題/狀態/有沒有人接/行政區/池別/報酬/時間),不吐下單人/接單人名字、不吐門牌、不吐聯絡方式。
+   要看完整資料(含名字)點卡片進訂單詳情,那頁本來就依登入者購買/解鎖情形把關;未登入導去登入。 */
+
+var STATUS = {
+  matching:    { cls:'matching', label:'找順咖中' },
+  accepted:    { cls:'accepted', label:'已有順咖接' },
+  active:      { cls:'active',   label:'服務進行中' },
+  await_confirm:{ cls:'await',   label:'待確認完成' }
+};
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDateTime(s){
+  try{ var d=new Date(s); var mm=('0'+(d.getMonth()+1)).slice(-2); var dd=('0'+d.getDate()).slice(-2);
+       var hh=('0'+d.getHours()).slice(-2); var mi=('0'+d.getMinutes()).slice(-2);
+       return mm+'/'+dd+' '+hh+':'+mi; }catch(e){ return ''; }
+}
+
+async function init(){
+  var ses = await sb.auth.getSession();
+  var loggedIn = !!(ses && ses.data && ses.data.session && ses.data.session.user);
+
+  var res = await sb.rpc('get_order_wall', { p_limit: 80 });
+  if(res.error){ document.getElementById('list').innerHTML='<div class="empty-note">載入失敗,請稍後再試</div>'; return; }
+  var rows = res.data || [];
+  if(!rows.length){ document.getElementById('list').innerHTML='<div class="empty-note">目前沒有進行中的服務單。</div>'; return; }
+
+  var cards = rows.map(function(o){
+    var st = STATUS[o.status] || { cls:'matching', label:'進行中' };
+    var isB = (o.pool === 'B');
+    var when = o.service_time ? fmtDateTime(o.service_time) : '';
+    var href = loggedIn ? ('10_order_detail.html?id='+encodeURIComponent(o.id)) : '13_login.html';
+    var bottomRight = loggedIn
+      ? '<span class="oc-lock"><svg width="11" height="11" style="fill:currentColor;"><use href="#i-map"/></svg>點看詳情</span>'
+      : '<span class="oc-lock"><svg width="11" height="11" style="fill:currentColor;"><use href="#i-lock"/></svg>登入看完整</span>';
+    return '<a class="ord-card" href="'+href+'">'
+      + '<div class="oc-top"><div class="oc-title">'+esc(o.service_type||'服務')+'</div>'
+      +   '<span class="st '+st.cls+'"><span class="d"></span>'+st.label+'</span></div>'
+      + '<div class="oc-meta">'
+      +   '<span class="pool-chip '+(isB?'b':'a')+'">'+(isB?'照服員':'一般')+'</span>'
+      +   (o.service_district?'<span><svg width="11" height="11" style="fill:currentColor;vertical-align:-1px;"><use href="#i-map"/></svg> '+esc(o.service_district)+'</span>':'')
+      +   (when?'<span><svg width="11" height="11" style="fill:currentColor;vertical-align:-1px;"><use href="#i-clock"/></svg> '+esc(when)+'</span>':'')
+      + '</div>'
+      + '<div class="oc-bottom"><div class="oc-amount">$ '+esc(o.amount==null?'-':o.amount)+' <span>報酬</span></div>'+bottomRight+'</div>'
+      + '</a>';
+  }).join('');
+  document.getElementById('list').innerHTML = '<div class="grid">'+cards+'</div>';
+
+  document.getElementById('foot-hint').innerHTML = loggedIn
+    ? '點任一張單看完整內容(依你的解鎖情形顯示)。想下單請到 <a href="04_order_form.html">我要預約服務</a>。'
+    : '為保護個資,下單人與接單人的名字不公開。<a href="13_login.html">登入</a>後可依你的會員與解鎖情形看完整內容。';
+}
+
+function start(){ if(typeof window.sb==='undefined'){ setTimeout(start,200); return; } init(); }
+document.addEventListener('DOMContentLoaded', start);
+</script>
+</body>
+</html>
