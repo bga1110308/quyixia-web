@@ -459,6 +459,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     </div>
   </div>
 
+  <!-- 待你說明的未到回報(案家回報你未到,要說明或承認;逾期會自動扣信用分) -->
+  <div id="noshow-section" style="display:none;">
+  <div class="sec-h">
+    <div class="sec-title" style="color:#C0392B;">待你說明的未到回報</div>
+  </div>
+  <div id="noshow-list"></div>
+  </div>
+
   <!-- 待服務(已接單、約定時間還沒開始) -->
   <div id="pending-section" style="display:none;">
   <div class="sec-h">
@@ -667,8 +675,65 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   }
   function pendingCard(o, clientName, clientPhone, clientNo){
     var contact = clientPhone ? '<button class="btn btn-outline" onclick="event.stopPropagation(); openContactModal('+JSON.stringify(clientName||'案家')+','+JSON.stringify(clientPhone)+',\'\','+JSON.stringify(clientNo||'')+')">聯絡</button>' : '';
-    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">待服務</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-red" onclick="event.stopPropagation(); window.releaseOrder(\''+esc(o.id)+'\', this)">取消接單</button><button class="btn btn-green" onclick="event.stopPropagation(); window.startService(\''+esc(o.id)+'\', this, \''+esc(o.service_time||'')+'\')">開始服務</button></div>'+price(o)+'</div></div>';
+    /* 過了約定服務時間仍沒按開始服務→紅色逾期提醒(前端標示;後端另有站內通知/鈴鐺) */
+    var overdue = o.service_time && (new Date(o.service_time).getTime() < Date.now());
+    var od = overdue ? '<div style="margin-top:8px;font-size:0.78rem;color:#C0392B;background:#FDECEA;border:1px solid #F5C6C0;border-radius:8px;padding:7px 10px;line-height:1.5;font-weight:600;">⚠ 已過約定服務時間。若已服務請按「開始服務」更新狀態;若無法前往,請盡快用「聯絡」告知案家。</div>' : '';
+    return '<div class="order-card open-order" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-open">待服務</span>')+metaRow(o)+od+'<div class="oc-bottom"><div class="oc-actions">'+contact+'<button class="btn btn-red" onclick="event.stopPropagation(); window.releaseOrder(\''+esc(o.id)+'\', this)">取消接單</button><button class="btn btn-green" onclick="event.stopPropagation(); window.startService(\''+esc(o.id)+'\', this, \''+esc(o.service_time||'')+'\')">開始服務</button></div>'+price(o)+'</div></div>';
   }
+  /* 未到回報卡(順咖端):reported→要說明或承認;explained→已送出待平台審 */
+  function noShowCard(o){
+    var tag = '<span class="status-tag" style="background:#FDECEA;color:#C0392B;">未到回報</span>';
+    if(o.no_show_state === 'explained'){
+      return '<div class="order-card" style="border-left:4px solid #C0392B;">'+head(o, tag)+
+        '<div style="margin-top:8px;font-size:0.82rem;color:#3a4a3f;background:#F1F6F2;border-radius:8px;padding:9px 11px;line-height:1.55;">你已送出說明,平台審核中,結果會再通知你。</div></div>';
+    }
+    return '<div class="order-card" style="border-left:4px solid #C0392B;">'+head(o, tag)+
+      '<div style="margin-top:8px;font-size:0.8rem;color:#C0392B;background:#FDECEA;border:1px solid #F5C6C0;border-radius:8px;padding:9px 11px;line-height:1.55;">案家回報你這筆服務未到。請說明原因(可附照片)或確認未到;逾期未回應會視同確認、扣信用分。若是車禍、急病等不可抗力,請說明並附上證明。</div>'+
+      '<textarea id="nse-'+esc(o.id)+'" placeholder="說明原因…" style="width:100%;margin-top:8px;border:1px solid #d9d2c7;border-radius:8px;padding:8px;font-family:inherit;font-size:0.85rem;min-height:64px;box-sizing:border-box;"></textarea>'+
+      '<div style="margin-top:6px;font-size:0.76rem;color:#9a9a9a;">可附照片(就醫單、事故現場等),可多張:</div>'+
+      '<input type="file" id="nsp-'+esc(o.id)+'" accept="image/*" multiple style="font-size:0.78rem;margin-top:4px;">'+
+      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">'+
+        '<button class="btn btn-green" onclick="event.stopPropagation(); window.submitNoShowExplain(\''+esc(o.id)+'\')">提出說明</button>'+
+        '<button class="btn btn-red" onclick="event.stopPropagation(); window.admitNoShow(\''+esc(o.id)+'\')">我確實未到</button>'+
+      '</div></div>';
+  }
+
+  /* 順咖提出未到說明:照片先傳 avatars 桶({我的id}/no_show/{單id}/),再把路徑帶進 suncar_submit_no_show_explain */
+  window.submitNoShowExplain = async function(orderId){
+    var ta = document.getElementById('nse-'+orderId);
+    var fi = document.getElementById('nsp-'+orderId);
+    var text = ta ? ta.value.trim() : '';
+    var files = fi ? Array.prototype.slice.call(fi.files || []) : [];
+    if(!text && !files.length){ alert('請至少填寫說明,或附一張照片。'); return; }
+    var uid = window._suncarUid;
+    var paths = [];
+    try{
+      for(var i=0;i<files.length;i++){
+        var f = files[i];
+        var ext = (String(f.name).split('.').pop() || 'jpg').toLowerCase();
+        var path = uid+'/no_show/'+orderId+'/'+Date.now()+'_'+i+'.'+ext;
+        var up = await sb.storage.from('avatars').upload(path, f, { upsert:true, contentType: f.type || 'image/jpeg' });
+        if(up.error){ alert('照片上傳失敗:'+up.error.message); return; }
+        paths.push(path);
+      }
+    }catch(e){ alert('照片上傳發生問題,請再試一次。'); return; }
+    var res = await sb.rpc('suncar_submit_no_show_explain', { p_order_id: orderId, p_text: text, p_photos: paths });
+    if(res.error){ alert('送出失敗:'+res.error.message); return; }
+    var r = res.data || {};
+    if(!r.ok){ alert(r.reason==='already_penalized' ? '這筆已處理,無法再說明。' : '送出失敗,請稍後再試。'); return; }
+    alert('已送出說明,平台會審核,結果會再通知你。'); location.reload();
+  };
+
+  /* 順咖承認未到:立刻扣信用分 */
+  window.admitNoShow = async function(orderId){
+    if(!confirm('確定要承認「我確實未到」嗎?\n承認後會立即扣信用分。')) return;
+    var res = await sb.rpc('suncar_admit_no_show', { p_order_id: orderId });
+    if(res.error){ alert('送出失敗:'+res.error.message); return; }
+    var r = res.data || {};
+    if(!r.ok && !r.already){ alert('送出失敗,請稍後再試。'); return; }
+    alert('已確認未到。'); location.reload();
+  };
+
   /* 已完成卡的評價狀態列:我評過這位案家就顯示「已評價」,沒評就給「去評價」按鈕(帶訂單 id 進 05) */
   function reviewRow(o){
     if(myReviewedClientOrders[o.id]){
@@ -927,16 +992,18 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     }
 
     /* 本人接的單(suncar_id = 我) */
-    var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id,address_note').eq('suncar_id', user.id).order('service_time',{ascending:false});
+    window._suncarUid = user.id;  /* 給未到說明上傳照片組路徑用 */
+    var ores = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id,address_note,no_show_state,no_show_explain,no_show_photos').eq('suncar_id', user.id).order('service_time',{ascending:false});
     var myOrders = ores.data || [];
     var pendingOrders = myOrders.filter(function(o){ return o.status==='accepted'; });
     var activeOrders = myOrders.filter(function(o){ return o.status==='active'; });
     var awaitOrders = myOrders.filter(function(o){ return o.status==='await_confirm'; });
     var doneOrders = myOrders.filter(function(o){ return o.status==='done'; });
+    var noShowOrders = myOrders.filter(function(o){ return o.status==='no_show' && (o.no_show_state==='reported' || o.no_show_state==='explained'); });
 
     /* 待服務與服務中都要案家聯絡資訊,一起撈 */
     var clientById = {};
-    var clientIds = pendingOrders.concat(activeOrders).map(function(o){ return o.client_id; }).filter(Boolean);
+    var clientIds = pendingOrders.concat(activeOrders).concat(noShowOrders).map(function(o){ return o.client_id; }).filter(Boolean);
     if(clientIds.length){
       var cres = await sb.from('users').select('id,display_name,phone,member_no').in('id', clientIds);
       (cres.data||[]).forEach(function(c){ clientById[c.id]=c; });
@@ -955,6 +1022,11 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     if(awaitOrders.length){
       $('await-list').innerHTML = awaitOrders.map(awaitCard).join('');
       $('await-section').style.display = '';
+    }
+
+    if(noShowOrders.length){
+      $('noshow-list').innerHTML = noShowOrders.map(function(o){ return noShowCard(o); }).join('');
+      $('noshow-section').style.display = '';
     }
 
     /* 查我(順咖)已評價過哪些訂單:只認自己寫的 suncar_reviews_client(RLS 只放行讀自己寫的),用來在已完成卡標評了沒 */

@@ -332,6 +332,7 @@ textarea.form-input{min-height:80px;resize:vertical;}
       <div class="nav-item" onclick="go('certreview',this)"><svg class="icon"><use href="#i-badge-check"/></svg>證件審核<span class="cnt" id="nav-cert-count">0</span></div>
       <div class="nav-item" onclick="go('orders',this)"><svg class="icon"><use href="#i-clipboard"/></svg>訂單總覽</div>
       <div class="nav-item" onclick="go('flags',this)"><svg class="icon"><use href="#i-shield"/></svg>紅旗回報<span class="cnt" id="nav-flag-count">0</span></div>
+      <div class="nav-item" onclick="go('noshow',this)"><svg class="icon"><use href="#i-clipboard"/></svg>未到審核<span class="cnt" id="nav-noshow-count">0</span></div>
       <div class="nav-item" onclick="go('topup',this)"><svg class="icon"><use href="#i-clipboard"/></svg>加值對帳<span class="cnt" id="nav-topup-count">0</span></div>
       <div class="nav-section">設定 / 報表</div>
       <div class="nav-item" onclick="go('announce',this)"><svg class="icon"><use href="#i-speaker"/></svg>公告管理</div>
@@ -442,6 +443,15 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
         <!-- 紅旗卡由 loadFlagReports() 填入此處 -->
         <div id="flag-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
+      </div>
+
+      <!-- 未到審核:案家回報順咖未到(orders.status='no_show')。順咖的說明文字與照片在此,判「成立扣分」或「免罰」。走 admin_confirm_no_show / admin_revoke_no_show -->
+      <div class="page" id="page-noshow">
+        <div class="sec-header">
+          <div style="display:flex;align-items:center;gap:9px;"><span class="sec-title">未到審核</span><span id="noshow-count" style="background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-size:11.5px;padding:3px 10px;border-radius:99px;font-weight:700;box-shadow:0 3px 8px rgba(239,159,39,0.3);">0</span></div>
+          <div style="font-size:12.5px;color:var(--ink-soft);">案家回報順咖未到。順咖會先說明(文字/照片)或承認;「待你判定」為順咖已說明、等你裁決的。判成立會扣順咖信用分,可撤銷。</div>
+        </div>
+        <div id="noshow-list"><div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">載入中…</div></div>
       </div>
 
       <!-- 加值對帳:使用者在 17 回報的匯款申請(topup_requests)。對照銀行入帳後按「確認入帳」由後台函式 admin_confirm_topup 發點 -->
@@ -1387,6 +1397,87 @@ async function rejectTopup(id,btn){
   loadTopups();
 }
 
+/* ===== 未到審核:案家回報順咖未到(orders.status='no_show')。順咖先說明(文字/照片)或承認;
+   待判定=state explained 還沒扣分。判成立走 admin_confirm_no_show(扣信用分)、免罰/撤銷走 admin_revoke_no_show ===== */
+async function loadNoShowReviews(){
+  var box=document.getElementById('noshow-list');
+  if(!box) return;
+  var res=await sb.from('orders')
+    .select('id,order_no,service_type,service_district,suncar_id,client_id,no_show_state,no_show_explain,no_show_photos,no_show_confirmed,no_show_reported_at')
+    .eq('status','no_show').order('no_show_reported_at',{ascending:false});
+  if(res.error){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--danger);font-size:13px;">讀取失敗:'+esc(res.error.message)+'</div>'; return; }
+  var list=res.data||[];
+  var ids=[]; list.forEach(function(o){ if(o.suncar_id)ids.push(o.suncar_id); if(o.client_id)ids.push(o.client_id); });
+  ids=ids.filter(function(v,i,a){ return v&&a.indexOf(v)===i; });
+  var nameMap={};
+  if(ids.length){ var mr=await sb.from('users').select('id,display_name,member_no').in('id',ids); if(!mr.error)(mr.data||[]).forEach(function(u){ nameMap[u.id]=u; }); }
+  renderNoShowCards(list, nameMap);
+}
+
+function renderNoShowCards(list, nameMap){
+  nameMap=nameMap||{};
+  function nm(id){ var u=nameMap[id]; return u?(esc(u.display_name||'未填姓名')+(u.member_no?' ('+esc(u.member_no)+')':'')):'—'; }
+  var box=document.getElementById('noshow-list');
+  var badge=document.getElementById('noshow-count');
+  var navCnt=document.getElementById('nav-noshow-count');
+  // 待你判定=順咖已說明、還沒扣分的;提醒數只算這些
+  var pending=list.filter(function(o){ return o.no_show_state==='explained' && !o.no_show_confirmed; }).length;
+  if(badge) badge.textContent=pending;
+  if(navCnt) navCnt.textContent=pending;
+  if(!list.length){ box.innerHTML='<div style="padding:30px;text-align:center;color:var(--ink-light);font-size:13px;">目前沒有未到回報</div>'; return; }
+  function rank(o){ if(o.no_show_state==='explained'&&!o.no_show_confirmed)return 0; if(o.no_show_state==='reported')return 1; return 2; }
+  var ordered=list.slice().sort(function(a,b){ return rank(a)-rank(b); });
+  box.innerHTML=ordered.map(function(o){
+    var st=o.no_show_state;
+    var stLabel = st==='explained'?'<span class="badge-mini" style="background:#FDECEC;color:#D9534F;">待你判定</span>'
+                : st==='reported'?'<span class="badge-mini" style="background:var(--champagne);color:var(--amber-deep);">等順咖回應</span>'
+                : st==='penalized'?'<span class="badge-mini" style="background:#FCE8E7;color:#D9534F;">已扣分</span>'
+                : st==='waived'?'<span class="badge-mini" style="background:var(--mint-pale);color:var(--forest);">已免罰</span>':'';
+    var explain = o.no_show_explain
+      ? '<div style="margin-top:8px;font-size:13px;color:var(--ink);background:var(--champagne-soft);border:1px solid var(--border);border-radius:9px;padding:9px 11px;line-height:1.6;">順咖說明：'+esc(o.no_show_explain)+'</div>'
+      : '<div style="margin-top:8px;font-size:12.5px;color:var(--ink-light);">（順咖尚未提出文字說明）</div>';
+    var arr=Array.isArray(o.no_show_photos)?o.no_show_photos:[];
+    var photos = arr.length
+      ? '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">'+arr.map(function(p){
+          var url=sb.storage.from('avatars').getPublicUrl(p).data.publicUrl;
+          return '<a href="'+esc(url)+'" target="_blank" rel="noopener"><img src="'+esc(url)+'" style="width:84px;height:84px;object-fit:cover;border-radius:8px;border:1px solid var(--border);"></a>';
+        }).join('')+'</div>'
+      : '';
+    var oid=esc(o.id);
+    var actions = o.no_show_confirmed
+      ? '<button class="btn-reject" onclick="waiveNoShow(\''+oid+'\',this)">撤銷·免罰</button>'
+      : '<button class="btn-approve" onclick="confirmNoShow(\''+oid+'\',this)">判成立·扣信用分</button><button class="btn-reject" onclick="waiveNoShow(\''+oid+'\',this)">免罰</button>';
+    var orderLine='單號 '+esc(o.order_no||'')+(o.service_type?' · '+esc(o.service_type):'')+(o.service_district?' · '+esc(o.service_district):'');
+    return '<div class="applicant-card" style="align-items:flex-start;'+(st==='explained'&&!o.no_show_confirmed?'border-left:4px solid #E5484D;':'')+((st==='penalized'||st==='waived')?'opacity:0.6;':'')+'">'+
+      '<div style="flex:1;">'+
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">'+
+          '<span style="font-size:14.5px;font-weight:600;color:var(--ink);">順咖：'+nm(o.suncar_id)+'</span>'+stLabel+
+        '</div>'+
+        '<div class="card-meta"><span>案家：'+nm(o.client_id)+'</span><span>'+esc(fmtDate(o.no_show_reported_at))+'</span><span>'+orderLine+'</span></div>'+
+        explain+photos+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">'+actions+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+async function confirmNoShow(orderId, btn){
+  if(!confirm('確定判這筆「未到成立」?\n順咖的信用分會被扣。')) return;
+  if(btn) btn.disabled=true;
+  var r=await sb.rpc('admin_confirm_no_show',{p_order_id:orderId});
+  if(r.error){ alert('失敗:'+r.error.message); if(btn)btn.disabled=false; return; }
+  if(r.data && r.data.ok===false){ alert('無法處理:'+(r.data.reason||'')); if(btn)btn.disabled=false; return; }
+  loadNoShowReviews();
+}
+async function waiveNoShow(orderId, btn){
+  if(!confirm('確定免罰／撤銷這筆未到?\n若已扣分,會把信用分還回順咖。')) return;
+  if(btn) btn.disabled=true;
+  var r=await sb.rpc('admin_revoke_no_show',{p_order_id:orderId});
+  if(r.error){ alert('失敗:'+r.error.message); if(btn)btn.disabled=false; return; }
+  if(r.data && r.data.ok===false){ alert('無法處理:'+(r.data.reason||'')); if(btn)btn.disabled=false; return; }
+  loadNoShowReviews();
+}
+
 async function loadFlagReports(){
   var box=document.getElementById('flag-list');
   if(!box) return;
@@ -1857,6 +1948,7 @@ async function initAdmin(){
   loadCertReview();
   loadCustomCertReview(); // 自訂證件待審清單
   loadFlagReports(); // 紅旗回報:順咖回報的案家風險狀況
+  loadNoShowReviews(); // 未到審核:案家回報順咖未到,看說明/照片判成立或免罰
   loadTopups(); // 加值對帳:使用者匯款回報,管理員確認後發點
   loadAccounts(); // 帳號管理:會員清單與分身分停權
   loadOrders();   // 訂單總覽:全部訂單統計與清單

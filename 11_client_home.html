@@ -566,6 +566,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     var st = STATUS[o.status] || STATUS.matching;
     // 只有「媒合中、待服務」可由案家取消;服務中/已完成不給取消,要走後台
     var canCancel = (o.status === 'matching' || o.status === 'accepted');
+    /* 待服務且過了約定服務時間→案家端逾期提醒(回報「順咖未到」的按鈕下一輪做在訂單詳情頁) */
+    var overdue = (o.status === 'accepted') && o.service_time && (new Date(o.service_time).getTime() < Date.now());
     var loc = [o.service_district, o.service_address].filter(Boolean).join(' · ');
     var metaTime = hoursText(o.duration_minutes);
     var otherNeed = pickNote(o.address_note, '其他需求');  /* 案家下單寫的其他需求,有才顯示 */
@@ -590,6 +592,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
             : '<div style="font-size:0.74rem;color:var(--ink-light);">'+(st.group==='matching'?'媒合中,等待順咖接單':'')+'</div>')+
           '<div><span class="oc-price-label">'+priceLabel+'</span><span class="oc-price">$ '+esc(o.amount==null?'-':o.amount)+'</span></div>'+
         '</div>'+
+        (overdue ? '<div style="margin-top:10px;font-size:0.78rem;color:#C0392B;background:#FDECEA;border:1px solid #F5C6C0;border-radius:8px;padding:8px 10px;line-height:1.5;"><div style="font-weight:600;margin-bottom:7px;">⚠ 已過約定服務時間。若順咖沒來或聯絡不上,可回報未到(會退回你付的媒合費點數,折抵用掉的金幣不退)。</div><button onclick="event.stopPropagation(); window.reportNoShow(\''+esc(o.id)+'\')" style="background:#C0392B;color:#fff;border:none;font-family:inherit;font-size:0.78rem;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;">回報順咖未到</button></div>' : '')+
         (o.status==='matching' ? promoRow11(o) : '')+
         (canCancel ? '<div style="margin-top:10px;text-align:right;"><button onclick="event.stopPropagation(); window.cancelClientOrder(\''+esc(o.id)+'\', \''+esc(o.status)+'\')" style="background:#fff;border:1.5px solid var(--danger);color:var(--danger);font-family:inherit;font-size:0.78rem;font-weight:600;padding:6px 14px;border-radius:99px;cursor:pointer;">取消訂單</button></div>' : '')+
         (o.status==='done' ? reviewRow11(o) : '')+
@@ -614,6 +617,23 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   /* 案家取消自己的訂單:軟取消,status 改 cancelled(不是真刪除,後台仍查得到)。
      條件帶 client_id=本人 且 status 在 媒合中/待服務,服務中/已完成不給取消。
      取消成功後重整,因為已被濾掉所以不再出現。 */
+  /* 案家回報順咖未到:走後台 report_no_show(轉 no_show、退媒合費點數、通知雙方、進後台;信用分等後台確認才扣) */
+  window.reportNoShow = async function(orderId){
+    if(!confirm('確定回報這筆「順咖未到」嗎?\n送出後這筆會結束,你付的媒合費點數會退回(折抵用掉的金幣不退)。\n平台會再跟進處理。')) return;
+    var res = await sb.rpc('report_no_show', { p_order_id: orderId });
+    if(res.error){ alert('回報失敗:' + res.error.message); return; }
+    var r = res.data || {};
+    if(!r.ok){
+      var m = (r.reason==='bad_status') ? '這筆狀態已改變,無法回報,請重新整理。'
+            : (r.reason==='not_overdue') ? '還沒到約定服務時間,暫時不能回報未到。'
+            : (r.reason==='not_owner')   ? '這不是你的訂單。'
+            : '回報失敗,請稍後再試。';
+      alert(m); if(r.reason==='bad_status') location.reload(); return;
+    }
+    alert('已回報順咖未到,媒合費點數已退回 ' + (r.refunded_points||0) + ' 點。平台會再跟進。');
+    location.reload();
+  };
+
   window.cancelClientOrder = async function(orderId, status){
     if(!_clientUserId){ alert('請重新整理頁面後再試'); return; }
     // 待服務(已有順咖接單)後取消:記一次取消、影響取消率,且服務費不退;媒合中取消:不計次,退回點數(金幣不退)
