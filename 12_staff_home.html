@@ -186,6 +186,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 /* 指定你的單:閃動脈衝吸引注意(2026/06/18) */
 .directed-flash{animation:directedPulse 1.4s ease-in-out infinite;}
 @keyframes directedPulse{0%,100%{box-shadow:0 0 0 0 rgba(95,181,142,0);}50%{box-shadow:0 0 0 5px rgba(95,181,142,0.30);}}
+/* 等你幫忙的人 入口(2026/06/18) */
+.help-wall-entry{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,var(--mint-pale),#fff 70%);border:1.5px solid var(--border-mint);border-radius:16px;padding:14px 16px;margin:8px 0 14px;text-decoration:none;color:var(--ink);box-shadow:0 2px 10px rgba(47,96,72,0.06);transition:all 0.2s;}
+.help-wall-entry:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(47,96,72,0.12);}
+.hwe-icon{font-size:1.6rem;line-height:1;}
+.hwe-text{flex:1;}
+.hwe-title{font-weight:700;color:var(--forest);}
+.hwe-sub{font-size:0.74rem;color:var(--ink-soft);margin-top:2px;}
+.hwe-arrow{font-size:1.4rem;color:var(--mint);font-weight:700;}
 .order-card.open-order{border-left:4px solid var(--amber);}
 .order-card.done-order{opacity:0.95;}
 .oc-trust{font-size:0.76rem;color:var(--ink-soft);margin-top:7px;padding-top:7px;border-top:1px dashed var(--border-soft);line-height:1.5;}
@@ -502,6 +510,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
   <div id="await-list"></div>
   </div>
+
+  <!-- 等你幫忙的人 入口 -->
+  <a href="22_help_wall.html" class="help-wall-entry">
+    <div class="hwe-icon">🤝</div>
+    <div class="hwe-text"><div class="hwe-title">等你幫忙的人</div><div class="hwe-sub">看看哪些案家正在找順咖</div></div>
+    <div class="hwe-arrow">›</div>
+  </a>
 
   <!-- 可接任務 -->
   <div class="sec-h">

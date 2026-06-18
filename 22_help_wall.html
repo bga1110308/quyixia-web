@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>等你幫忙的人 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;
+  --champagne:#FFF4DD;--champagne-soft:#FFFCF5;
+  --forest:#2F6048;--mint:#5FB58E;--mint-pale:#E8F5EE;--border-mint:rgba(95,181,142,0.3);
+  --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+  --border:#FFE9B8;--border-soft:#F5EBD8;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--champagne-soft);color:var(--ink);line-height:1.55;padding-bottom:40px;}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--forest);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(47,96,72,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--mint-pale);transform:scale(1.05);border-color:var(--mint);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.head{text-align:center;padding:3rem 1.25rem 1.4rem;background:linear-gradient(135deg,var(--mint-pale) 0%,var(--champagne-soft) 70%);}
+.head h1{font-size:1.4rem;font-weight:700;color:var(--ink);}
+.head p{font-size:0.82rem;color:var(--ink-soft);margin-top:0.5rem;}
+
+.wrap{max-width:520px;margin:0 auto;padding:1rem 1.1rem;}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+
+.client-card{position:relative;background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:20px 16px 18px;text-align:center;cursor:pointer;transition:all 0.25s;overflow:hidden;text-decoration:none;color:var(--ink);display:block;}
+.client-card::before{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.1) 0%,transparent 70%);transition:all 0.3s;}
+.client-card:hover{transform:translateY(-4px);border-color:var(--mint);box-shadow:0 14px 32px rgba(47,96,72,0.16);}
+.cc-avatar{position:relative;width:64px;height:64px;border-radius:50%;background:var(--mint-pale);display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:1.6rem;color:var(--forest);overflow:hidden;box-shadow:inset 0 0 0 1.5px var(--border-mint);}
+.cc-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.cc-name{font-size:1rem;font-weight:600;margin-top:10px;}
+.cc-member{font-size:0.66rem;color:var(--ink-light);margin-top:1px;letter-spacing:0.3px;}
+.cc-count{display:inline-flex;align-items:center;gap:4px;font-size:0.74rem;font-weight:600;color:var(--forest);background:var(--mint-pale);padding:4px 11px;border-radius:99px;margin-top:10px;}
+.cc-hint{font-size:0.7rem;color:var(--amber-deep);font-weight:700;margin-top:10px;}
+
+.empty-note{text-align:center;color:var(--ink-light);padding:3rem 1rem;font-size:0.9rem;}
+.load-note{text-align:center;color:var(--ink-soft);padding:3rem 1rem;font-size:0.9rem;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></symbol>
+</defs>
+</svg>
+
+<a href="12_staff_home.html" class="home-fab" title="返回順咖首頁"><svg><use href="#i-back"/></svg></a>
+
+<div class="head">
+  <h1>等你幫忙的人</h1>
+  <p>這些案家正有單在找順咖，點名片看他的開放單與種子庫</p>
+</div>
+
+<div class="wrap">
+  <div id="list"><div class="load-note">載入中…</div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
+<script src="qyx-load-guard.js"></script>
+<script>
+/* 等你幫忙的人:列出目前有媒合中訂單的案家(get_open_clients 只吐安全欄位:暱稱/頭像/編號/開放單數)。
+   點名片進 21_client_profile.html 看這位案家的開放單、種子庫、評價。 */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function firstChar(name){ var n=(name||'').trim(); return n ? n.charAt(0) : '案'; }
+
+async function init(){
+  if(typeof window.sb==='undefined'){ document.getElementById('list').innerHTML='<div class="load-note">連線尚未載入</div>'; return; }
+  var s = await sb.auth.getSession();
+  var user = s && s.data && s.data.session ? s.data.session.user : null;
+  if(!user){ location.href='13_login.html'; return; }
+
+  var res = await sb.rpc('get_open_clients');
+  if(res.error){ document.getElementById('list').innerHTML='<div class="empty-note">載入失敗,請稍後再試</div>'; return; }
+  var rows = res.data || [];
+  if(!rows.length){ document.getElementById('list').innerHTML='<div class="empty-note">目前沒有正在找順咖的案家。</div>'; return; }
+
+  var cards = rows.map(function(c){
+    var avatar = c.avatar_url
+      ? '<img src="'+esc(c.avatar_url)+'" alt="頭像">'
+      : esc(firstChar(c.display_name));
+    return '<a class="client-card" href="21_client_profile.html?id='+encodeURIComponent(c.id)+'">'
+      + '<div class="cc-avatar">'+avatar+'</div>'
+      + '<div class="cc-name">'+esc(c.display_name||'案家')+'</div>'
+      + (c.member_no?'<div class="cc-member">'+esc(c.member_no)+'</div>':'')
+      + '<div class="cc-count"><svg width="12" height="12" style="fill:currentColor;"><use href="#i-list"/></svg>'+(c.open_count||0)+' 張待幫忙</div>'
+      + '<div class="cc-hint">點名片看介紹</div>'
+      + '</a>';
+  }).join('');
+  document.getElementById('list').innerHTML = '<div class="grid">'+cards+'</div>';
+}
+
+document.addEventListener('DOMContentLoaded', function(){ qyxGuard(init, { color:'#2F6048' }); });
+</script>
+</body>
+</html>

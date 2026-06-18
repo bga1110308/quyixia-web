@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>案家介紹 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;--amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;--champagne-soft:#FFFCF5;--cream:#FAEEDA;
+  --forest:#2F6048;--forest-deep:#1F4A36;--mint:#5FB58E;--mint-pale:#E8F5EE;--border-mint:rgba(95,181,142,0.3);
+  --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+  --border:#FFE9B8;--border-soft:#F5EBD8;
+  --warn:#E89544;--warn-pale:#FFF1E0;--danger:#D9534F;--danger-pale:#FCE8E7;--info:#3A7CB8;--info-pale:#E8F1F8;
+  --gold:#E0A93C;--gold-soft:#FFF6E0;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--champagne-soft);color:var(--ink);line-height:1.55;padding-bottom:40px;}
+.icon{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--forest);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(47,96,72,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--mint-pale);transform:scale(1.05);border-color:var(--mint);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.wrap{max-width:480px;margin:0 auto;padding:0 1.1rem;}
+
+/* 頁頭(案家=綠色系) */
+.profile-head{position:relative;text-align:center;padding:3.2rem 1.25rem 1.6rem;background:linear-gradient(135deg,var(--mint-pale) 0%,var(--champagne-soft) 60%,var(--champagne) 100%);overflow:hidden;}
+.profile-head::before{content:'';position:absolute;top:-80px;right:-90px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.18) 0%,transparent 70%);}
+.profile-head > *{position:relative;z-index:1;}
+.pf-avatar{position:relative;width:84px;height:84px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:2.1rem;color:var(--forest);box-shadow:0 4px 14px rgba(47,96,72,0.2),inset 0 0 0 1.5px var(--border-mint);overflow:hidden;}
+.pf-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.pf-name{font-size:1.5rem;font-weight:600;color:var(--ink);margin-top:0.7rem;letter-spacing:-0.3px;}
+.pf-member{font-size:0.72rem;color:var(--ink-light);margin-top:2px;letter-spacing:0.3px;}
+.pf-tagline{font-size:0.8rem;color:var(--ink-soft);margin-top:0.5rem;}
+
+/* 數據兩格 */
+.stat-row{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:1.2rem 0 0.4rem;}
+.stat-box{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:0.9rem 0.5rem;text-align:center;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.stat-box .lbl{font-size:0.68rem;color:var(--ink-light);font-weight:600;margin-bottom:4px;}
+.stat-box .val{font-size:1.05rem;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:3px;}
+.stat-box .val svg{width:0.95em;height:0.95em;fill:var(--amber);}
+.stat-box .sub{font-size:0.66rem;color:var(--ink-soft);font-weight:500;margin-top:1px;}
+
+/* 區塊卡 */
+.section-card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.2rem;margin-top:1rem;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.sec-title{font-size:0.92rem;font-weight:600;color:var(--ink);margin-bottom:0.9rem;display:flex;align-items:center;gap:8px;}
+.sec-title::before{content:'';display:block;width:4px;height:17px;background:linear-gradient(180deg,var(--mint),var(--forest));border-radius:2px;}
+.sec-title svg{width:15px;height:15px;fill:var(--forest);}
+
+/* 開放中的訂單 */
+.oo-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0.75rem 0;border-bottom:1px solid var(--border-soft);text-decoration:none;color:var(--ink);}
+.oo-item:last-child{border-bottom:none;}
+.oo-type{font-size:0.9rem;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.oo-pool{font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:99px;}
+.oo-pool.a{background:var(--mint-pale);color:var(--forest);}
+.oo-pool.b{background:var(--warn-pale);color:var(--warn);}
+.oo-meta{font-size:0.72rem;color:var(--ink-soft);margin-top:3px;}
+.oo-amount{font-size:0.98rem;font-weight:700;color:var(--amber-deep);white-space:nowrap;}
+
+/* 種子庫 */
+.seed-prog{font-size:0.78rem;color:var(--ink-soft);font-weight:600;margin-bottom:0.8rem;}
+.seed-prog b{color:var(--amber-darker);}
+.dex-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px 8px;}
+.cell{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;}
+.seedwrap{position:relative;display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;}
+.seedshape{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(45deg);background:linear-gradient(150deg,#FFF7E4,#FFE3AC);border:1.6px solid var(--gold);box-shadow:inset 0 -2px 6px rgba(186,117,23,0.12),0 3px 8px rgba(186,117,23,0.12);}
+.seedshape .emj{transform:rotate(-45deg);line-height:1;font-size:1.35rem;}
+.seedshape.locked{background:linear-gradient(150deg,#F2ECDD,#E6DCC6);border-color:#D8CBAE;box-shadow:inset 0 -2px 6px rgba(0,0,0,0.04);}
+.seedshape.locked .emj{color:var(--ink-light);opacity:0.55;}
+.seedshape.fine{border-color:#7FB0D8;background:linear-gradient(150deg,#EAF3FB,#CFE4F5);}
+.seedshape.rare{border-color:#B79AD8;background:linear-gradient(150deg,#F3ECFB,#E0CFF3);}
+.seedshape.gold{border-color:var(--gold);background:linear-gradient(150deg,#FFF3CF,#FFD980);}
+.sprout{position:absolute;left:50%;top:-6px;transform:translateX(-50%);z-index:2;color:var(--mint);pointer-events:none;}
+.sprout svg{width:14px;height:14px;fill:currentColor;display:block;}
+.cell .nm{font-size:0.6rem;color:var(--ink-soft);line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cell .xn{font-size:0.6rem;color:var(--amber-deep);font-weight:700;}
+
+/* 匿名評價 */
+.rv-item{padding:0.8rem 0;border-bottom:1px solid var(--border-soft);}
+.rv-item:last-child{border-bottom:none;}
+.rv-stars{color:var(--amber);font-size:0.82rem;letter-spacing:1px;}
+.rv-date{font-size:0.66rem;color:var(--ink-light);float:right;font-weight:500;margin-top:3px;}
+.rv-comment{font-size:0.85rem;color:var(--ink);line-height:1.6;margin-top:4px;}
+.rv-locked{font-size:0.72rem;color:var(--amber-deep);cursor:pointer;text-decoration:underline;}
+
+.empty-note{font-size:0.82rem;color:var(--ink-light);text-align:center;padding:1.5rem 1rem;}
+.load-note{text-align:center;color:var(--ink-soft);padding:3rem 1rem;font-size:0.9rem;}
+
+/* 解鎖視窗(沿用 redeem_info 流程,順咖付費看完整評價) */
+.modal-overlay{position:fixed;inset:0;background:rgba(61,41,20,0.5);z-index:9999;display:none;align-items:center;justify-content:center;padding:1.5rem;}
+.modal-overlay.show{display:flex;}
+.modal-box{background:#fff;border-radius:22px;padding:1.6rem 1.4rem;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(47,96,72,0.25);}
+.modal-box h3{font-size:1.1rem;color:var(--ink);text-align:center;margin-bottom:0.4rem;}
+.modal-box .ul-bal{font-size:0.8rem;color:var(--ink-soft);text-align:center;margin-bottom:1.1rem;}
+.modal-box .ul-bal b{color:var(--amber-darker);}
+.ul-opt{display:flex;justify-content:space-between;align-items:center;width:100%;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:0.9rem 1.1rem;margin-bottom:0.7rem;font-size:0.92rem;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;transition:all 0.2s;}
+.ul-opt:hover{border-color:var(--mint);background:var(--mint-pale);}
+.ul-opt-month{border-color:var(--mint);background:var(--mint-pale);}
+.ul-opt .cost{color:var(--forest);}
+.ul-topup{display:block;text-align:center;font-size:0.78rem;color:var(--forest);margin:0.3rem 0 0.8rem;cursor:pointer;text-decoration:underline;}
+.cm-cancel{width:100%;background:none;border:none;color:var(--ink-soft);font-size:0.85rem;cursor:pointer;font-family:inherit;padding:0.4rem;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 24 24"><path d="M11.3 21.5c-.05-3.3.05-5.3.5-7.2-2.6.2-4.9-.4-6.6-2-1.4-1.3-2-3-2-4.8 2.6-.2 4.9.4 6.6 2 .9.85 1.5 1.85 1.85 3 .35-1.6 1.15-2.95 2.4-4.05 1.9-1.65 4.45-2.2 7-2-.15 2.6-1 4.85-2.9 6.5-1.65 1.45-3.8 2-6 1.95-.5 1.85-.6 3.85-.55 6.6h-.3z"/></symbol>
+  <symbol id="i-seed" viewBox="0 0 24 24"><path d="M12 2C7 6 6 11 8 16c1.2 3 3.6 5 4 6 .4-1 2.8-3 4-6 2-5 1-10-4-14z"/></symbol>
+</defs>
+</svg>
+
+<a href="22_help_wall.html" class="home-fab" title="返回等你幫忙的人"><svg><use href="#i-back"/></svg></a>
+
+<div id="page-body">
+  <div class="load-note" id="load-note">載入中…</div>
+</div>
+
+<!-- 解鎖視窗(順咖付費看完整評價) -->
+<div class="modal-overlay" id="unlock-modal" onclick="if(event.target===this)closeUnlockModal()">
+  <div class="modal-box">
+    <h3>解鎖完整評價</h3>
+    <div class="ul-bal">你目前有 <b id="ul-balance">0</b> 點</div>
+    <button class="ul-opt" onclick="doRedeem('single')"><span>只看這位案家</span><span class="cost"><span id="ul-cost-single">10</span> 點</span></button>
+    <button class="ul-opt ul-opt-month" onclick="doRedeem('month')"><span>30 天看全部案家</span><span class="cost"><span id="ul-cost-month">80</span> 點</span></button>
+    <span class="ul-topup" onclick="goBuyForUnlock()">點數不足？去儲值</span>
+    <button class="cm-cancel" onclick="closeUnlockModal()">取消</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
+<script src="qyx-load-guard.js"></script>
+<script>
+/* 案家介紹頁(順咖從「等你幫忙的人」點案家小卡進來看)。資料來源:
+   get_client_profile(暱稱/頭像/編號,跨權限只吐安全欄位) + 直接讀這位案家的媒合中訂單(RLS 本就放行順咖讀媒合中單)
+   + get_user_seeds(種子庫,守雙池+隱藏開關,client 池) + 既有評價函式(順咖評案家 suncar_reviews_client)。
+   只呈現,不外送真名電話地址;完整評價走後台付費判斷。 */
+
+var TARGET = new URLSearchParams(location.search).get('id') || '';
+
+var RARITY = { normal:{label:'普通',cls:''}, fine:{label:'高級',cls:'fine'}, rare:{label:'稀有',cls:'rare'}, gold:{label:'金',cls:'gold'} };
+
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function firstChar(name){ var n=(name||'').trim(); return n ? n.charAt(0) : '案'; }
+function fmtDateTime(s){
+  try{ var d=new Date(s); var mm=('0'+(d.getMonth()+1)).slice(-2); var dd=('0'+d.getDate()).slice(-2);
+       var hh=('0'+d.getHours()).slice(-2); var mi=('0'+d.getMinutes()).slice(-2);
+       return mm+'/'+dd+' '+hh+':'+mi; }catch(e){ return ''; }
+}
+
+async function init(){
+  if(typeof window.sb==='undefined'){ showError('連線尚未載入'); return; }
+  var s = await sb.auth.getSession();
+  var user = s && s.data && s.data.session ? s.data.session.user : null;
+  if(!user){ location.href='13_login.html'; return; }
+  if(!TARGET){ showError('沒有指定要看哪位案家'); return; }
+
+  /* 解鎖視窗用的價目與順咖點數餘額(順咖付費看完整評價,扣 suncar 池) */
+  var meRes = await sb.from('users').select('suncar_points').eq('id', user.id).maybeSingle();
+  var me = (meRes && meRes.data) ? meRes.data : {};
+  var cfgRes = await sb.from('app_config').select('price_suncar_single,price_suncar_month').eq('id',1).maybeSingle();
+  var cfg = (cfgRes && cfgRes.data) ? cfgRes.data : {};
+  window.UNLOCK = { single:(cfg.price_suncar_single==null?10:cfg.price_suncar_single), month:(cfg.price_suncar_month==null?80:cfg.price_suncar_month), points:(me.suncar_points||0), target:TARGET };
+
+  /* 案家基本資料(只吐暱稱/頭像/編號的安全函式) */
+  var profRes = await sb.rpc('get_client_profile', { p_target: TARGET });
+  var prof = (profRes && profRes.data && profRes.data.length) ? profRes.data[0] : null;
+  if(!prof){ showError('找不到這位案家,可能已停用'); return; }
+
+  /* 其餘平行抓:這位案家的媒合中訂單 + 評價彙總 + 匿名評價 + 種子庫(client 池) */
+  var ids = [TARGET];
+  var results = await Promise.all([
+    sb.from('orders').select('id,order_no,service_type,pool,service_district,service_time,duration_minutes,amount').eq('client_id', TARGET).eq('status','matching').is('suncar_id', null).order('service_time',{ascending:true}),
+    sb.rpc('get_review_stats_batch', { p_targets: ids, p_mode: 'suncar_reviews_client' }),
+    sb.rpc('get_public_reviews', { p_reviewee: TARGET, p_mode: 'suncar_reviews_client' }),
+    sb.rpc('get_user_seeds', { p_target: TARGET, p_pool: 'client' })
+  ]);
+
+  var data = {
+    prof: prof,
+    openOrders: (results[0] && results[0].data) ? results[0].data : [],
+    review: (results[1] && results[1].data && results[1].data.length) ? results[1].data[0] : null,
+    publicReviews: (results[2] && results[2].data) ? results[2].data : [],
+    seeds: (results[3] && results[3].data) ? results[3].data : []
+  };
+  render(data);
+}
+
+function render(d){
+  var prof = d.prof;
+  var html = '';
+
+  /* 頁頭 */
+  var avatarInner = prof.avatar_url
+    ? '<img src="'+esc(prof.avatar_url)+'" alt="頭像">'
+    : esc(firstChar(prof.display_name));
+  html += '<div class="profile-head">';
+  html += '<div class="pf-avatar">'+avatarInner+'</div>';
+  html += '<div class="pf-name">'+esc(prof.display_name||'案家')+'</div>';
+  if(prof.member_no) html += '<div class="pf-member">'+esc(prof.member_no)+'</div>';
+  html += '<div class="pf-tagline">正在等你幫忙的案家</div>';
+  html += '</div>';
+
+  html += '<div class="wrap">';
+
+  /* 數據兩格:評價 / 開放中訂單 */
+  html += '<div class="stat-row">';
+  var rv = d.review;
+  var ratingVal = (rv && rv.enough) ? '<svg><use href="#i-star"/></svg>'+Number(rv.overall_avg).toFixed(1) : '—';
+  var ratingSub = (rv && rv.enough) ? rv.cnt+' 則評價' : '尚無足夠評價';
+  html += '<div class="stat-box"><div class="lbl">順咖給的評價</div><div class="val">'+ratingVal+'</div><div class="sub">'+ratingSub+'</div></div>';
+  html += '<div class="stat-box"><div class="lbl">開放中的單</div><div class="val">'+d.openOrders.length+'</div><div class="sub">'+(d.openOrders.length?'點下方可接':'目前沒有')+'</div></div>';
+  html += '</div>';
+
+  /* 開放中的訂單 */
+  if(d.openOrders.length){
+    html += card('i-list','開放中的單', renderOpenOrders(d.openOrders));
+  }
+
+  /* 種子庫(client 池)。隱藏或無圖鑑時 get_user_seeds 回空,整塊不顯示 */
+  if(d.seeds.length){
+    html += card('i-seed','種子庫', renderSeedbox(d.seeds));
+  }
+
+  /* 匿名評價留言(順咖評這位案家) */
+  if(d.publicReviews.length){
+    html += card('i-chat','順咖們的評價', renderPublicReviews(d.publicReviews));
+  }
+
+  if(!d.openOrders.length && !d.seeds.length && !d.publicReviews.length){
+    html += '<div class="empty-note">這位案家目前沒有公開的資料。</div>';
+  }
+
+  html += '</div>'; /* /wrap */
+
+  document.getElementById('page-body').innerHTML = html;
+}
+
+function card(icon,title,body){
+  return '<div class="section-card"><div class="sec-title"><svg><use href="#'+icon+'"/></svg>'+title+'</div>'+body+'</div>';
+}
+
+function renderOpenOrders(rows){
+  return rows.map(function(o){
+    var isB = (o.pool === 'B');
+    var t = o.service_time ? fmtDateTime(o.service_time) : '';
+    var hrs = o.duration_minutes ? (Math.round(o.duration_minutes/60*10)/10 + ' 小時') : '';
+    var meta = [esc(o.service_district||''), esc(t), hrs ? esc(hrs) : ''].filter(Boolean).join(' · ');
+    return '<a class="oo-item" href="10_order_detail.html?id='+esc(o.id)+'">'
+      + '<div><div class="oo-type">'+esc(o.service_type||'服務')+'<span class="oo-pool '+(isB?'b':'a')+'">'+(isB?'照服員':'一般')+'</span></div>'
+      + '<div class="oo-meta">'+meta+'</div></div>'
+      + '<div class="oo-amount">$ '+esc(o.amount==null?'-':o.amount)+'</div></a>';
+  }).join('');
+}
+
+function renderSeedbox(seeds){
+  var got=0, total=seeds.length, cells='';
+  seeds.forEach(function(s){
+    var r = RARITY[s.rarity] ? s.rarity : 'normal';
+    var cls = RARITY[r].cls;
+    var have = s.cnt || 0;
+    var hasIt = have > 0;
+    if(hasIt) got++;
+    var shapeCls = 'seedshape'+(cls?' '+cls:'')+(hasIt?'':' locked');
+    var emj = hasIt ? esc(s.emoji) : '?';
+    var nm = hasIt ? esc(s.name) : '？？？';
+    var sprout = hasIt ? '<span class="sprout"><svg><use href="#i-sprout"/></svg></span>' : '';
+    var xn = (have>1) ? '<span class="xn">×'+have+'</span>' : '';
+    cells += '<div class="cell">'
+           +   '<div class="seedwrap">'+sprout+'<div class="'+shapeCls+'"><span class="emj">'+emj+'</span></div></div>'
+           +   '<div class="nm">'+nm+' '+xn+'</div>'
+           + '</div>';
+  });
+  return '<div class="seed-prog">已收集 <b>'+got+'</b> / '+total+' 種</div><div class="dex-grid">'+cells+'</div>';
+}
+
+function renderPublicReviews(rows){
+  return rows.map(function(r){
+    var stars = avgStars(r.ratings);
+    var date = r.created_at ? String(r.created_at).slice(0,10) : '';
+    var comment = r.comment ? esc(r.comment) + (r.truncated ? ' <span class="rv-locked" onclick="openUnlockModal()">…解鎖看完整</span>' : '') : '<span style="color:var(--ink-light);">(無文字評價)</span>';
+    return '<div class="rv-item"><span class="rv-date">'+esc(date)+'</span><div class="rv-stars">'+stars+'</div><div class="rv-comment">'+comment+'</div></div>';
+  }).join('');
+}
+
+function avgStars(ratings){
+  if(!ratings || typeof ratings!=='object') return '★★★★★';
+  var vals=[]; for(var k in ratings){ if(typeof ratings[k]==='number') vals.push(ratings[k]); }
+  if(!vals.length) return '★★★★★';
+  var avg = Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length);
+  avg = Math.max(1, Math.min(5, avg));
+  return '★★★★★'.slice(0,avg) + '☆☆☆☆☆'.slice(0,5-avg);
+}
+
+function showError(msg){ document.getElementById('page-body').innerHTML = '<div class="load-note">'+esc(msg)+'</div>'; }
+
+/* === 解鎖視窗(沿用 redeem_info,順咖看完整評價,扣 suncar 池) === */
+function openUnlockModal(){
+  var U = window.UNLOCK || { single:10, month:80, points:0, target:TARGET };
+  document.getElementById('ul-balance').textContent = U.points;
+  document.getElementById('ul-cost-single').textContent = U.single;
+  document.getElementById('ul-cost-month').textContent = U.month;
+  document.getElementById('unlock-modal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeUnlockModal(){
+  document.getElementById('unlock-modal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function goBuyForUnlock(){
+  try { sessionStorage.setItem('credits_pool','suncar'); sessionStorage.setItem('credits_returnTo','21_client_profile.html?id='+encodeURIComponent(TARGET)); } catch(e){}
+  location.href = '16_buy_credits.html';
+}
+async function doRedeem(kind){
+  if(typeof window.sb==='undefined'){ alert('系統載入中,請稍候再試'); return; }
+  var target = (kind==='single') ? TARGET : null;
+  var r = await sb.rpc('redeem_info', { p_kind:kind, p_as:'suncar', p_target:target });
+  if(r.error){
+    var msg = r.error.message || '解鎖失敗';
+    if(msg.indexOf('點數不足')>=0){ if(confirm(msg+'\n\n要去儲值嗎?')) goBuyForUnlock(); return; }
+    alert('解鎖失敗:'+msg); return;
+  }
+  alert(kind==='month' ? '已開通月票,30 天內可看全部案家完整評價' : '已解鎖這位案家的完整評價');
+  location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', function(){ qyxGuard(init, { color:'#2F6048' }); });
+</script>
+</body>
+</html>
