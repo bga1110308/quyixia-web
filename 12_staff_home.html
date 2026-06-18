@@ -183,6 +183,9 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .order-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(47,96,72,0.1);border-color:var(--border-mint);}
 .order-card.active-order{border-left:4px solid var(--amber);background:linear-gradient(135deg,var(--champagne-soft),#fff 60%);}
 .order-card.preferred{border-left:4px solid var(--mint);background:linear-gradient(135deg,var(--mint-pale),#fff 60%);}
+/* 指定你的單:閃動脈衝吸引注意(2026/06/18) */
+.directed-flash{animation:directedPulse 1.4s ease-in-out infinite;}
+@keyframes directedPulse{0%,100%{box-shadow:0 0 0 0 rgba(95,181,142,0);}50%{box-shadow:0 0 0 5px rgba(95,181,142,0.30);}}
 .order-card.open-order{border-left:4px solid var(--amber);}
 .order-card.done-order{opacity:0.95;}
 .oc-trust{font-size:0.76rem;color:var(--ink-soft);margin-top:7px;padding-top:7px;border-top:1px dashed var(--border-soft);line-height:1.5;}
@@ -468,6 +471,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div id="noshow-list"></div>
   </div>
 
+  <!-- 指定你的單(案家指定保留給你,限時內只有你能接;放最上面、會閃動提醒) -->
+  <div id="directed-section" style="display:none;">
+  <div class="sec-h">
+    <div class="sec-title">指定你的單<span class="badge" id="directed-badge">0 筆</span></div>
+  </div>
+  <div id="directed-list"></div>
+  </div>
+
   <!-- 待服務(已接單、約定時間還沒開始) -->
   <div id="pending-section" style="display:none;">
   <div class="sec-h">
@@ -490,14 +501,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="sec-title">等待案家確認</div>
   </div>
   <div id="await-list"></div>
-  </div>
-
-  <!-- 指定你的單(案家指定保留給你,限時內只有你能接) -->
-  <div id="directed-section" style="display:none;">
-  <div class="sec-h">
-    <div class="sec-title">指定你的單<span class="badge" id="directed-badge">0 筆</span></div>
-  </div>
-  <div id="directed-list"></div>
   </div>
 
   <!-- 可接任務 -->
@@ -771,7 +774,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
   function directedCard(o){
     var until = o.reserved_until ? new Date(o.reserved_until) : null;
     var tleft = until ? Math.max(0, Math.round((until.getTime() - Date.now())/60000)) : 0;
-    return '<div class="order-card preferred" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'
+    return '<div class="order-card preferred directed-flash" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'
       + head(o, '<span class="preferred-mark"><svg><use href="#i-star"/></svg>指定給你</span>')
       + metaRow(o)
       + '<div style="font-size:0.74rem;color:var(--forest);margin:6px 0 2px;">案家指定你接這張單,保留約剩 '+tleft+' 分鐘。逾時沒接會自動轉公開單。</div>'
