@@ -124,6 +124,12 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <span id="success-text">儲值成功!</span>
   </div>
 
+  <!-- 有未確認入帳的加值就提醒,避免重複匯款 -->
+  <div id="pending-warn" style="display:none;align-items:center;gap:8px;background:var(--warn-pale);border:1.5px solid var(--warn);color:var(--warn);padding:12px 14px;border-radius:14px;margin-bottom:14px;font-size:0.85rem;line-height:1.6;">
+    <svg style="width:18px;height:18px;fill:currentColor;flex-shrink:0;"><use href="#i-info"/></svg>
+    <span id="pending-warn-text"></span>
+  </div>
+
   <!-- 目前點數(雙池) -->
   <div class="balance-grid">
     <div class="balance-card client">
@@ -270,8 +276,25 @@ function checkSuccess() {
   }
 }
 
+/* 進頁查有沒有未確認入帳的加值,有就在上方提醒(避免案家以為沒成功而重複匯款) */
+async function checkPendingTopup(){
+  if (typeof window.sb === 'undefined') return;
+  var sres = await sb.auth.getSession();
+  var user = (sres.data && sres.data.session) ? sres.data.session.user : null;
+  if (!user) return;
+  var q = await sb.from('topup_requests').select('amount,points').eq('user_id', user.id).eq('status', 'pending').order('created_at', { ascending: false });
+  var rows = (q && q.data) ? q.data : [];
+  if (!rows.length) return;
+  var r = rows[0];
+  var tx = document.getElementById('pending-warn-text');
+  if (tx) tx.innerHTML = '你有 ' + rows.length + ' 筆加值還在等平台確認入帳(最近一筆 NT$' + r.amount + ' → ' + r.points + ' 點)。確認通常 3~5 個工作天,確認後點數才會進帳。如果只是還沒入帳,先不用重複匯款。';
+  var el = document.getElementById('pending-warn');
+  if (el) el.style.display = 'flex';
+}
+
 async function init() {
   await refreshBalance();
+  checkPendingTopup();
 
   /* 讀來源頁設定的池(預設,不鎖死;使用者仍可手動切換) */
   var pool = '';

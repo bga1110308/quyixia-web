@@ -53,6 +53,9 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .role-switch-link:hover{background:var(--mint);color:#fff;}
 
 /* === HERO === */
+/* 未送出草稿卡的閃動:吸引案家注意「這張單還沒送出」 */
+@keyframes draftFlash{0%,100%{box-shadow:0 0 0 0 rgba(239,159,39,0),0 4px 14px rgba(239,159,39,0.18);border-color:var(--amber);}50%{box-shadow:0 0 0 6px rgba(239,159,39,0.30),0 6px 20px rgba(239,159,39,0.38);border-color:var(--amber-deep);}}
+.draft-flash{animation:draftFlash 1.2s ease-in-out infinite;}
 .hero{background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 55%,var(--mint-pale) 100%);padding:1.75rem 1.25rem 1.5rem;position:relative;overflow:hidden;}
 .hero::before{content:'';position:absolute;top:-80px;right:-80px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.18) 0%,transparent 70%);pointer-events:none;}
 .hero::after{content:'';position:absolute;bottom:-100px;left:-80px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.15) 0%,transparent 70%);pointer-events:none;}
@@ -323,6 +326,9 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <span class="fs-cta-arrow">→</span>
   </a>
 
+  <!-- ============ 未送出的草稿單:點數不足存起來,點數到了一鍵發布(放在下單入口下面,最明顯) ============ -->
+  <div id="draft-section" style="display:none;margin-bottom:14px;"></div>
+
   <!-- ============ 數據概覽 ============ -->
   <div class="sec-h">
     <div class="sec-title">我的訂單概況</div>
@@ -358,9 +364,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div id="cancel-stat" style="display:none;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:14px;font-size:0.86rem;color:var(--ink-soft);">
     我的取消率:<b id="cancel-rate" style="color:var(--ink);">0%</b> <span style="color:var(--ink-light);">(待服務後取消 <span id="cancel-cnt">0</span> 次)</span>
   </div>
-
-  <!-- ============ 未送出的草稿單:點數不足存起來,點數到了一鍵發布 ============ -->
-  <div id="draft-section" style="display:none;margin-bottom:14px;"></div>
 
   <!-- ============ 媒合中:還沒被順咖接的單,等待接單 ============ -->
   <div id="matching-section" style="display:none;">
@@ -746,7 +749,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       stateHtml = '<div style="font-size:0.78rem;color:var(--amber-deep);margin-top:6px;">點數還差 '+(need-pts-coins)+' 點,儲值入帳後就能發布</div>';
       btnHtml = '<button onclick="window.draftTopup()" style="'+btnStyle+'">先去儲值</button>';
     }
-    sec.innerHTML = '<div style="background:#fff;border:1.5px solid var(--amber);border-radius:16px;padding:14px 16px;box-shadow:0 4px 14px rgba(239,159,39,0.12);">'
+    sec.innerHTML = '<div class="draft-flash" style="background:#fff;border:1.5px solid var(--amber);border-radius:16px;padding:14px 16px;">'
       + '<div style="display:flex;align-items:center;gap:6px;font-size:0.82rem;font-weight:600;color:var(--amber-deep);margin-bottom:8px;"><svg style="width:1em;height:1em;fill:currentColor;"><use href="#i-edit"/></svg>未送出的草稿單</div>'
       + info + stateHtml
       + '<div style="display:flex;gap:8px;margin-top:12px;">'+btnHtml
