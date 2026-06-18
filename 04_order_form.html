@@ -1193,6 +1193,36 @@ function handleSubmit() {
   submitOrder(payload, rateCheck);
 }
 
+/* === 草稿單(伺服器端,綁帳號) ===
+   點數不足去匯款時把整張單存進 order_drafts(綁 user_id),換裝置/隔幾天/重新登入都還在;
+   發布成功就刪掉。發布一律走既有 submitOrder→place_order,不另開一套扣點流程(治本,邏輯不散落)。 */
+async function saveServerDraft(uid, payload){
+  try { await sb.from('order_drafts').upsert({ user_id: uid, payload: payload, updated_at: new Date().toISOString() }); }
+  catch(e){ console.error('存草稿失敗', e); }
+}
+async function deleteServerDraft(uid){
+  try { await sb.from('order_drafts').delete().eq('user_id', uid); } catch(e){}
+}
+/* 從首頁草稿卡按「發布」(04?draft=1):讀伺服器草稿→驗服務時間沒過→走 submitOrder 送出 */
+async function publishDraftFromServer(){
+  if (typeof window.sb === 'undefined') { setTimeout(publishDraftFromServer, 300); return; }
+  var sres = await sb.auth.getSession();
+  var user = (sres.data && sres.data.session) ? sres.data.session.user : null;
+  if (!user) { try{ sessionStorage.setItem('post_login_return','04_order_form.html?draft=1'); }catch(e){} window.location.href='13_login.html'; return; }
+  var d = await sb.from('order_drafts').select('payload').eq('user_id', user.id).maybeSingle();
+  var payload = (d && d.data && d.data.payload) ? d.data.payload : null;
+  if (!payload) { alert('找不到草稿單,可能已發布或刪除。'); window.location.href='04_order_form.html'; return; }
+  /* 服務時間已過不能直接發(會變沒人能接的過期單),請她回去重選時間 */
+  if (payload.service_time && new Date(payload.service_time).getTime() < Date.now()) {
+    alert('這張草稿單的服務時間已經過了,請重新選擇時間後再送出。');
+    window.location.href='04_order_form.html';
+    return;
+  }
+  alert('正在幫你發布剛才那張單');
+  if (typeof qyxConsentGate === 'function') { qyxConsentGate({ color:'#EF9F27' }).then(function(){ submitOrder(payload, null); }); }
+  else { submitOrder(payload, null); }
+}
+
 async function submitOrder(payload, rateCheck) {
   if (typeof window.sb === 'undefined') { alert('系統未就緒,請重新整理頁面後再試'); return; }
 
@@ -1228,9 +1258,10 @@ async function submitOrder(payload, rateCheck) {
     var pts = (pr.data && pr.data.client_points != null) ? pr.data.client_points : 0;
     var cbRes = await sb.rpc('coin_balance', { p_user: user.id, p_pool: 'client' });
     var coins = (cbRes && cbRes.data != null) ? cbRes.data : 0;
-    var feeNeed = orderFeeVal();
+    var feeNeed = (payload && payload.points_cost != null) ? payload.points_cost : orderFeeVal();
     if (pts + coins < feeNeed) {
-      alert('餘額不足:服務費 ' + feeNeed + ' 點(可用金幣折抵)。目前金幣 ' + coins + '、點數 ' + pts + ',先帶你去加值。');
+      alert('餘額不足:服務費 ' + feeNeed + ' 點(可用金幣折抵)。目前金幣 ' + coins + '、點數 ' + pts + ',先帶你去加值。匯款確認後可從首頁草稿卡一鍵發布,不用再填一次。');
+      await saveServerDraft(user.id, payload);
       try {
         sessionStorage.setItem('pending_order', JSON.stringify(payload));
         sessionStorage.setItem('credits_returnTo', '04_order_form.html?resume=1');
@@ -1252,7 +1283,8 @@ async function submitOrder(payload, rateCheck) {
     var r = res.data || {};
     if (!r.ok) {
       if (r.reason === 'insufficient') {
-        alert('餘額不足:服務費 ' + (r.cost != null ? r.cost : 50) + ' 點(可用金幣折抵)。目前金幣 ' + (r.coins != null ? r.coins : 0) + '、點數 ' + (r.balance != null ? r.balance : 0) + ',先帶你去加值。');
+        alert('餘額不足:服務費 ' + (r.cost != null ? r.cost : 50) + ' 點(可用金幣折抵)。目前金幣 ' + (r.coins != null ? r.coins : 0) + '、點數 ' + (r.balance != null ? r.balance : 0) + ',先帶你去加值。匯款確認後可從首頁草稿卡一鍵發布,不用再填一次。');
+        await saveServerDraft(user.id, payload);
         try {
           sessionStorage.setItem('pending_order', JSON.stringify(payload));
           sessionStorage.setItem('credits_returnTo', '04_order_form.html?resume=1');
@@ -1290,6 +1322,7 @@ async function submitOrder(payload, rateCheck) {
     if (rateCheck) recordOrder(rateCheck);
 
     try { sessionStorage.removeItem('pending_order'); } catch(e){}
+    await deleteServerDraft(user.id); /* 單已送出,清掉伺服器草稿 */
     var doneMsg = coinUsed > 0
       ? ('下單成功!本次用 ' + coinUsed + ' 金幣折抵' + (ptUsed > 0 ? ('、扣 ' + ptUsed + ' 點') : '(不扣點數)') + ',剩餘 ' + remain + ' 點、金幣 ' + coinRemain + '。')
       : ('下單成功!已扣 ' + ptUsed + ' 點,目前剩餘 ' + remain + ' 點。');
@@ -1309,6 +1342,9 @@ async function submitOrder(payload, rateCheck) {
 
 (function(){
   var params = new URLSearchParams(window.location.search);
+
+  /* 從首頁草稿卡按「發布」進來:讀伺服器草稿、驗時間後走 submitOrder 送出(不用再填一次) */
+  if (params.get('draft') === '1') { publishDraftFromServer(); return; }
 
   /* 從加值頁或登入頁回來:自動完成剛才未送出的訂單。
      兩條路都會走到這:①點數不足去 16 加值回來 ②未登入去 13 登入(新用戶再經 18)回來。
