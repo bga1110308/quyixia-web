@@ -492,6 +492,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div id="await-list"></div>
   </div>
 
+  <!-- 指定你的單(案家指定保留給你,限時內只有你能接) -->
+  <div id="directed-section" style="display:none;">
+  <div class="sec-h">
+    <div class="sec-title">指定你的單<span class="badge" id="directed-badge">0 筆</span></div>
+  </div>
+  <div id="directed-list"></div>
+  </div>
+
   <!-- 可接任務 -->
   <div class="sec-h">
     <div class="sec-title">可接任務<span class="badge" id="open-badge">0 筆</span></div>
@@ -759,6 +767,32 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     var prio = perks.priority_badge ? '<span style="display:inline-block;background:#EF9F27;color:#fff;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:6px;vertical-align:middle;">優先</span>' : '';
     return '<div class="'+cls+'" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o, pinTag+'<span class="status-tag s-open">可接單</span>'+prio)+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"><button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button></div>'+price(o)+'</div></div>';
   }
+  /* 指定你的單:案家指定保留給你,限時內只有你能接;可接、也可婉拒(婉拒後立刻轉公開) */
+  function directedCard(o){
+    var until = o.reserved_until ? new Date(o.reserved_until) : null;
+    var tleft = until ? Math.max(0, Math.round((until.getTime() - Date.now())/60000)) : 0;
+    return '<div class="order-card preferred" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'
+      + head(o, '<span class="preferred-mark"><svg><use href="#i-star"/></svg>指定給你</span>')
+      + metaRow(o)
+      + '<div style="font-size:0.74rem;color:var(--forest);margin:6px 0 2px;">案家指定你接這張單,保留約剩 '+tleft+' 分鐘。逾時沒接會自動轉公開單。</div>'
+      + '<div class="oc-bottom"><div class="oc-actions">'
+      + '<button class="btn btn-green" onclick="event.stopPropagation(); window.takeOrder(\''+esc(o.id)+'\', this)">接單</button>'
+      + '<button class="btn btn-outline" onclick="event.stopPropagation(); window.declineDirected(\''+esc(o.id)+'\', this)">婉拒</button>'
+      + '</div>'+price(o)+'</div></div>';
+  }
+  /* 婉拒指定單:呼叫後台 decline_directed_order,後台驗本人＋保留中才放行,並立刻釋出給其他順咖 */
+  window.declineDirected = async function(orderId, btnEl){
+    if(!confirm('確定婉拒這張指定單嗎?\n婉拒後這張單會立刻改成公開單,讓其他順咖接。')) return;
+    if(btnEl){ btnEl.disabled = true; btnEl.textContent = '處理中...'; }
+    var res = await sb.rpc('decline_directed_order', { p_order_id: orderId });
+    if(res.error || !(res.data && res.data.ok)){
+      alert('婉拒失敗,請稍後再試。');
+      if(btnEl){ btnEl.disabled = false; btnEl.textContent = '婉拒'; }
+      return;
+    }
+    alert('已婉拒,這張單已轉為公開單。');
+    location.reload();
+  };
   /* 我的加值:讀自己 user_perks(RLS 本人可讀自己),把沒過期的列成「名稱 剩X」。
      為什麼寫死代碼對照:四種加值代碼固定、後台極少改名;要改名就改這一行。 */
   var PERK_LABEL = { crown_frame:'皇冠頭框', referral_badge:'推薦達人', order_pin:'任務置頂', priority_badge:'優先標章' };
@@ -1057,8 +1091,21 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     /* 可接任務(媒合中且尚無人接,審核通過才查) */
     if(canAcceptJobs){
       // neq client_id:排除自己下的單,順咖不能接到自己當案家下的單(第一層,清單就不列出)
-      var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id,address_note').eq('status','matching').is('suncar_id', null).neq('client_id', user.id).order('service_time',{ascending:true});
-      var openOrders = (open.data || []).filter(function(o){ return o.pool==='A' || (o.pool==='B' && u.has_caregiver_cert); });
+      var open = await sb.from('orders').select('id,order_no,status,pool,service_type,service_district,service_address,service_time,duration_minutes,amount,client_id,address_note,preferred_suncar_id,reserved_until,preferred_status').eq('status','matching').is('suncar_id', null).neq('client_id', user.id).order('service_time',{ascending:true});
+      var allOpen = (open.data || []).filter(function(o){ return o.pool==='A' || (o.pool==='B' && u.has_caregiver_cert); });
+      // 指定下單分流:保留中=preferred_status 'reserved' 且未過期。指定給我→「指定你的單」;指定給別人→不列(接不到);過期/釋出/沒指定→一般可接
+      var nowMs = Date.now();
+      function _reserved(o){ return o.preferred_status === 'reserved' && o.reserved_until && new Date(o.reserved_until).getTime() > nowMs; }
+      var directedOrders = allOpen.filter(function(o){ return _reserved(o) && o.preferred_suncar_id === user.id; });
+      var openOrders = allOpen.filter(function(o){ return !_reserved(o); });
+      // 渲染「指定你的單」區
+      if(directedOrders.length){
+        $('directed-section').style.display = '';
+        $('directed-badge').textContent = directedOrders.length + ' 筆';
+        $('directed-list').innerHTML = directedOrders.map(function(o){ return directedCard(o); }).join('');
+      } else {
+        $('directed-section').style.display = 'none';
+      }
       // 兌換加值效果(改綁單張):有效 order_pin 的「這張單」置頂、有效 priority_badge 顯示「優先」徽章。
       // 走後台 get_active_order_perks(只回沒過期的這兩種),用「訂單 id」查,不再用案家 id;
       // 用 security definer 函式跨人讀(順咖不是案家,RLS 讀不到別人單的加值)。

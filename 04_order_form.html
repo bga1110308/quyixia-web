@@ -56,6 +56,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 /* 指定順咖卡(從 02 帶 ?staff= 進來時顯示) */
 .specified-staff{display:none;background:linear-gradient(135deg,#fff,var(--mint-pale) 100%);border:1.5px solid var(--border-mint);border-radius:16px;padding:1rem 1.15rem;margin-bottom:1rem;box-shadow:0 4px 14px rgba(47,96,72,0.08);align-items:center;gap:12px;}
 .specified-staff.show{display:flex;}
+/* 指定下單:保留時間選擇(只有指定順咖時顯示) */
+.reserve-row{background:var(--mint-pale);border:1.5px solid var(--border-mint);border-radius:16px;padding:0.9rem 1.1rem;margin-bottom:1rem;}
+.reserve-label{font-weight:700;color:var(--ink);margin-bottom:0.6rem;font-size:0.95rem;}
+.reserve-opts{display:flex;gap:8px;margin-bottom:0.55rem;}
+.reserve-opt{flex:1;padding:0.5rem 0;border:1.5px solid var(--border-mint);border-radius:10px;background:#fff;color:var(--ink);font-weight:600;cursor:pointer;font-size:0.95rem;}
+.reserve-opt.active{background:var(--brand,#2f6048);color:#fff;border-color:var(--brand,#2f6048);}
+.reserve-hint{font-size:0.82rem;color:#6b7d73;line-height:1.5;}
 .ss-icon{width:44px;height:44px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:1.2rem;color:var(--forest);flex-shrink:0;box-shadow:0 3px 10px rgba(47,96,72,0.15),inset 0 0 0 1.5px var(--border-mint);}
 .ss-info{flex:1;min-width:0;}
 .ss-label{font-size:0.68rem;color:var(--forest);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;display:inline-flex;align-items:center;gap:4px;}
@@ -315,6 +322,17 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <button class="ss-clear" onclick="clearSpecifiedStaff()" type="button">改成不指定</button>
   </div>
 
+  <!-- 指定下單:保留時間(只有指定順咖時顯示) -->
+  <div class="reserve-row" id="reserve-row" style="display:none;">
+    <div class="reserve-label">保留給這位順咖的時間</div>
+    <div class="reserve-opts">
+      <button type="button" class="reserve-opt" data-min="10" onclick="pickReserve(10)">10 分鐘</button>
+      <button type="button" class="reserve-opt active" data-min="30" onclick="pickReserve(30)">30 分鐘</button>
+      <button type="button" class="reserve-opt" data-min="60" onclick="pickReserve(60)">60 分鐘</button>
+    </div>
+    <div class="reserve-hint">這段時間內只有這位順咖能接。時間到他還沒接,系統會自動把單改成公開,讓所有合格順咖都能接,你不用重下單。</div>
+  </div>
+
   <div class="step1-card">
     <div class="step-label">STEP 1</div>
     <div class="step-q">這次是要幫誰處理?</div>
@@ -544,6 +562,16 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <script>
 /* 指定順咖:用 02 帶來的 id 查 public_suncars 顯示暱稱與期望時薪 */
 window._specifiedStaffId = null;
+window._reserveMinutes = 30;  /* 指定下單保留時間,案家選 10/30/60,預設 30 */
+
+/* 指定下單:選保留時間 */
+function pickReserve(min){
+  window._reserveMinutes = min;
+  var opts = document.querySelectorAll('#reserve-row .reserve-opt');
+  for (var i=0;i<opts.length;i++){
+    opts[i].classList.toggle('active', parseInt(opts[i].getAttribute('data-min'),10) === min);
+  }
+}
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function firstChar(name){ name=(name||'').trim(); if(!name) return '·'; var ch=Array.from(name); for(var i=0;i<ch.length;i++){ if(/[\p{L}\p{N}]/u.test(ch[i])) return ch[i]; } return ch[0]; }
@@ -576,6 +604,9 @@ async function showSpecifiedStaff(staffId) {
   }
   document.getElementById('ss-rate').textContent = (rate != null ? rate : '—');
   card.classList.add('show');
+  /* 指定順咖時顯示保留時間選擇 */
+  var rr = document.getElementById('reserve-row');
+  if (rr) rr.style.display = '';
 
   /* 報酬欄位下方時薪提示 */
   if (rate != null) {
@@ -589,6 +620,8 @@ function clearSpecifiedStaff() {
   window._specifiedStaffId = null;
   document.getElementById('specified-staff').classList.remove('show');
   document.getElementById('rate-tip').classList.remove('show');
+  var rr = document.getElementById('reserve-row');
+  if (rr) rr.style.display = 'none';
   /* 清掉 URL 上的 staff 參數,避免重新整理又跳回來 */
   var url = new URL(window.location.href);
   url.searchParams.delete('staff');
@@ -1151,7 +1184,10 @@ function handleSubmit() {
   addrNoteParts.push('縣市:' + cityName);
 
   var payload = {
-    suncar_id: window._specifiedStaffId || null,
+    /* 指定下單:改送「保留給誰+保留幾分鐘」,不再直接送 suncar_id(那會變成半接單狀態)。
+       後端 place_order 收到 preferred_suncar_id 就把單設成保留,時間內只有這位順咖能接。 */
+    preferred_suncar_id: window._specifiedStaffId || null,
+    reserve_minutes: window._specifiedStaffId ? window._reserveMinutes : null,
     status: 'matching',
     order_type: 'service',
     service_type: serviceType,
