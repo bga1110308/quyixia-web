@@ -287,6 +287,7 @@ var _empty = false;   // 這個金額還沒建種子
 var _busy = false;
 var _need = false;    // true=點數不足,打賞鈕改成「去儲值」
 var _byId = {};       // seed_id → {id,name,emoji,rarity,weight}
+var _owned = {};      // seed_id → 收集數量,圖鑑點擊放大用
 var _totalW = 0;      // 整池 weight 總和,算掉落機率用
 var _refCode = '';    // 我的推薦碼
 var _lastReveal = null;
@@ -396,6 +397,7 @@ var RARITY = {
 var RARITY_ORDER = ['normal', 'fine', 'rare', 'gold'];
 
 function renderDex(seeds, owned){
+  _owned = owned;   // 存起來給圖鑑點擊放大用
   var got = 0, total = seeds.length, html = '';
   var coll = { normal:[0,0], fine:[0,0], rare:[0,0], gold:[0,0] };   // 各等級 [已收,總數]
   seeds.forEach(function(s){
@@ -409,7 +411,8 @@ function renderDex(seeds, owned){
     var meta = hasIt
       ? '<div class="rate">' + rateStr(s.weight) + (have > 1 ? ' <span class="xn">×' + have + '</span>' : '') + '</div>'
       : '<div class="rate">&nbsp;</div>';
-    html += '<div class="cell ' + (hasIt ? 'got' : 'locked') + (cls ? ' ' + cls : '') + '">'
+    var clk = hasIt ? ' role="button" tabindex="0" style="cursor:pointer" onclick="showSeedDetail(\'' + s.id + '\')"' : '';
+    html += '<div class="cell ' + (hasIt ? 'got' : 'locked') + (cls ? ' ' + cls : '') + '"' + clk + '>'
           +   '<div class="seedwrap">' + seedMarkup(s, hasIt, 50) + '</div>'
           +   '<div class="nm">' + nm + '</div>' + meta
           + '</div>';
@@ -479,6 +482,25 @@ function showReveal(d){
   document.getElementById('reveal').classList.add('show');
 }
 function closeReveal(){ document.getElementById('reveal').classList.remove('show'); }
+
+/* 點圖鑑裡已收集的種子→用同一個揭曉彈窗放大顯示+可分享(不重造彈窗) */
+function showSeedDetail(id){
+  var s = _byId[id]; if(!s) return;
+  var cnt = _owned[id] || 1;
+  var box = document.getElementById('reveal-box');
+  var r = RARITY[s.rarity] ? s.rarity : 'normal';
+  var info = RARITY[r];
+  box.classList.toggle('gold', r === 'gold');
+  document.getElementById('rv-art').innerHTML = seedMarkup({ art:s.art, rarity:s.rarity, emoji:s.emoji, name:s.name }, true, 104);
+  document.getElementById('rv-name').textContent = s.name || '種子';
+  var tag = document.getElementById('rv-tag');
+  tag.className = 'reveal-tag tag-' + r;
+  tag.textContent = (r === 'gold' ? '✨' : r === 'rare' ? '💜' : '') + info.label + '種子';
+  document.getElementById('rv-meta').textContent = '掉落機率 ' + rateStr(s.weight) + ' · 已收集 ×' + cnt;
+  document.getElementById('rv-desc').textContent = '';
+  _lastReveal = { name: s.name, emoji: s.emoji, rarity: s.rarity };
+  document.getElementById('reveal').classList.add('show');
+}
 
 /* ---- 分享 ---- */
 function openShare(seed){ _shareSeed = seed || null; document.getElementById('share-mask').classList.add('show'); }
