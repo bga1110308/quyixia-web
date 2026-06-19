@@ -39,7 +39,7 @@
 
   injectStyle();
   var box = buildBox();
-  var els = buildOverlays();
+  var els = null;   /* 收集面板/放大彈窗等 mount 時(body 已生成)才建,避免腳本掛在 <head> 時 body 還不存在而報錯 */
 
   /* ---- 樣式 ---- */
   function injectStyle() {
@@ -414,6 +414,7 @@
   }
 
   function mount() {
+    els = buildOverlays();
     document.body.appendChild(box);
     initPos();
     bindDrag();
