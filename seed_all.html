@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>種子造型總表 · 去一下</title>
+<style>
+  :root{ --gold:#EF9F27; --green:#5FB58E; --ink:#3D2914; --soft:#8B7355; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif; color:var(--ink);
+        background:linear-gradient(180deg,#FFFDF7,#FBF3E0); padding:1.2rem 1rem 3rem; }
+  .head{ max-width:1100px; margin:0 auto 1.2rem; text-align:center; }
+  .head h1{ font-size:1.4rem; margin:0 0 .4rem; }
+  .head p{ font-size:.86rem; color:var(--soft); margin:.2rem 0; line-height:1.6; }
+  .wrap{ max-width:1100px; margin:0 auto; }
+  .tier-sec{ background:#fff; border:1.5px solid #E8C77A; border-radius:18px;
+             padding:1rem 1rem 1.3rem; margin-bottom:1.3rem; box-shadow:0 6px 18px rgba(186,117,23,.1); }
+  .tier-title{ font-size:1.1rem; font-weight:700; margin:0 0 .2rem; }
+  .tier-sub{ font-size:.78rem; color:var(--soft); margin:0 0 .8rem; }
+  .pool-block{ margin-top:.9rem; }
+  .pool-name{ font-size:.92rem; font-weight:700; padding:.25rem .7rem; border-radius:99px; display:inline-block; color:#fff; }
+  .pool-name.client{ background:linear-gradient(135deg,#FFB84D,#EF9F27); }
+  .pool-name.suncar{ background:linear-gradient(135deg,#5FB58E,#2F6048); }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(86px,1fr)); gap:10px 6px; margin-top:.7rem; }
+  .cell{ text-align:center; }
+  .art{ width:72px; height:72px; margin:0 auto; }
+  .art svg{ width:100%; height:100%; display:block; }
+  .art img{ width:100%; height:100%; object-fit:contain; }
+  .nm{ font-size:.7rem; font-weight:600; line-height:1.2; margin-top:2px; }
+  .lv{ font-size:.6rem; font-weight:700; padding:1px 6px; border-radius:99px; display:inline-block; margin-top:2px; }
+  .lv.normal{ background:#FAEEDA; color:#BA7517; }
+  .lv.fine{ background:#E8F1F8; color:#3A7CB8; }
+  .lv.rare{ background:#F0E8FA; color:#8A52C9; }
+  .lv.gold{ background:#E0A93C; color:#fff; }
+  .loading,.err{ text-align:center; color:var(--soft); padding:2rem; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>🌱 種子造型總表</h1>
+  <p>七個金額、案家與順咖兩套,全部種子的造型一次看。資料即時來自種子圖鑑,你建了多少就顯示多少。</p>
+  <p id="count"></p>
+</div>
+
+<div class="wrap" id="wrap"><div class="loading">載入中…</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
+<script src="qyx-seed-art.js"></script>
+<script>
+/* 種子造型總表:讀 seed_catalog 全部(這份允許公開讀),用繪圖引擎一次畫出全部造型。
+   純檢視工具,不依賴登入、不依賴 user_seeds。給負責人核對造型用,沒有放任何全站入口。 */
+var TIERS = [30, 50, 100, 500, 1000, 5000, 10000];
+var THEME = { 30:'萌芽', 50:'綻放', 100:'結果', 500:'盆栽', 1000:'珍寶', 5000:'晶耀', 10000:'至尊' };
+var RARITY = { normal:'普通', fine:'高級', rare:'稀有', gold:'金' };
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+
+/* 一顆種子的圖:有圖片路徑顯圖片,否則用引擎畫向量 */
+function drawSeed(s){
+  var art = s.art || {};
+  if(typeof art === 'string'){ try{ art = JSON.parse(art); }catch(e){ art = {}; } }
+  if(art && art.img){ return '<img src="' + esc(art.img) + '" alt="">'; }
+  if(typeof QyxSeedArt === 'undefined'){ return esc(s.emoji || '🌱'); }
+  return QyxSeedArt.svg({ art:art, rarity:s.rarity, pool:s.pool, tier:s.tier, size:72, got:true });
+}
+
+function poolBlock(label, cls, list){
+  if(!list.length) return '';
+  var cells = list.map(function(s){
+    var rk = RARITY[s.rarity] ? s.rarity : 'normal';
+    return '<div class="cell">'
+      + '<div class="art">' + drawSeed(s) + '</div>'
+      + '<div class="nm">' + esc(s.name || '種子') + '</div>'
+      + '<span class="lv ' + rk + '">' + RARITY[rk] + '</span>'
+      + '</div>';
+  }).join('');
+  return '<div class="pool-block"><span class="pool-name ' + cls + '">' + label + '（' + list.length + '）</span>'
+       + '<div class="grid">' + cells + '</div></div>';
+}
+
+async function init(){
+  if(typeof window.sb === 'undefined'){
+    document.getElementById('wrap').innerHTML = '<div class="err">supabase-init.js 未載入,請確認檔案有上傳。</div>';
+    return;
+  }
+  var r = await sb.from('seed_catalog')
+    .select('tier,pool,sort,name,rarity,weight,emoji,art')
+    .order('tier').order('pool').order('sort');
+  if(r.error || !r.data){
+    document.getElementById('wrap').innerHTML = '<div class="err">讀取種子失敗,請稍後再試。</div>';
+    return;
+  }
+  var seeds = r.data;
+  document.getElementById('count').textContent = '目前共 ' + seeds.length + ' 顆種子';
+
+  /* 依金額分組,組內再分案家/順咖 */
+  var byTier = {};
+  seeds.forEach(function(s){
+    (byTier[s.tier] = byTier[s.tier] || { client:[], suncar:[] });
+    if(s.pool === 'suncar') byTier[s.tier].suncar.push(s);
+    else byTier[s.tier].client.push(s);
+  });
+
+  var html = '';
+  TIERS.forEach(function(t){
+    var g = byTier[t];
+    if(!g || (!g.client.length && !g.suncar.length)) return;
+    html += '<div class="tier-sec">'
+      + '<div class="tier-title">' + t + ' 點 · ' + (THEME[t] || '') + '</div>'
+      + '<div class="tier-sub">案家池與順咖池各自獨立收集</div>'
+      + poolBlock('案家', 'client', g.client)
+      + poolBlock('順咖', 'suncar', g.suncar)
+      + '</div>';
+  });
+  document.getElementById('wrap').innerHTML = html || '<div class="err">還沒有任何種子,先跑種子 SQL。</div>';
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
