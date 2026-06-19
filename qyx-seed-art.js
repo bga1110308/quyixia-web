@@ -15,7 +15,7 @@
 
   var INK = '#3D2914';
   var PAL = {
-    warm:  { fill:'#C99A63', stroke:'#86572D', hi:'#E6CB9F' },
+    warm:  { fill:'#E0C29A', stroke:'#B58E5A', hi:'#F4E6CE' },
     green: { fill:'#8FCBA4', stroke:'#3F7E5C', hi:'#D6EEDF' },
     blue:  { fill:'#9CC6E8', stroke:'#3A7CB8', hi:'#E2F0FB' },
     purple:{ fill:'#C3A6E0', stroke:'#8A52C9', hi:'#EEE2F8' },
