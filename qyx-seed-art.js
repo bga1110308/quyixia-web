@@ -237,7 +237,31 @@
          + '<text x="0" y="9" font-size="22" text-anchor="middle" fill="'+p.stroke+'" font-weight="700">?</text>';
   }
 
-  /* 組裝順序:外框 → 頭飾 → 身體 → 臉 → 道具 → 星星。腳下道具(pot)畫在身體前不擋臉 */
+  /* ---- 金種子專屬華麗零件(只有 gold 等級會用,讓金種子最吸睛) ---- */
+  /* 會呼吸的金色光暈 + 一圈會轉圈的星星(SMIL 動畫寫在 SVG 內,圖鑑/彈窗/種子櫃到處都會動) */
+  function goldHalo(){
+    return '<circle r="38" fill="#FFE9A8" opacity="0.12"><animate attributeName="opacity" values="0.06;0.32;0.06" dur="2.4s" repeatCount="indefinite"/></circle>'
+         + '<g><animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 0 0" to="360 0 0" dur="7s" repeatCount="indefinite"/>'
+         +   sparkle(0, -44, 4.5, '#ffffff') + sparkle(44, 0, 4, '#FFD86B')
+         +   sparkle(0, 44, 4.5, '#ffffff') + sparkle(-44, 0, 4, '#FFD86B')
+         + '</g>';
+  }
+  /* 小手小腳(畫在身體後,只露出身體輪廓外的部分,看起來像從身體伸出來) */
+  function limbs(pal){
+    return '<g stroke="'+pal.stroke+'" stroke-width="3.4" stroke-linecap="round" fill="none">'
+         +   '<path d="M-24,9 q-9,3 -13,11"/><path d="M24,9 q9,3 13,11"/>'
+         +   '<path d="M-11,28 l-3,12"/><path d="M11,28 l3,12"/></g>'
+         + '<g fill="'+pal.fill+'" stroke="'+pal.stroke+'" stroke-width="1.6">'
+         +   '<circle cx="-38" cy="20" r="4.5"/><circle cx="38" cy="20" r="4.5"/>'
+         +   '<ellipse cx="-15" cy="41" rx="5.5" ry="3.4"/><ellipse cx="15" cy="41" rx="5.5" ry="3.4"/></g>';
+  }
+  /* 身體亮面光澤(畫在身體之後,讓金種子看起來會反光、不是一塊死金色) */
+  function sheen(){
+    return '<ellipse cx="-8" cy="-12" rx="8" ry="12" fill="#fff" opacity="0.5"/>'
+         + '<circle cx="6" cy="-16" r="3" fill="#fff" opacity="0.7"/>';
+  }
+
+  /* 組裝順序:外框 → (金光環/手腳) → 頭飾 → 身體 → (亮面) → 臉 → 道具 → 星星。腳下道具(pot)畫在身體前不擋臉 */
   function inner(opts){
     opts = opts || {};
     if(opts.got === false) return lockedInner();
@@ -247,11 +271,15 @@
     var pal = bodyPal(rarity, pool);
     var shp = bodyShape(art.b || 'seed', pal);
     var pk = art.p || '';
+    var gold = (rarity === 'gold');
     var s = '';
     s += frame(opts.tier, rarity, pool);
+    if(gold) s += goldHalo();                    // 轉圈星環(背景)
+    if(gold) s += limbs(pal);                     // 手腳(身體後)
     if(pk === 'pot') s += prop('pot', pal);
-    s += hat(art.h || '');
+    s += hat(art.h || (gold ? 'crown' : ''));     // 金種子沒指定頭飾就自動戴皇冠
     s += shp.body;
+    if(gold) s += sheen();                         // 亮面光澤
     s += face(art.f || 'happy', shp.faceY);
     if(pk && pk !== 'pot') s += prop(pk, pal);
     s += rarityStars(rarity);
