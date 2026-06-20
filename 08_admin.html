@@ -667,29 +667,11 @@ textarea.form-input{min-height:80px;resize:vertical;}
 
           <div class="setting-row">
             <div class="sr-left">
-              <div class="sr-label">信用卡綁定收會費 <span style="font-size:10px;background:var(--ink-soft);color:#fff;padding:2px 7px;border-radius:99px;font-weight:600;">加值服務</span></div>
-              <div class="sr-desc">開啟後,使用者可綁定信用卡作為會員費或訂閱費扣款。需先接好金流(PAYUNi)</div>
-              <span class="status-chip chip-off" id="chip-card">目前:關閉</span>
-            </div>
-            <label class="toggle"><input type="checkbox" onchange="confirmEnableFeature(this,'chip-card','信用卡綁定','已開啟','關閉','請先確認 PAYUNi 已申請完成。確認啟用?')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-          </div>
-
-          <div class="setting-row">
-            <div class="sr-left">
               <div class="sr-label">身分證實名驗證 <span style="font-size:10px;background:var(--ink-soft);color:#fff;padding:2px 7px;border-radius:99px;font-weight:600;">接政府案用</span></div>
               <div class="sr-desc">開啟後,要求使用者上傳身分證正反面。需接 OCR + 人工審核</div>
               <span class="status-chip chip-off" id="chip-idcard">目前:關閉</span>
             </div>
             <label class="toggle"><input type="checkbox" onchange="confirmEnableFeature(this,'chip-idcard','身分證實名','已開啟','關閉','需準備 OCR 服務 + 人工審核流程。確認啟用?')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
-          </div>
-
-          <div class="setting-row">
-            <div class="sr-left">
-              <div class="sr-label">LINE 群自動建立 <span style="font-size:10px;background:var(--line-green);color:#fff;padding:2px 7px;border-radius:99px;font-weight:600;">配對溝通</span></div>
-              <div class="sr-desc">訂單配對成功時自動建立 LINE 群(順咖+案家+客服 bot)</div>
-              <span class="status-chip chip-off" id="chip-linegroup">目前:尚未開放</span>
-            </div>
-            <label class="toggle"><input type="checkbox" disabled onchange="updateChip(this,'chip-linegroup','已啟用','已關閉')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
           </div>
 
           <div class="setting-row">

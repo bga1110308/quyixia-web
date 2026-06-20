@@ -279,14 +279,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 <div class="page-header">
   <div class="page-title">帳號認證</div>
-  <div class="page-sub">完成信箱與手機認證,提升信任度<br>認證標章會顯示在你的檔案與任務單上</div>
+  <div class="page-sub">完成信箱認證與證件上傳,提升信任度<br>認證標章會顯示在你的檔案與任務單上</div>
 </div>
 
 <div class="progress-bar">
   <div class="progress-bar-info">
     <div class="progress-bar-label">
       <span>整體認證進度</span>
-      <span><span class="num" id="progress-done">0</span> / 6 項</span>
+      <span><span class="num" id="progress-done">0</span> / 5 項</span>
     </div>
     <div class="progress-bar-track">
       <div class="progress-bar-fill" id="progress-fill" style="width:0%;"></div>
@@ -297,7 +297,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 <div class="tab-bar">
   <div class="tab active" onclick="switchTab(0,this)">信箱認證</div>
-  <div class="tab" onclick="switchTab(1,this)">手機認證</div>
+  <div class="tab" onclick="switchTab(1,this)">聯絡電話</div>
   <div class="tab" onclick="switchTab(2,this)">證件上傳</div>
   <div class="tab" onclick="switchTab(3,this)">認證狀態</div>
 </div>
@@ -338,65 +338,22 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   </div>
 </div>
 
-<!-- Tab 1:手機認證 -->
+<!-- Tab 1:聯絡電話(只當聯絡用,不需驗證;手機 OTP 待接簡訊服務再做) -->
 <div class="wrap" id="tab1" style="display:none;">
   <div class="card">
-    <div class="sec-title">手機認證</div>
-    <div class="hint" style="color:var(--warn);margin-bottom:8px;">目前為測試模擬,尚未真正發送簡訊(待接簡訊服務後才會真發)。</div>
-    <div id="phone-step1">
-      <div class="field">
-        <label>手機號碼</label>
-        <div class="input-btn-row">
-          <input type="tel" id="phone-input" placeholder="09XX-XXX-XXX">
-          <button class="send-btn" onclick="sendPhoneOTP()">傳送簡訊</button>
-        </div>
-        <div class="verify-status">
-          <div class="status-dot unverified"></div>
-          <span style="color:var(--warn);">尚未驗證</span>
-        </div>
-      </div>
-      <div class="hint">簡訊驗證碼將傳送至此號碼</div>
+    <div class="sec-title">聯絡電話</div>
+    <div class="field">
+      <label>你的聯絡手機</label>
+      <div style="font-size:1.1rem;font-weight:700;color:var(--ink);margin-top:4px;" id="contact-phone-show">—</div>
+      <div class="hint" style="margin-top:8px;">這支號碼是你註冊時填的,供案家與順咖在服務聯繫時使用,不需要另外驗證。</div>
+      <div class="hint" style="margin-top:4px;">要修改號碼,請到「編輯資料」更新。</div>
     </div>
-    <div id="phone-step2" style="display:none;">
-      <div style="text-align:center;margin-bottom:0.9rem;">
-        <div style="font-size:0.85rem;color:var(--ink-soft);">驗證碼已傳送至</div>
-        <div style="font-size:0.92rem;font-weight:600;color:var(--ink);margin-top:3px;" id="phone-show"></div>
-        <div class="verify-status" style="justify-content:center;margin-top:6px;">
-          <div class="status-dot pending"></div>
-          <span style="color:var(--info);">等待驗證中</span>
-        </div>
-      </div>
-      <div class="otp-row">
-        <input class="otp-input" maxlength="1" id="p0" oninput="otpNext(this,'p1','','phone')">
-        <input class="otp-input" maxlength="1" id="p1" oninput="otpNext(this,'p2','p0','phone')">
-        <input class="otp-input" maxlength="1" id="p2" oninput="otpNext(this,'p3','p1','phone')">
-        <input class="otp-input" maxlength="1" id="p3" oninput="otpNext(this,'p4','p2','phone')">
-        <input class="otp-input" maxlength="1" id="p4" oninput="otpNext(this,'p5','p3','phone')">
-        <input class="otp-input" maxlength="1" id="p5" oninput="otpNext(this,'','p4','phone')">
-      </div>
-      <div class="error-msg" id="phone-error">驗證碼錯誤,請重新輸入</div>
-      <button class="verify-btn" id="phone-verify-btn" onclick="verifyPhone()" disabled>確認驗證</button>
-      <div class="resend-row">
-        <span class="countdown" id="phone-countdown">60 秒後可重新傳送</span>
-        <span class="resend-link" id="phone-resend" style="display:none;" onclick="resendPhone()">重新傳送</span>
-      </div>
-    </div>
-    <div id="phone-step3" style="display:none;">
-      <div class="success-box">
-        <span class="success-icon-svg"><svg><use href="#i-check-circle"/></svg></span>
-        <div class="success-title">手機認證完成!</div>
-        <div class="success-sub">你的手機認證標章已顯示於檔案上<br>系統可透過簡訊即時通知你</div>
-      </div>
-    </div>
-    <div class="hint" style="margin-top:9px;">簡訊可能延遲 1–2 分鐘,請耐心等候</div>
   </div>
   <div class="card">
-    <div class="sec-title">手機認證有什麼用?</div>
+    <div class="sec-title">為什麼要留電話?</div>
     <div class="info-card">
-      <div><svg style="color:var(--forest);"><use href="#i-phone"/></svg> 檔案上顯示「<span style="color:var(--forest);font-weight:600;">手機已驗證</span>」標章</div>
-      <div><svg style="color:var(--amber-deep);"><use href="#i-bell"/></svg> 任務有新進度時,簡訊即時通知你</div>
-      <div><svg style="color:var(--info);"><use href="#i-shield"/></svg> 防止假帳號,讓平台更安全</div>
-      <div><svg style="color:var(--forest);"><use href="#i-check"/></svg> 順咖或案家更願意選擇有認證的對象</div>
+      <div><svg style="color:var(--forest);"><use href="#i-phone"/></svg> 媒合成功後,雙方能透過電話聯繫服務細節</div>
+      <div><svg style="color:var(--amber-deep);"><use href="#i-bell"/></svg> 平台有重要通知時可以聯絡到你</div>
     </div>
   </div>
 </div>
@@ -543,10 +500,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div class="verified-card">
     <div class="verified-icon-svg" style="color:var(--forest);"><svg><use href="#i-phone"/></svg></div>
     <div class="verified-info">
-      <div class="verified-label">手機號碼</div>
-      <div class="verified-value" id="phone-status-value">尚未驗證</div>
+      <div class="verified-label">聯絡電話</div>
+      <div class="verified-value" id="phone-status-value">—</div>
     </div>
-    <span class="verified-badge" id="phone-status-badge" style="background:var(--warn);">未驗證</span>
+    <span class="verified-badge" id="phone-status-badge" style="background:var(--forest);">聯絡用</span>
   </div>
   <div class="verified-card">
     <div class="verified-icon-svg" style="color:var(--amber-deep);"><svg><use href="#i-id"/></svg></div>
@@ -641,8 +598,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 </div>
 
 <script>
-var emailVerified = false, phoneVerified = false;
-var phoneOTP = '';
+var emailVerified = false;
 window._verifiedEmail = '';
 var certStatus = {id:'empty', safe:'empty', cpr:'empty', cna:'empty'};
 
@@ -664,14 +620,14 @@ function switchTab(n, el) {
 }
 
 function updateProgress() {
+  // 5 項:信箱 + 4 張證件(身分證/照服員/良民/急救)。手機改為聯絡用,不列入認證項目。
   var done = 0;
   if (emailVerified) done++;
-  if (phoneVerified) done++;
   Object.keys(certStatus).forEach(function(k){
     if (certStatus[k] === 'uploaded') done++;
   });
   document.getElementById('progress-done').textContent = done;
-  document.getElementById('progress-fill').style.width = (done / 6 * 100) + '%';
+  document.getElementById('progress-fill').style.width = (done / 5 * 100) + '%';
 }
 
 function uploadCert(card, key, isRequired) {
@@ -743,84 +699,17 @@ function applyEmailLoginState(user) {
   }).catch(function () { frontendFallback(); });
 }
 
-function sendPhoneOTP() {
-  var val = document.getElementById('phone-input').value.trim();
-  if (!val || val.length < 10) { alert('請輸入正確的手機號碼'); return; }
-  phoneOTP = Math.floor(100000 + Math.random() * 900000).toString();
-  document.getElementById('phone-show').textContent = val;
-  document.getElementById('phone-step1').style.display = 'none';
-  document.getElementById('phone-step2').style.display = 'block';
-  startCountdown('phone-countdown', 'phone-resend', 60);
-  alert('【模擬】簡訊驗證碼為:' + phoneOTP + '(實際上線後會發簡訊)');
-}
-function resendPhone() {
-  phoneOTP = Math.floor(100000 + Math.random() * 900000).toString();
-  startCountdown('phone-countdown', 'phone-resend', 60);
-  alert('【模擬】新驗證碼為:' + phoneOTP);
-}
-function verifyPhone() {
-  var entered = ['p0','p1','p2','p3','p4','p5'].map(function(id){ return document.getElementById(id).value; }).join('');
-  if (entered === phoneOTP) {
-    phoneVerified = true;
-    document.getElementById('phone-step2').style.display = 'none';
-    document.getElementById('phone-step3').style.display = 'block';
-    updateStatusTab();
-    updateProgress();
-    showToast('手機驗證成功!自動進入證件上傳');
-    setTimeout(function(){
-      switchTab(2, null);
-    }, 1200);
-  } else {
-    document.getElementById('phone-error').classList.add('show');
-    ['p0','p1','p2','p3','p4','p5'].forEach(function(id){ document.getElementById(id).classList.add('error'); });
-    setTimeout(function(){
-      document.getElementById('phone-error').classList.remove('show');
-      ['p0','p1','p2','p3','p4','p5'].forEach(function(id){
-        var el = document.getElementById(id); el.classList.remove('error','filled'); el.value = '';
-      });
-      document.getElementById('phone-verify-btn').disabled = true;
-      document.getElementById('p0').focus();
-    }, 1500);
-  }
-}
-
-function otpNext(el, nextId, prevId, type) {
-  // 只保留一個數字:IME 或重複事件造成的多餘字元一律清掉(防呆)
-  el.value = el.value.replace(/[^0-9]/g, '').slice(-1);
-  el.classList.toggle('filled', el.value.length > 0);
-  // 跳到下一格延後一拍:若在 input 事件裡同步 focus 下一格,瀏覽器會把剛打的字又塞進下一格
-  // (就是「自動多輸入一次」的原因)。改用 setTimeout 等這一格確定填好再跳,就不會重複。
-  if (el.value.length === 1 && nextId) {
-    var n = document.getElementById(nextId);
-    if (n) setTimeout(function(){ n.focus(); }, 0);
-  }
-  var prefix = type === 'email' ? 'e' : 'p';
-  var btnId = type + '-verify-btn';
-  var all = [0,1,2,3,4,5].map(function(i){ return document.getElementById(prefix+i).value; });
-  document.getElementById(btnId).disabled = all.some(function(v){ return v === ''; });
-}
-
-function startCountdown(countdownId, resendId, sec) {
-  var el = document.getElementById(countdownId);
-  var re = document.getElementById(resendId);
-  el.style.display = 'inline'; re.style.display = 'none';
-  var t = sec;
-  var timer = setInterval(function(){
-    t--;
-    el.textContent = t + ' 秒後可重新傳送';
-    if (t <= 0) { clearInterval(timer); el.style.display = 'none'; re.style.display = 'inline'; }
-  }, 1000);
-}
+/* 手機驗證已移除:手機改為「聯絡用」、不做 OTP。
+   為什麼:原本是前端用 Math.random() 自己產碼再自己比對,等於假驗證、會誤導人。
+   真要做手機驗證需接簡訊服務(伺服器端發碼/驗碼),屆時再加,不在前端產假碼。 */
 
 function updateStatusTab() {
   var emailVal = window._verifiedEmail || '尚未驗證';
-  var phoneVal = document.getElementById('phone-input').value || '尚未驗證';
   document.getElementById('email-status-value').textContent = emailVerified ? emailVal : '尚未驗證';
   document.getElementById('email-status-badge').textContent = emailVerified ? '已驗證 ✓' : '未驗證';
   document.getElementById('email-status-badge').style.background = emailVerified ? 'var(--forest)' : 'var(--warn)';
-  document.getElementById('phone-status-value').textContent = phoneVerified ? phoneVal : '尚未驗證';
-  document.getElementById('phone-status-badge').textContent = phoneVerified ? '已驗證 ✓' : '未驗證';
-  document.getElementById('phone-status-badge').style.background = phoneVerified ? 'var(--forest)' : 'var(--warn)';
+  // 手機改為聯絡用:只顯示號碼,不做驗證徽章(徽章在 HTML 固定為「聯絡用」)
+  document.getElementById('phone-status-value').textContent = window._contactPhone || '未填寫';
 
   var idEl = document.getElementById('id-status-value');
   var idBadge = document.getElementById('id-status-badge');
@@ -1292,8 +1181,13 @@ async function loadCertStatus(){
   var res = await sb.from('cert_submissions').select('cert_type,status').eq('user_id', user.id).in('cert_type', ['id','cna','safe','cpr']);
   (res.data || []).forEach(function(r){ applyCertCardStatus(r.cert_type, r.status); });
   /* 回填固定證件的「顯示給案家」開關狀態 */
-  var uShow = await sb.from('users').select('show_realname,show_caregiver,show_good_conduct,show_cpr').eq('id', user.id).maybeSingle();
-  if (uShow && uShow.data) applyFixedVisibility(uShow.data);
+  var uShow = await sb.from('users').select('phone,show_realname,show_caregiver,show_good_conduct,show_cpr').eq('id', user.id).maybeSingle();
+  if (uShow && uShow.data) {
+    applyFixedVisibility(uShow.data);
+    window._contactPhone = uShow.data.phone || '';
+    var cpEl = document.getElementById('contact-phone-show');
+    if (cpEl) cpEl.textContent = window._contactPhone || '未填寫(請到編輯資料補上)';
+  }
   updateProgress();
   updateDoneSummary();
 }
