@@ -51,7 +51,7 @@
 <script>
 /* 種子造型總表:讀 seed_catalog 全部(這份允許公開讀),用繪圖引擎一次畫出全部造型。
    純檢視工具,不依賴登入、不依賴 user_seeds。給負責人核對造型用,沒有放任何全站入口。 */
-var TIERS = [30, 50, 100, 500, 1000, 5000, 10000];
+var TIERS = [30, 50, 100];
 var THEME = { 30:'萌芽', 50:'綻放', 100:'結果', 500:'盆栽', 1000:'珍寶', 5000:'晶耀', 10000:'至尊' };
 var RARITY = { normal:'普通', fine:'高級', rare:'稀有', gold:'金' };
 
@@ -62,7 +62,7 @@ function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
 function drawSeed(s){
   var art = s.art || {};
   if(typeof art === 'string'){ try{ art = JSON.parse(art); }catch(e){ art = {}; } }
-  if(art && art.img){ return '<img src="' + esc(art.img) + '" alt="">'; }
+  if(art && art.img){ return '<img loading="lazy" decoding="async" src="' + esc(art.img) + '" alt="">'; }
   if(typeof QyxSeedArt === 'undefined'){ return esc(s.emoji || '🌱'); }
   return QyxSeedArt.svg({ art:art, rarity:s.rarity, pool:s.pool, tier:s.tier, size:72, got:true });
 }

@@ -192,6 +192,22 @@ body.suncar .amt-chip.on{background:linear-gradient(135deg,var(--mint),var(--for
 .reveal-seed .qsa-wrap{animation:qsaBob 2.6s ease-in-out infinite;}
 .seed-img{width:100%;height:100%;object-fit:contain;display:block;}
 .seed-img.locked{filter:grayscale(1) brightness(1.05);opacity:0.4;}
+
+/* 十連抽:第二顆按鈕(金色,跟單抽區隔)＋十連結果彈窗 */
+.donate10-btn{background:linear-gradient(135deg,#FFD27A,#E0A93C);box-shadow:0 8px 24px rgba(224,169,60,0.32);margin-top:0.8rem;}
+body.suncar .donate10-btn{background:linear-gradient(135deg,#7FCBA8,#2F6048);box-shadow:0 8px 24px rgba(47,96,72,0.28);}
+.ten-box{max-width:390px;}
+.ten-title{font-size:1.15rem;font-weight:700;color:var(--ink);margin-bottom:0.9rem;}
+.ten-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px 4px;}
+.ten-cell{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.ten-cell .seedwrap{width:46px;height:46px;}
+.ten-cell .seedshape{width:38px;height:38px;}
+.ten-cell .seedshape .emj{font-size:1.3rem;}
+.ten-cell .sprout{top:-5px;}
+.ten-cell .sprout svg{width:13px;height:13px;}
+.ten-cell .nm{font-size:0.56rem;color:var(--ink);font-weight:600;line-height:1.1;}
+.ten-cell .tnew{font-size:0.54rem;font-weight:700;color:var(--forest);}
+.ten-cell .tdup{font-size:0.54rem;font-weight:700;color:var(--ink-light);}
 </style>
 </head>
 <body>
@@ -217,6 +233,10 @@ body.suncar .amt-chip.on{background:linear-gradient(135deg,var(--mint),var(--for
       打賞 30 點 · 抽一顆種子
     </button>
     <div class="donate-note" id="donate-note">點數從你的帳戶扣除,打賞後立即掉一顆種子進收集庫</div>
+    <button class="donate-btn donate10-btn" id="donate10-btn" onclick="doDonate10()">
+      <svg style="width:1.1em;height:1.1em;fill:currentColor;"><use href="#i-seed"/></svg>
+      十連抽 · <span id="ten-cost">300</span> 點 · 一次抽 10 顆
+    </button>
     <button class="share-link-btn" onclick="openShare(null)">📣 分享給朋友 · 自動帶我的推薦碼</button>
   </div>
 
@@ -254,6 +274,19 @@ body.suncar .amt-chip.on{background:linear-gradient(135deg,var(--mint),var(--for
   </div>
 </div>
 
+<!-- 十連抽結果彈窗 -->
+<div class="reveal-mask" id="reveal10" onclick="if(event.target===this)close10()">
+  <div class="reveal-box ten-box">
+    <div class="ten-title">🌱 十連抽結果</div>
+    <div class="ten-grid" id="ten-grid"></div>
+    <div class="reveal-meta" id="ten-meta" style="margin-top:1rem"></div>
+    <div class="reveal-btns">
+      <button class="reveal-share" onclick="openShare(null)">炫耀 · 分享</button>
+      <button class="reveal-close" onclick="close10()">收下</button>
+    </div>
+  </div>
+</div>
+
 <!-- 分享彈窗 -->
 <div class="share-mask" id="share-mask" onclick="if(event.target===this)closeShare()">
   <div class="share-box">
@@ -280,11 +313,12 @@ body.suncar .amt-chip.on{background:linear-gradient(135deg,var(--mint),var(--for
    等級＝普通/金;掉落機率＝該種子 weight ÷ 整池 weight 總和。
    分享連結帶自己的 ref_code(users.ref_code),朋友從 14_signup.html?ref= 進來會自動綁推薦。 */
 var POOL = (new URLSearchParams(location.search).get('as') === 'suncar') ? 'suncar' : 'client';
-var AMOUNTS = [30, 50, 100, 500, 1000, 5000, 10000];   // 七個金額級距,各自一個收集庫
+var AMOUNTS = [30, 50, 100];   // 三個金額級距,各自一個收集庫(每池每金額50顆)
 var TIER = 30;        // 目前選的金額(預設 30)
 var _uid = null;      // 記住登入者,切金額時重抓
 var _empty = false;   // 這個金額還沒建種子
 var _busy = false;
+var _bal = 0;         // 目前這池餘額,十連抽要先確認夠不夠
 var _need = false;    // true=點數不足,打賞鈕改成「去儲值」
 var _byId = {};       // seed_id → {id,name,emoji,rarity,weight}
 var _owned = {};      // seed_id → 收集數量,圖鑑點擊放大用
@@ -334,7 +368,8 @@ function seedMarkup(s, got, size){
   var art = s.art || {};
   if(typeof art === 'string'){ try{ art = JSON.parse(art); }catch(e){ art = {}; } }
   if(art && art.img){
-    return '<img class="seed-img' + (got ? '' : ' locked') + '" src="' + esc(art.img) + '" alt="">';
+    /* loading=lazy：捲到才載圖,圖鑑再多也不會一次塞爆網路;decoding=async 不卡畫面 */
+    return '<img class="seed-img' + (got ? '' : ' locked') + '" loading="lazy" decoding="async" src="' + esc(art.img) + '" alt="">';
   }
   if(typeof window.QyxSeedArt === 'undefined'){ return got ? esc(s.emoji || '🌱') : '?'; }
   if(!got) return QyxSeedArt.svg({ art:{ b:(art && art.b) || 'seed' }, rarity:s.rarity, pool:POOL, tier:TIER, size:size, got:false });
@@ -346,6 +381,7 @@ async function loadAll(uid){
   var ur = await sb.from('users').select('client_points,suncar_points,ref_code').eq('id', uid).maybeSingle();
   var u = (ur && ur.data) ? ur.data : {};
   var bal = ((POOL === 'client') ? u.client_points : u.suncar_points) || 0;
+  _bal = bal;
   _refCode = u.ref_code || '';
   document.getElementById('bal').textContent = bal;
 
@@ -380,6 +416,12 @@ async function loadAll(uid){
     btn.innerHTML = seedIco + '打賞 ' + TIER + ' 點 · 抽一顆種子';
     note.textContent = '點數從你的帳戶扣除,打賞後立即掉一顆種子進收集庫';
   }
+
+  /* 十連抽鈕:沒種子就關掉,費用＝這池金額×10 */
+  var btn10 = document.getElementById('donate10-btn');
+  var tc = document.getElementById('ten-cost');
+  if(tc) tc.textContent = TIER * 10;
+  if(btn10) btn10.disabled = _empty;
 }
 
 function rateStr(weight){
@@ -482,6 +524,53 @@ function showReveal(d){
   document.getElementById('reveal').classList.add('show');
 }
 function closeReveal(){ document.getElementById('reveal').classList.remove('show'); }
+
+/* ---- 十連抽 ---- 後端 donate_seed_bulk 連抽 10 次(原子,逐次扣點),回傳 10 顆結果 */
+async function doDonate10(){
+  if(_busy || _empty) return;
+  var need = TIER * 10;
+  if(_bal < need){
+    if(confirm('十連抽要 ' + need + ' 點,你目前 ' + _bal + ' 點。要去儲值嗎?')) goTopup();
+    return;
+  }
+  if(!confirm('十連抽? 會扣 ' + need + ' 點,一次抽 10 顆種子。')) return;
+  _busy = true;
+  var b1 = document.getElementById('donate-btn'), b2 = document.getElementById('donate10-btn');
+  b1.disabled = true; b2.disabled = true;
+  var r = await sb.rpc('donate_seed_bulk', { p_pool: POOL, p_tier: TIER, p_n: 10 });
+  _busy = false;
+  if(r.error){ alert('十連抽失敗,請稍後再試。'); b1.disabled = false; b2.disabled = false; return; }
+  var d = r.data || {};
+  var draws = d.draws || [];
+  if(!draws.length){
+    if(d.reason === 'insufficient'){ alert('點數不足,先去儲值。'); goTopup(); return; }
+    alert('十連抽失敗,請稍後再試。'); b1.disabled = false; b2.disabled = false; return;
+  }
+  showReveal10(d);
+  var s = await sb.auth.getSession();
+  var user = s && s.data && s.data.session ? s.data.session.user : null;
+  if(user) await loadAll(user.id);
+}
+
+function showReveal10(d){
+  var draws = d.draws || [];
+  document.getElementById('ten-grid').innerHTML = draws.map(function(x){
+    var r = RARITY[x.rarity] ? x.rarity : 'normal';
+    return '<div class="ten-cell ' + (r === 'gold' ? 'gold' : '') + '">'
+      +   '<div class="seedwrap">' + seedMarkup({ art:x.art, rarity:x.rarity, emoji:x.emoji, name:x.name }, true, 46) + '</div>'
+      +   '<div class="nm">' + esc(x.name || '種子') + '</div>'
+      +   (x.is_new ? '<div class="tnew">新!</div>' : '<div class="tdup">重複</div>')
+      + '</div>';
+  }).join('');
+  var msg = d.partial
+    ? ('點數只夠抽 ' + (d.drawn || draws.length) + ' 顆 · 新種子 ' + (d.new_count || 0) + ' 顆')
+    : ('本次新種子 ' + (d.new_count || 0) + ' 顆');
+  if(d.collected != null && d.total != null) msg += ' · 已收集 ' + d.collected + ' / ' + d.total;
+  document.getElementById('ten-meta').textContent = msg;
+  _shareSeed = null;
+  document.getElementById('reveal10').classList.add('show');
+}
+function close10(){ document.getElementById('reveal10').classList.remove('show'); }
 
 /* 點圖鑑裡已收集的種子→用同一個揭曉彈窗放大顯示+可分享(不重造彈窗) */
 function showSeedDetail(id){
