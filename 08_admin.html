@@ -747,6 +747,31 @@ textarea.form-input{min-height:80px;resize:vertical;}
           </div>
         </div>
 
+        <div class="setting-group">
+          <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>種子免費抽活動</div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">開啟免費抽活動</div>
+              <div class="sr-desc">開啟後:朋友用推薦連結註冊,新人拿「註冊見面禮」免費抽;被推薦人完成第一筆服務,再送推薦人免費抽。關閉後不再發送(已發出的次數不收回)。一按就生效,不用跑 SQL。</div>
+              <span class="status-chip chip-off" id="chip-seedpromo">目前:已關閉</span>
+            </div>
+            <label class="toggle"><input type="checkbox" id="cfg-seedpromo" onchange="saveSwitch(this,'free_draw_promo_on','chip-seedpromo','活動中','已關閉')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">活動到期日與次數</div>
+              <div class="sr-desc">到期日當天之後自動停送,留空=不設到期、一直送。「註冊送幾抽」給新人;「首單送幾抽」給推薦人。改完按右邊「儲存」。</div>
+              <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;align-items:flex-end;">
+                <label style="font-size:12.5px;color:var(--ink-soft);">活動到期日<br><input class="text-input" id="cfg-seedpromo-until" type="date" style="margin-top:4px;max-width:170px;"></label>
+                <label style="font-size:12.5px;color:var(--ink-soft);">註冊送幾抽<br><input class="text-input" id="cfg-seedpromo-signup" type="number" min="0" max="50" style="margin-top:4px;max-width:110px;"></label>
+                <label style="font-size:12.5px;color:var(--ink-soft);">首單送幾抽<br><input class="text-input" id="cfg-seedpromo-ref" type="number" min="0" max="50" style="margin-top:4px;max-width:110px;"></label>
+                <button class="btn-gold-sm" style="padding:9px 22px;font-size:13px;" onclick="saveSeedPromo(this)">儲存</button>
+              </div>
+              <div id="seedpromo-result" style="margin-top:8px;font-size:12.5px;color:var(--ink-soft);"></div>
+            </div>
+          </div>
+        </div>
+
         </div><!-- /sp-switch -->
 
         <div class="settings-pane" id="sp-members">
@@ -2199,6 +2224,12 @@ async function loadPricing(){
   var lgL=document.getElementById('cfg-login-line');   if(lgL){ lgL.checked = !(c.login_line_on === false);   updateChip(lgL,'chip-line','已啟用','已關閉'); }
   var lgG=document.getElementById('cfg-login-google'); if(lgG){ lgG.checked = !(c.login_google_on === false); updateChip(lgG,'chip-google','已啟用','已關閉'); }
   var lgE=document.getElementById('cfg-login-email');  if(lgE){ lgE.checked = !(c.login_email_on === false);  updateChip(lgE,'chip-email','已啟用','已關閉'); }
+  /* 種子免費抽活動:開關＋到期日＋兩個次數,讀同一列 app_config */
+  var sp=document.getElementById('cfg-seedpromo');
+  if(sp){ sp.checked = (c.free_draw_promo_on === true); updateChip(sp,'chip-seedpromo','活動中','已關閉'); }
+  var spu=document.getElementById('cfg-seedpromo-until'); if(spu) spu.value = (c.free_draw_promo_until ? String(c.free_draw_promo_until).slice(0,10) : '');
+  var sps=document.getElementById('cfg-seedpromo-signup'); if(sps) sps.value = (c.free_draw_signup_n==null?'':c.free_draw_signup_n);
+  var spr=document.getElementById('cfg-seedpromo-ref'); if(spr) spr.value = (c.free_draw_referrer_n==null?'':c.free_draw_referrer_n);
 }
 
 /* 數字欄轉存:空字串→null(讓「單次永久」可存),其餘轉整數 */
@@ -2257,6 +2288,22 @@ async function saveSwitch(cb, col, chipId, onText, offText){
     return;
   }
   if(r) r.textContent='已儲存,全站立刻生效。';
+}
+/* 種子免費抽活動:到期日與兩個次數寫回 app_config(沿用 app_config_admin_write 政策)。
+   開關 free_draw_promo_on 走上面 saveSwitch 一按即存;這顆只存到期日與次數,改完按「儲存」。
+   空到期日=不設到期一直送;次數留空回預設(註冊 1、首單 10)。 */
+async function saveSeedPromo(btn){
+  var r=document.getElementById('seedpromo-result'); if(r) r.textContent='儲存中…';
+  var payload={
+    free_draw_promo_until: (document.getElementById('cfg-seedpromo-until').value || null),
+    free_draw_signup_n:   (numOrNull('cfg-seedpromo-signup')==null ? 1 : numOrNull('cfg-seedpromo-signup')),
+    free_draw_referrer_n: (numOrNull('cfg-seedpromo-ref')==null ? 10 : numOrNull('cfg-seedpromo-ref'))
+  };
+  if(btn) btn.disabled=true;
+  var up=await sb.from('app_config').update(payload).eq('id',1);
+  if(btn) btn.disabled=false;
+  if(up.error){ if(r) r.textContent='儲存失敗:'+up.error.message+'(若說找不到欄位,代表種子活動的 SQL A 段還沒跑)'; return; }
+  if(r) r.textContent='已儲存。之後有人註冊/完成首單就照新設定送。';
 }
 function saveOrderOpen(cb){ saveSwitch(cb,'order_open','chip-order','開放中','關閉中'); }
 function saveViewCounts(cb){ saveSwitch(cb,'show_view_counts','chip-views','開啟中','關閉中'); }
