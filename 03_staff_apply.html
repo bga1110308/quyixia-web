@@ -660,7 +660,7 @@ window.addEventListener('DOMContentLoaded', async function () {
     });
     return;
   }
-  // 已登入：補 line_user_id、用 LINE 暱稱預填暱稱欄
+  // 已登入：補 line_user_id(暱稱/手機改帶帳號層既有值並鎖住,見下方)
   await backfillLineId();
   var ures = await sb.auth.getUser();
   var user = ures.data ? ures.data.user : null;
@@ -691,22 +691,21 @@ window.addEventListener('DOMContentLoaded', async function () {
   }
 
   if (user) {
-    var lineName = (user.user_metadata && (user.user_metadata.name || user.user_metadata.full_name)) || '';
-    var nick = document.getElementById('sa-nickname');
-    if (lineName && nick && !nick.value) nick.value = lineName;
-
-    // 已是會員(例如原本是案家)來開順咖身分:用既有主檔資料預填基本欄位,不用重打一次。
-    // 只在欄位是空的時候帶,不覆蓋使用者已經改過的內容。
+    /* 業界作法:暱稱/電話是「帳號層」資料(全站一份,在 18 註冊關卡已收齊),申請順咖不重問、也不另存第二份。
+       一律帶入帳號現有的暱稱/手機並鎖住,要改統一去編輯資料頁(15),避免一人兩名、帳號混亂。
+       不再用 Google/LINE 的登入名字搶填暱稱(那是之前順咖頁暱稱跟案家頁不一樣的原因)。 */
     var meRes = await sb.from('users').select('display_name,phone,role_detail').eq('id', user.id).maybeSingle();
-    if (meRes && meRes.data) {
-      var me = meRes.data;
-      var rd = me.role_detail || {};
-      var realBox = document.getElementById('sa-realname');
-      if (realBox && !realBox.value && rd.real_name) realBox.value = rd.real_name;
-      if (nick && !nick.value && me.display_name) nick.value = me.display_name;
-      var phoneBox = document.getElementById('sa-phone');
-      if (phoneBox && !phoneBox.value && me.phone) phoneBox.value = me.phone;
-    }
+    var me = (meRes && meRes.data) ? meRes.data : {};
+    var rd = me.role_detail || {};
+    // 真實姓名屬身分資料,有就帶入(可改,全新順咖可能還沒填過)
+    var realBox = document.getElementById('sa-realname');
+    if (realBox && !realBox.value && rd.real_name) realBox.value = rd.real_name;
+    // 暱稱:帶帳號既有值並鎖住;極少數沒過 18 的新帳號(無值)才留白讓他填
+    var nick = document.getElementById('sa-nickname');
+    if (nick && me.display_name) { nick.value = me.display_name; lockAccountField(nick); }
+    // 手機:同上,帳號層共用、鎖住
+    var phoneBox = document.getElementById('sa-phone');
+    if (phoneBox && me.phone) { phoneBox.value = me.phone; lockAccountField(phoneBox); }
   }
   // 把存起來的推薦碼自動填進輸入框;若是朋友連結帶來的,就鎖住不讓改(確保推薦人一定記得到)
   var savedRef = localStorage.getItem('signup_ref');
@@ -721,6 +720,15 @@ window.addEventListener('DOMContentLoaded', async function () {
   }
   localStorage.removeItem('signup_role');
 });
+
+/* 帳號層欄位(暱稱/手機)在順咖申請頁鎖成唯讀:全站只有一份,要改去編輯資料頁(15),不在這裡分叉出第二份。 */
+function lockAccountField(box){
+  box.readOnly = true;
+  box.style.background = '#F5EBD8';
+  box.style.cursor = 'not-allowed';
+  var hint = box.parentNode.querySelector('.hint');
+  if (hint) hint.innerHTML = '帳號共用資料,要修改請到 <a href="15_edit_profile.html">編輯資料</a>';
+}
 
 async function backfillLineId() {
   var ures = await sb.auth.getUser();

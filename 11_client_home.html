@@ -816,10 +816,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
     var badges = '';
     if(u.is_realname || u.is_verified){ badges += '<span class="bm b-verified"><svg><use href="#i-check"/></svg>實名</span>'; }
-    if(u.phone){ badges += '<span class="bm b-phone"><svg><use href="#i-phone"/></svg>手機已驗</span>'; }
-    var hasEmail = u.role_detail && u.role_detail.email;
-    badges += hasEmail
-      ? '<span class="bm b-verified"><svg><use href="#i-mail"/></svg>信箱已留</span>'
+    /* 手機:目前沒有真的簡訊驗證(待接簡訊服務),只標「已留」=號碼有填,不灌水說已驗 */
+    if(u.phone){ badges += '<span class="bm b-phone"><svg><use href="#i-phone"/></svg>手機已留</span>'; }
+    /* 信箱:讀真正的驗證狀態(登入系統的 email_confirmed_at),跟 07 與順咖徽章同一來源。
+       用 Google/信箱登入且驗過→已驗;LINE 登入沒信箱或未驗→未驗,點了去 07。 */
+    var emailVerified = !!user.email_confirmed_at;
+    badges += emailVerified
+      ? '<span class="bm b-verified"><svg><use href="#i-mail"/></svg>信箱已驗</span>'
       : '<span class="bm bm-unverified" onclick="window.location.href=\'07_verification.html\'"><svg><use href="#i-mail"/></svg>信箱未驗</span>';
     $('h-badges').innerHTML = badges;
 
