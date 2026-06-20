@@ -196,6 +196,11 @@ body.suncar .amt-chip.on{background:linear-gradient(135deg,var(--mint),var(--for
 /* 十連抽:第二顆按鈕(金色,跟單抽區隔)＋十連結果彈窗 */
 .donate10-btn{background:linear-gradient(135deg,#FFD27A,#E0A93C);box-shadow:0 8px 24px rgba(224,169,60,0.32);margin-top:0.8rem;}
 body.suncar .donate10-btn{background:linear-gradient(135deg,#7FCBA8,#2F6048);box-shadow:0 8px 24px rgba(47,96,72,0.28);}
+/* 免費抽:白底虛線金邊的「優惠券」樣式,跟付費的金色實心鈕一眼分得出來 */
+.free-draw-btn{background:#fff!important;color:var(--amber-deep)!important;border:2px dashed var(--amber)!important;box-shadow:0 6px 18px rgba(239,159,39,0.18)!important;margin-top:0.8rem;}
+.free-draw-btn:hover{background:var(--champagne)!important;}
+body.suncar .free-draw-btn{color:var(--forest)!important;border-color:var(--mint)!important;box-shadow:0 6px 18px rgba(47,96,72,0.18)!important;}
+body.suncar .free-draw-btn:hover{background:var(--mint-pale)!important;}
 .ten-box{max-width:390px;}
 .ten-title{font-size:1.15rem;font-weight:700;color:var(--ink);margin-bottom:0.9rem;}
 .ten-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px 4px;}
@@ -237,6 +242,10 @@ body.suncar .donate10-btn{background:linear-gradient(135deg,#7FCBA8,#2F6048);box
       <svg style="width:1.1em;height:1.1em;fill:currentColor;"><use href="#i-seed"/></svg>
       十連抽 · <span id="ten-cost">300</span> 點 · 一次抽 10 顆
     </button>
+    <button class="donate-btn free-draw-btn" id="free-btn" onclick="doFreeDraw()" style="display:none;">
+      🎁 免費抽 · 剩 <span id="free-left">0</span> 次
+    </button>
+    <div class="donate-note" id="free-note" style="display:none;">推薦活動贈送的免費抽,不扣點數,直接抽一顆種子。</div>
     <button class="share-link-btn" onclick="openShare(null)">📣 分享給朋友 · 自動帶我的推薦碼</button>
   </div>
 
@@ -327,6 +336,7 @@ var _totalW = 0;      // 整池 weight 總和,算掉落機率用
 var _refCode = '';    // 我的推薦碼
 var _lastReveal = null;
 var _shareSeed = null;
+var _freeLeft = 0;    // 這池目前可用的免費抽次數(推薦活動贈送,不扣點)
 
 function setupTheme(){
   if(POOL === 'suncar'){
@@ -346,6 +356,8 @@ async function init(){
   var user = s && s.data && s.data.session ? s.data.session.user : null;
   if(!user){ location.href = '13_login.html'; return; }
   _uid = user.id;
+  // 註冊見面禮:被推薦註冊的人進這頁自動領一次免費抽(後台檢查活動有沒有開、是否已領過,只能領一次)
+  try{ await sb.rpc('claim_signup_free_draw'); }catch(e){}
   renderAmtBar();
   await loadAll(_uid);
 }
@@ -385,6 +397,11 @@ async function loadAll(uid){
   _bal = bal;
   _refCode = u.ref_code || '';
   document.getElementById('bal').textContent = bal;
+
+  /* 免費抽次數(這池):推薦活動贈送,不扣點。沒有資料就是 0 */
+  var fr = await sb.from('free_seed_draws').select('remaining').eq('pool', POOL).maybeSingle();
+  _freeLeft = (fr && fr.data) ? (fr.data.remaining || 0) : 0;
+  renderFreeBtn();
 
   var pn = document.querySelector('.prog-name'); if(pn) pn.textContent = TIER + ' 點種子收集庫';
 
@@ -503,6 +520,46 @@ async function doDonate(){
   var s = await sb.auth.getSession();
   var user = s && s.data && s.data.session ? s.data.session.user : null;
   if(user) await loadAll(user.id);
+}
+
+/* 免費抽鈕:有次數才顯示,沒有就藏起來 */
+function renderFreeBtn(){
+  var btn = document.getElementById('free-btn');
+  var note = document.getElementById('free-note');
+  var span = document.getElementById('free-left');
+  if(!btn) return;
+  if(_freeLeft > 0){
+    if(span) span.textContent = _freeLeft;
+    btn.style.display = '';
+    if(note) note.style.display = '';
+    btn.disabled = _empty;
+  } else {
+    btn.style.display = 'none';
+    if(note) note.style.display = 'none';
+  }
+}
+
+/* 免費抽:走後台 redeem_free_seed_draw(扣一次免費次數、不扣點數),回傳跟付費打賞一樣的結果 */
+async function doFreeDraw(){
+  if(_busy || _empty || _freeLeft <= 0) return;
+  _busy = true;
+  var btn = document.getElementById('free-btn');
+  btn.disabled = true;
+  var r = await sb.rpc('redeem_free_seed_draw', { p_pool: POOL, p_tier: TIER });
+  _busy = false;
+  if(r.error){ alert('免費抽失敗,請稍後再試。'); btn.disabled = false; return; }
+  var d = r.data || {};
+  if(!d.ok){
+    if(d.reason === 'no_free'){ alert('免費抽次數已用完。'); _freeLeft = 0; renderFreeBtn(); }
+    else if(d.reason === 'no_seed'){ alert('這個金額的種子還沒建好,免費次數沒被扣掉。'); }
+    else if(d.reason === 'not_login'){ location.href = '13_login.html'; return; }
+    else { alert('免費抽失敗,請稍後再試。'); }
+    btn.disabled = false;
+    return;
+  }
+  if(typeof d.free_left === 'number') _freeLeft = d.free_left;
+  showReveal(d);
+  if(_uid) await loadAll(_uid);   // 重畫圖鑑與免費次數
 }
 
 function showReveal(d){

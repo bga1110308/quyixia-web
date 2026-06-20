@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>使用說明 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;--amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;--champagne-soft:#FFFCF5;--cream:#FAEEDA;
+  --forest:#2F6048;--forest-deep:#1F4A36;--mint:#5FB58E;--mint-pale:#E8F5EE;--border-mint:rgba(95,181,142,0.3);
+  --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+  --border:#FFE9B8;--border-soft:#F5EBD8;
+  --warn:#E89544;--warn-pale:#FFF1E0;--danger:#D9534F;--danger-pale:#FCE8E7;--info:#3A7CB8;--info-pale:#E8F1F8;
+  --line-green:#06C755;--bg:var(--champagne-soft);--surface:#fff;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;
+  background:var(--champagne-soft);color:var(--ink);min-height:100vh;line-height:1.7;}
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;
+  background:#fff;border:1px solid var(--border);color:var(--amber-deep);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;
+  box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.wrap{max-width:760px;margin:0 auto;padding:5rem 1.25rem 4rem;}
+
+.page-head{text-align:center;margin-bottom:1.6rem;}
+.page-head h1{font-size:2rem;font-weight:600;letter-spacing:-0.5px;margin-bottom:0.5rem;}
+.page-head p{font-size:0.95rem;color:var(--ink-soft);}
+
+/* 錨點目錄 */
+.toc{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:1.8rem;}
+.toc a{font-size:0.8rem;font-weight:600;color:var(--ink-soft);background:#fff;border:1.5px solid var(--border);
+  padding:6px 13px;border-radius:99px;text-decoration:none;transition:all 0.2s;}
+.toc a:hover{background:var(--champagne);color:var(--amber-deep);border-color:var(--amber);}
+
+.card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.4rem 1.5rem;margin-bottom:1.1rem;
+  box-shadow:0 2px 8px rgba(186,117,23,0.04);scroll-margin-top:5rem;}
+.card.staff{border-left:4px solid var(--forest);}
+.card.client{border-left:4px solid var(--amber);}
+.sec-title{font-size:1.12rem;font-weight:600;color:var(--ink);margin-bottom:0.9rem;display:flex;align-items:center;gap:10px;}
+.sec-title svg{width:22px;height:22px;flex-shrink:0;}
+.sec-title .ic-amber{fill:var(--amber);}
+.sec-title .ic-forest{fill:var(--forest);}
+.card p{font-size:0.92rem;color:var(--ink);margin-bottom:0.7rem;}
+.card p:last-child{margin-bottom:0;}
+.card b{color:var(--amber-darker);font-weight:600;}
+.card .soft{color:var(--ink-soft);font-size:0.86rem;}
+
+/* 步驟/重點清單 */
+.steps{list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:0.7rem;margin:0.3rem 0;}
+.steps li{counter-increment:s;position:relative;padding-left:2.4rem;font-size:0.92rem;}
+.steps li::before{content:counter(s);position:absolute;left:0;top:-1px;width:1.7rem;height:1.7rem;border-radius:50%;
+  background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;font-weight:700;font-size:0.82rem;
+  display:flex;align-items:center;justify-content:center;}
+.card.staff .steps li::before{background:linear-gradient(135deg,var(--mint),var(--forest));}
+
+.points{list-style:none;display:flex;flex-direction:column;gap:0.55rem;margin:0.3rem 0;}
+.points li{position:relative;padding-left:1.5rem;font-size:0.92rem;}
+.points li::before{content:'';position:absolute;left:0;top:0.55rem;width:7px;height:7px;border-radius:50%;background:var(--amber);}
+.card.staff .points li::before{background:var(--forest);}
+
+/* 提示框 */
+.note{border-radius:12px;padding:0.8rem 1rem;font-size:0.85rem;line-height:1.65;margin-top:0.8rem;display:flex;gap:9px;}
+.note svg{width:17px;height:17px;flex-shrink:0;margin-top:2px;}
+.note.warn{background:var(--warn-pale);color:#9a5a13;}.note.warn svg{fill:var(--warn);}
+.note.danger{background:var(--danger-pale);color:#9a2b28;}.note.danger svg{fill:var(--danger);}
+.note.info{background:var(--info-pale);color:#1f4e74;}.note.info svg{fill:var(--info);}
+.note.ok{background:var(--mint-pale);color:var(--forest-deep);}.note.ok svg{fill:var(--forest);}
+
+table.mini{width:100%;border-collapse:collapse;margin:0.4rem 0;font-size:0.86rem;}
+table.mini th,table.mini td{border:1px solid var(--border-soft);padding:8px 10px;text-align:left;vertical-align:top;}
+table.mini th{background:var(--champagne-soft);font-weight:600;color:var(--amber-darker);}
+
+.cta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:1.4rem;}
+.cta{flex:1;min-width:140px;display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;
+  padding:0.95rem;border-radius:14px;font-size:0.95rem;font-weight:600;transition:all 0.2s;}
+.cta.gold{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;box-shadow:0 8px 24px rgba(239,159,39,0.32);}
+.cta.gold:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(239,159,39,0.42);}
+.cta.green{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;box-shadow:0 6px 18px rgba(47,96,72,0.28);}
+.cta.green:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(47,96,72,0.38);}
+.cta svg{width:1.1em;height:1.1em;fill:currentColor;}
+
+.foot{text-align:center;font-size:0.8rem;color:var(--ink-light);margin-top:1.5rem;line-height:1.7;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></symbol>
+  <symbol id="i-staff" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm.31 16.13v1.32h-1.06v-1.31c-1.71-.22-2.54-1.21-2.6-2.41h1.27c.06.65.51 1.16 1.86 1.16 1.45 0 1.77-.72 1.77-1.18 0-.62-.33-1.21-2-1.61-1.86-.45-3.13-1.21-3.13-2.74 0-1.29.99-2.13 2.43-2.4v-1.32h1.06v1.32c1.55.25 2.41 1.16 2.46 2.34h-1.27c-.04-.69-.41-1.18-1.66-1.18-1.16 0-1.85.51-1.85 1.21 0 .68.43 1.17 2.04 1.6 1.65.45 3.09 1.21 3.09 2.79 0 1.39-1.07 2.18-2.41 2.41z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V5l-9-4zm-1.5 16L6 12.5l1.4-1.4 3.1 3.1 6.1-6.1L18 9.5l-7.5 7.5z"/></symbol>
+  <symbol id="i-crown" viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v2H5v-2z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-seed" viewBox="0 0 24 24"><path d="M20 4s-7-1-11 3-3 11-3 11 7 1 11-3 3-11 3-11zm-9 12c0-3 2-6 6-7-3 0-7 1-9 4-1 2-1 4-1 4s2 0 4-1z"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><path d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm13 0l3 3-3 3-1.4-1.4 1.6-1.6h-4.2v-2h4.2l-1.6-1.6L17 14z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></symbol>
+  <symbol id="i-line" viewBox="0 0 24 24"><path d="M12 3C6.48 3 2 6.69 2 11.25c0 4.09 3.74 7.5 8.79 8.14.34.07.81.23.93.52.1.27.07.69.03.96l-.15.9c-.04.27-.21 1.05.92.57s6.11-3.6 8.34-6.16C21.36 14.5 22 12.95 22 11.25 22 6.69 17.52 3 12 3z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="wrap">
+
+  <div class="page-head">
+    <h1>怎麼用 <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span></h1>
+    <p>第一次來看這頁就懂。下單、接單、收費、信用分、評分，一次說清楚。</p>
+  </div>
+
+  <div class="toc">
+    <a href="#what">這是什麼</a>
+    <a href="#start">三步驟開始</a>
+    <a href="#client">案家下單</a>
+    <a href="#staff">順咖接單</a>
+    <a href="#pay">點數與收費</a>
+    <a href="#cancel">取消退款</a>
+    <a href="#credit">信用分</a>
+    <a href="#flag">紅旗與未到</a>
+    <a href="#review">評分</a>
+    <a href="#seed">打賞種子</a>
+    <a href="#refer">推薦獎勵</a>
+    <a href="#law">安全與規範</a>
+  </div>
+
+  <!-- 1 -->
+  <div class="card" id="what">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-info"/></svg>去一下是什麼</div>
+    <p><span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span> 是一個<b>自費生活服務媒合平台</b>。家裡需要人陪看醫生、代排隊、遛狗、幫長輩備餐這些雜事，在這裡下單，附近願意接的人就會來幫你。</p>
+    <p>平台的角色是<b>居中媒合資訊</b>，把需要幫忙的人和願意幫忙的人牽在一起。平台<b>不是人力派遣、不是仲介</b>，不指派誰一定要去、也不從服務報酬抽成。</p>
+    <div class="note ok"><svg><use href="#i-check"/></svg><span>所有提供服務的人都經過實名認證，需要身體照顧的服務還要照服員證才能接，讓雙方都安心。</span></div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card" id="start">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-flow"/></svg>三步驟開始</div>
+    <ol class="steps">
+      <li><b>註冊</b>：用 LINE、Google 或電子信箱都可以，一個人一個帳號。</li>
+      <li><b>補基本資料</b>：填暱稱、電話、信箱、身分證號。這是一次性的，填完就是正式會員。</li>
+      <li><b>開始用</b>：要找人幫忙就<b>下單</b>，想接案賺外快就去<b>加入順咖</b>。同一個帳號兩種身份都能用。</li>
+    </ol>
+    <div class="note info"><svg><use href="#i-info"/></svg><span>身分證號只用來確認「一個人一個帳號」，不會公開給別人看，也不等於已經實名驗證。實名徽章要另外上傳證件審核。</span></div>
+  </div>
+
+  <!-- 3 案家 -->
+  <div class="card client" id="client">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-pin"/></svg>案家：怎麼下單、要注意什麼</div>
+    <p class="soft">案家就是「需要幫忙、發出需求的人」。</p>
+    <ul class="points">
+      <li><b>把需求寫清楚</b>：時間、地點、要做什麼、長輩狀況，寫越清楚越快被接、越不會有誤會。</li>
+      <li><b>選對服務類型</b>：一般跑腿陪伴是一種，需要攙扶、協助身體照顧是另一種（要有照服員證的人才能接）。</li>
+      <li><b>公開找人或指定某位順咖</b>：可以公開讓大家搶接，也可以指定某位順咖、保留一段時間給他優先接，他沒接或婉拒就自動轉公開。</li>
+      <li><b>下單要付一筆媒合費</b>：用點數支付，這是付給平台的資訊媒合費，不是服務報酬。服務本身的費用你和順咖另外講定。</li>
+      <li><b>聯絡方式在訂單成立後才開放</b>：保護雙方電話不外洩，也避免有人想跳過平台私下交易。</li>
+    </ul>
+    <div class="note warn"><svg><use href="#i-warn"/></svg><span>下單前先確認服務時間，避免時間已經過了才被接。臨時要取消，看下面「取消與退款」的規則。</span></div>
+  </div>
+
+  <!-- 4 順咖 -->
+  <div class="card staff" id="staff">
+    <div class="sec-title"><svg class="ic-forest"><use href="#i-staff"/></svg>順咖：怎麼接單、要注意什麼</div>
+    <p class="soft">「順咖」就是在平台上幫忙、提供服務、賺取收入的人。我們不叫服務員、不叫派遣。</p>
+    <ul class="points">
+      <li><b>看單、挑單</b>：挑自己想接、離家近、時間配合得來的單。要不要接你自己決定，沒有人逼你。</li>
+      <li><b>身體照顧的單要照服員證</b>：沒有照服員證只能接一般跑腿陪伴類。這是法律規定，平台會擋，不是為難你。</li>
+      <li><b>準時到、做完</b>：接了就要守時把服務完成。臨時去不了要儘早婉拒或聯絡案家，不要讓人家空等。</li>
+      <li><b>不要私下跳過平台</b>：聯絡走平台，留紀錄才有保障。私下交易出事平台幫不了你。</li>
+      <li><b>接單會用到點數</b>：資訊媒合是付費取得的，這是順咖付費自保、也讓平台中立運作的方式。</li>
+    </ul>
+    <div class="note danger"><svg><use href="#i-warn"/></svg><span>接了單卻沒到（俗稱放鳥），案家可以回報，後台查核成立會扣你的信用分。守信用才接得到好單。</span></div>
+  </div>
+
+  <!-- 5 收費 -->
+  <div class="card" id="pay">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-coin"/></svg>點數與收費</div>
+    <p>平台的收費方式是<b>賣資訊、收點數，不抽成</b>。你和對方談好的服務費，平台一毛都不碰。</p>
+    <ul class="points">
+      <li><b>案家點數、順咖點數完全分開</b>，互不流通。案家的點數只用在案家這邊，順咖的只用在順咖那邊。</li>
+      <li><b>下單媒合費</b>：一般類和照服員類的點數不同，金額由平台後台設定，下單畫面會顯示當下要扣多少。</li>
+      <li><b>儲值</b>：用人工匯款對帳，回報後約 3 到 5 個工作天內入帳。入帳後點數才會增加。</li>
+    </ul>
+    <div class="note info"><svg><use href="#i-info"/></svg><span>平台不會在網頁上直接收信用卡卡號。任何要你在頁面輸入卡號的畫面都不是我們的正常流程。</span></div>
+  </div>
+
+  <!-- 6 取消退款 -->
+  <div class="card" id="cancel">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-info"/></svg>取消與退款</div>
+    <table class="mini">
+      <tr><th>狀況</th><th>能不能取消</th><th>退款 / 計次</th></tr>
+      <tr><td>還在媒合中（沒人接）</td><td>可以取消</td><td>媒合費全退，不計取消次數</td></tr>
+      <tr><td>已經有順咖接了</td><td>可以取消</td><td>媒合費不退，記一次取消、影響信用分</td></tr>
+      <tr><td>服務中、已完成</td><td>前台不能取消</td><td>有爭議走後台處理</td></tr>
+      <tr><td>都沒人接、時間過了</td><td>系統自動取消</td><td>依設定退回媒合費</td></tr>
+    </table>
+    <div class="note warn"><svg><use href="#i-warn"/></svg><span>用金幣（推薦獎勵那種）折抵的部分一律不退。媒合費是付給平台的資訊費，不是服務報酬。</span></div>
+  </div>
+
+  <!-- 7 信用分 -->
+  <div class="card" id="credit">
+    <div class="sec-title"><svg class="ic-forest"><use href="#i-shield"/></svg>信用分怎麼算</div>
+    <p>每個人從 <b>100 分</b>起算。信用分讓大家知道你守不守信，分數越高越受信任。</p>
+    <ul class="points">
+      <li>每被記一次<b>「已接單後又取消」</b>，扣 5 分。</li>
+      <li>每被後台確認一次<b>「接了沒到」</b>，扣分（扣幾分由後台設定）。</li>
+      <li>最低扣到 0 分為止，不會變負數。</li>
+    </ul>
+    <p class="soft">媒合中就取消、沒人接而自動取消，這些都不扣分。取消率算的是「願意接你的單裡，你後來反悔的比例」。</p>
+  </div>
+
+  <!-- 8 紅旗 -->
+  <div class="card" id="flag">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-flag"/></svg>紅旗與順咖未到</div>
+    <p>如果順咖接了單卻沒出現，案家可以在訂單上<b>回報未到</b>。</p>
+    <ul class="points">
+      <li>案家回報後，系統先把這張單標成「未到」，並<b>退回案家的媒合費</b>（金幣不退）。</li>
+      <li>順咖會收到通知，<b>可以提出說明或證據</b>（例如臨時車禍、案家自己取消等）。</li>
+      <li><b>是否成立由後台查核</b>，不是案家說了算。查核成立才扣順咖信用分；有正當理由可以免罰。</li>
+    </ul>
+    <div class="note info"><svg><use href="#i-info"/></svg><span>平台是中立的媒合資訊方，不介入雙方的金錢或醫療糾紛。回報機制是用來維持平台秩序，不是仲裁賠償。</span></div>
+  </div>
+
+  <!-- 9 評分 -->
+  <div class="card" id="review">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-star"/></svg>評分</div>
+    <p>服務完成後，案家和順咖可以<b>互相評分、留下評價</b>。星等是公開的，幫助後面的人判斷要不要合作。</p>
+    <p class="soft">好的評分會讓你更容易被選上。誠實服務、誠實評分，平台才會越來越好用。</p>
+  </div>
+
+  <!-- 10 種子 -->
+  <div class="card" id="seed">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-seed"/></svg>打賞與集種子</div>
+    <p>想支持平台、或想多一點樂趣，可以用點數<b>打賞</b>，每次打賞會隨機掉一顆<b>種子寶寶</b>進你的收集庫。集滿整池就拿到「制霸徽章」。</p>
+    <ul class="points">
+      <li>案家和順咖的收集庫<b>各自獨立</b>，分開收集、互不混用。</li>
+      <li>有不同金額的收集庫，越稀有的種子越難掉到。</li>
+      <li>打賞純粹是支持與收集的小遊戲，跟接單派單無關。</li>
+    </ul>
+  </div>
+
+  <!-- 11 推薦 -->
+  <div class="card" id="refer">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-crown"/></svg>推薦好友拿獎勵</div>
+    <p>把你的<b>推薦連結</b>分享給朋友，他點連結註冊就會自動算在你名下，不用他手動輸入。</p>
+    <ul class="points">
+      <li><b>推薦金幣與皇冠</b>：推薦越多朋友，累積金幣、解鎖推薦皇冠頭框與標章。</li>
+      <li><b>推薦照服員獎勵加倍</b>：介紹有照服員證的朋友進來，獎勵比一般人多。</li>
+      <li><b>活動期間還有免費抽種子</b>：朋友用你的連結註冊、完成第一筆服務，你就拿到免費抽的機會（活動有開才有，期間由平台公告）。</li>
+    </ul>
+    <p class="soft">推薦話術範本在推薦頁，有很多句可以換，複製就會自動帶上你的連結。</p>
+  </div>
+
+  <!-- 12 法律 -->
+  <div class="card" id="law">
+    <div class="sec-title"><svg class="ic-amber"><use href="#i-shield"/></svg>安全與規範</div>
+    <ul class="points">
+      <li><b>身體照顧一定要照服員證</b>：沒有證照不能接需要身體照顧的服務，這是長照法規定。</li>
+      <li><b>聯絡與交易都走平台</b>：留紀錄才有保障，私下交易出事平台無法協助。</li>
+      <li><b>實名認證</b>：完成證件審核會有實名徽章，讓案家更信任你。</li>
+      <li><b>平台是中立資訊媒合方</b>：不指派、不抽成、不仲介，雙方的服務內容與費用由你們自己談定。</li>
+    </ul>
+    <div class="note danger"><svg><use href="#i-warn"/></svg><span>未成年不提供成人相關服務。任何違法、危害他人安全的需求，平台一律不接受。</span></div>
+  </div>
+
+  <div class="cta-row">
+    <a href="04_order_form.html" class="cta gold"><svg><use href="#i-pin"/></svg>我要找幫手</a>
+    <a href="03_staff_apply.html" class="cta green"><svg><use href="#i-staff"/></svg>我要當順咖</a>
+  </div>
+
+  <div class="foot">還有問題嗎? 加 <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span> 官方 LINE 問我們。<br>這份說明會隨平台功能更新。</div>
+
+</div>
+
+</body>
+</html>

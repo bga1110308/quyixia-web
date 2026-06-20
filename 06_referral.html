@@ -107,6 +107,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .script-copy-btn{position:absolute;top:0.75rem;right:0.75rem;background:#fff;border:1.5px solid var(--border);color:var(--amber-deep);padding:4px 10px;border-radius:8px;font-size:0.74rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-weight:600;transition:all 0.15s;}
 .script-copy-btn:hover{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;}
 .script-copy-btn svg{width:0.9em;height:0.9em;fill:currentColor;}
+.script-more{margin-top:9px;background:none;border:none;color:var(--amber-deep);font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit;padding:2px 0;text-decoration:underline;text-underline-offset:3px;}
+.script-more:hover{color:var(--amber);}
 
 /* 進度卡 */
 .progress-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
@@ -278,24 +280,27 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   <div class="card">
     <div class="sec-title">推薦話術範本</div>
-    <div style="font-size:0.82rem;color:var(--ink-soft);margin-bottom:0.95rem;line-height:1.7;">直接複製貼到 LINE 給朋友,不知道怎麼開口時用這個。</div>
+    <div style="font-size:0.82rem;color:var(--ink-soft);margin-bottom:0.95rem;line-height:1.7;">每一類都有很多句,按「換一句」就會換不一樣的說法。複製時會自動把你的專屬推薦連結接在後面,朋友點連結註冊就會自動算你推薦的。</div>
 
-    <div class="script-card">
-      <div class="script-label"><svg><use href="#i-msg"/></svg>給想接案的朋友</div>
-      <button class="script-copy-btn" onclick="copyScript(this, 'staff')"><svg><use href="#i-copy"/></svg>複製</button>
-      <div class="script-text" data-tpl="1">嘿,我在用一個叫「去一下」的接案平台,下班或假日有空就接,自己排班自己定價,不用打卡也沒底薪壓力。用我推薦碼 FANG2025 註冊,雙方都有獎勵。https://quyixia-web.vercel.app/14_signup.html?ref=FANG2025</div>
+    <div class="script-card" data-aud="staff">
+      <div class="script-label"><svg><use href="#i-msg"/></svg>給想接案的順咖朋友</div>
+      <button class="script-copy-btn" onclick="copyScript(this)"><svg><use href="#i-copy"/></svg>複製</button>
+      <div class="script-text">載入中…</div>
+      <button class="script-more" onclick="shuffleScript(this)">換一句</button>
     </div>
 
-    <div class="script-card">
-      <div class="script-label"><svg><use href="#i-steth"/></svg>給照服員 / 居服員朋友(建議用這個,獎勵 3 倍)</div>
-      <button class="script-copy-btn" onclick="copyScript(this, 'cna')"><svg><use href="#i-copy"/></svg>複製</button>
-      <div class="script-text" data-tpl="1">妳有照服員證的話可以試試「去一下」,下班後接自費案賺外快,平台不問妳在哪間機構上班,可以自己設定不接單時段保護本業。我的推薦碼 FANG2025。https://quyixia-web.vercel.app/14_signup.html?ref=FANG2025</div>
+    <div class="script-card" data-aud="cna">
+      <div class="script-label"><svg><use href="#i-steth"/></svg>給照服員 / 居服員朋友(獎勵加倍)</div>
+      <button class="script-copy-btn" onclick="copyScript(this)"><svg><use href="#i-copy"/></svg>複製</button>
+      <div class="script-text">載入中…</div>
+      <button class="script-more" onclick="shuffleScript(this)">換一句</button>
     </div>
 
-    <div class="script-card">
-      <div class="script-label"><svg><use href="#i-pin"/></svg>給需要幫忙的朋友</div>
-      <button class="script-copy-btn" onclick="copyScript(this, 'client')"><svg><use href="#i-copy"/></svg>複製</button>
-      <div class="script-text" data-tpl="1">家裡長輩需要陪看醫生、遛狗、代排隊...這些雜事用「去一下」就好,平台都是實名認證過的順咖。用我的推薦碼 FANG2025 註冊有優惠。https://quyixia-web.vercel.app/14_signup.html?ref=FANG2025</div>
+    <div class="script-card" data-aud="client">
+      <div class="script-label"><svg><use href="#i-pin"/></svg>給需要幫忙的案家朋友</div>
+      <button class="script-copy-btn" onclick="copyScript(this)"><svg><use href="#i-copy"/></svg>複製</button>
+      <div class="script-text">載入中…</div>
+      <button class="script-more" onclick="shuffleScript(this)">換一句</button>
     </div>
   </div>
 
@@ -405,14 +410,8 @@ async function loadReferral() {
   if (me.data) { myRefCode = me.data.ref_code || ''; }
   document.getElementById('ref-code').textContent = myRefCode || '—';
   await refreshCoinBalances();   // 填 staffPts/clientPts 並寫進畫面
-  // 把三段話術裡的推薦碼與連結換成真碼
-  if (myRefCode) {
-    document.querySelectorAll('.script-text[data-tpl]').forEach(function(el){
-      el.textContent = el.textContent
-        .replace(/FANG2025/g, myRefCode)
-        .replace(/ref=[A-Z0-9]+/g, 'ref=' + myRefCode);
-    });
-  }
+  // 話術每類先顯示第一句;複製時才把推薦連結接上去(連結用 myRefCode 動態組,不寫死在話術裡)
+  renderScripts();
 
   // 2. 人頭數 = referred_by = 我 的帳號數(註冊就算)
   var cnt = await sb.from('users').select('id', { count: 'exact', head: true }).eq('referred_by', user.id);
@@ -512,10 +511,13 @@ function copyRefLink() {
 function shareRef() {
   if (!myRefCode) { alert('推薦碼尚未載入'); return; }
   var url = REF_BASE + myRefCode;
+  // 隨機挑一句案家話術當分享文案,每次分享不一樣
+  var list = SCRIPTS.client;
+  var msg = list[Math.floor(Math.random() * list.length)];
   if (navigator.share) {
-    navigator.share({ title: '去一下平台', text: '推薦你加入去一下!', url: url });
+    navigator.share({ title: '去一下平台', text: msg, url: url });
   } else {
-    copyTo(url, '連結已複製,可貼上分享!');
+    copyTo(msg + '\n' + url, '已複製分享文案,可貼上分享!');
   }
 }
 
@@ -560,29 +562,87 @@ function fmtExpiry(s) {
   return d.getFullYear() + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + ('0'+d.getDate()).slice(-2) + ' ' + ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
 }
 
-function copyScript(btn, type) {
+// 三類話術句庫(每句不含推薦碼/連結,複製時才接上自己的連結,所以同一句任何人複製都帶到自己的碼)
+var SCRIPTS = {
+  staff: [
+    '下班想多賺一點?「去一下」讓你下班、假日有空才接,自己排班自己定價,不用打卡也沒底薪壓力。用我的推薦連結註冊,雙方都有獎勵。',
+    '趕快來幫自己加薪!「去一下」接案平台,代排、陪同、備餐這些你本來就會的,接一單賺一單,時間自己抓。',
+    '不用再看老闆臉色,「去一下」自己接案自己當家,想接才接、想休就休。我推薦你進來,雙方都有禮。',
+    '想要自由一點的工作?「去一下」讓你選自己想接的單、挑離家近的,賺外快又不綁約。',
+    '你會照顧、會跑腿,這些技能別浪費。「去一下」把你的時間變現,空檔接個單就有收入。',
+    '在家帶小孩、半退休也能接!「去一下」彈性接單,有多少時間做多少,離家近的單會主動跳給你。',
+    '想多一份收入又不想多一個老闆?「去一下」自己就是老闆,接單、定價、休息全你說了算。',
+    '平台都是實名案家,接得安心。「去一下」讓你下班後接自費案賺外快,用我的連結註冊有獎勵。'
+  ],
+  cna: [
+    '妳有照服員證就別只領一份薪水。「去一下」下班後接自費案,平台不問妳在哪間機構,獎勵還比一般人多。',
+    '照服員專屬加薪管道!「去一下」讓妳用專業接自費單,自己設不接單時段保護本業,接一單賺一單。',
+    '有證照的妳最吃香。「去一下」上照服員接案獎勵加倍,空班、休假接個案,收入自己掌握。',
+    '別讓照服員證放著生灰。「去一下」自費案需要妳的專業,時薪自己開,離家近優先派給妳。',
+    '妳的照顧專業值得更多。「去一下」讓妳下班接自費身體照顧案,合法、有保障,用我的連結進來有獎勵。',
+    '照服員下班別急著回家,「去一下」上接一單自費案等於多一份薪水,而且時間妳自己挑。'
+  ],
+  client: [
+    '年假修完了,需要幫手嗎?快上「去一下」!陪看醫生、代排隊、備餐,什麼雜事都幫你去一下。',
+    '什麼都幫你「去一下」的好幫手!家裡長輩要陪同、要遛狗、要跑腿,實名順咖幫你搞定。',
+    '一個人忙不過來?「去一下」幫你分擔。陪長輩看診、代購、備餐,下單就有離你最近的順咖接。',
+    '長輩在家沒人陪、雜事一堆沒空做?「去一下」實名認證順咖,下單簡單,有人主動聯絡你。',
+    '臨時要人幫忙又找不到人?「去一下」隨時下單,代排隊、陪同就醫、買東西都能幫。',
+    '家裡的大小雜事交給「去一下」。順咖都實名認證過,陪伴、跑腿、備餐安心交付。',
+    '不想麻煩親戚朋友?「去一下」用付費請專業的人幫忙,清楚又不欠人情。',
+    '爸媽要回診沒人陪?「去一下」找得到附近的陪同順咖,實名、可評價,放心託付。'
+  ]
+};
+var _scriptIdx = { staff: 0, cna: 0, client: 0 };
+
+// 推薦連結(動態組,確保永遠是當前登入者自己的碼)
+function refLink() { return REF_BASE + (myRefCode || ''); }
+
+// 把某張卡顯示句庫第 i 句(循環)
+function showScript(card, aud, i) {
+  var list = SCRIPTS[aud] || [];
+  if (!list.length) return;
+  i = ((i % list.length) + list.length) % list.length;
+  _scriptIdx[aud] = i;
+  card.querySelector('.script-text').textContent = list[i];
+}
+// 進頁先各顯示第一句
+function renderScripts() {
+  document.querySelectorAll('.script-card[data-aud]').forEach(function(card){
+    showScript(card, card.getAttribute('data-aud'), _scriptIdx[card.getAttribute('data-aud')] || 0);
+  });
+}
+// 換一句:往後跳一句
+function shuffleScript(btn) {
   var card = btn.closest('.script-card');
-  var text = card.querySelector('.script-text').textContent;
+  var aud = card.getAttribute('data-aud');
+  showScript(card, aud, (_scriptIdx[aud] || 0) + 1);
+}
+
+function copyScript(btn) {
+  if (!myRefCode) { alert('推薦碼尚未載入,請稍候再試'); return; }
+  var card = btn.closest('.script-card');
+  var phrase = card.querySelector('.script-text').textContent;
+  var text = phrase + '\n' + refLink();   // 話術 + 換行 + 自己的推薦連結
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(function(){
-      var orig = btn.innerHTML;
-      btn.innerHTML = '<svg><use href="#i-check"/></svg>已複製';
-      btn.style.background = 'linear-gradient(135deg,var(--mint),var(--forest))';
-      btn.style.color = '#fff';
-      btn.style.borderColor = 'transparent';
-      setTimeout(function(){
-        btn.innerHTML = orig;
-        btn.style.background = '';
-        btn.style.color = '';
-        btn.style.borderColor = '';
-      }, 2000);
-    });
+    navigator.clipboard.writeText(text).then(function(){ flashCopied(btn); });
   } else {
     var ta = document.createElement('textarea');
     ta.value = text; document.body.appendChild(ta); ta.select();
     document.execCommand('copy'); document.body.removeChild(ta);
-    alert('話術已複製!');
+    flashCopied(btn);
   }
+}
+// 複製成功的按鈕回饋(綠色「已複製」2 秒後復原)
+function flashCopied(btn) {
+  var orig = btn.innerHTML;
+  btn.innerHTML = '<svg><use href="#i-check"/></svg>已複製';
+  btn.style.background = 'linear-gradient(135deg,var(--mint),var(--forest))';
+  btn.style.color = '#fff';
+  btn.style.borderColor = 'transparent';
+  setTimeout(function(){
+    btn.innerHTML = orig; btn.style.background = ''; btn.style.color = ''; btn.style.borderColor = '';
+  }, 2000);
 }
 </script>
 </body>
