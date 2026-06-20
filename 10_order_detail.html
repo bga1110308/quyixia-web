@@ -703,21 +703,63 @@ function renderTimeline(o){
   sec.style.display = '';
 }
 
-/* LINE 聯絡:按了先告訴後台「我這張單要聯絡對方」(set_line_relay_context),再開官方帳號加好友頁。
-   為什麼要先設情境:LINE 官方帳號收到訊息時只知道「誰傳的」,不知道「要轉給誰」;
-   靠這張單把案家↔順咖配對起來,之後對方傳訊息 webhook 才轉得對,且全程走官方帳號中轉、不交換私人 LINE(守平台中轉定案)。
-   後台會驗你是不是這張單的案家/順咖、訂單是否進行中,不符就回錯誤、不開啟。 */
+/* LINE 聯絡:順咖按了要先「解鎖中轉」(unlock_line_relay),依後台設定可能扣 suncar 點;
+   案家一律免費。解鎖成功才設情境(set_line_relay_context)、開官方帳號加好友頁。
+   為什麼分兩步:解鎖負責收費與權限把關(集中在後台函式、前端不能繞、同一張單只扣一次),
+   情境(set_line_relay_context)負責把案家↔順咖配對起來,之後對方傳訊息 webhook 才轉得對,
+   全程走官方帳號中轉、不交換私人 LINE(守平台中轉定案)。 */
 async function openLineRelay(){
   var oid = window._orderId;
   if(!oid){ alert('找不到訂單,請重新整理頁面再試'); return; }
+
+  // 先看這次會不會扣點:要扣才先跳確認框(別讓人按了才發現被扣)。真正把關仍在後台函式。
+  try{
+    var pre = await relayChargePreview(oid);
+    if(pre.willCharge && !confirm('使用 LINE 聯絡這張單需扣 ' + pre.cost + ' 點(順咖點數),同一張單只扣一次。確定要扣點開啟?')) return;
+  }catch(e){ /* 預覽失敗不擋,交給後台函式判斷 */ }
+
+  // 真正解鎖:後台函式是唯一收費與權限關卡(扣對的池、同單只扣一次、案家免費、免費期不扣)
+  var u;
+  try{ u = await sb.rpc('unlock_line_relay', { p_order_id: oid }); }
+  catch(e){ alert('連線異常,請稍後再試'); return; }
+  if(u && u.error){ alert('目前無法開啟 LINE 聯絡:' + (u.error.message || '請稍後再試')); return; }
+  var res = u ? u.data : null;
+  if(!res || !res.ok){
+    if(res && res.reason === 'not_enough_points'){
+      if(confirm('點數不足,開啟 LINE 聯絡需 ' + (res.need || '') + ' 點。要去儲值嗎?')) location.href = '16_buy_credits.html';
+      return;
+    }
+    alert('目前無法開啟 LINE 聯絡,請確認你是這張單的順咖且訂單進行中。');
+    return;
+  }
+
+  /* 用同一分頁直接前往官方帳號加好友頁,不要用 window.open 開新分頁:
+     手機瀏覽器在 await(等後台回應)之後再開新分頁會被彈窗攔截、按了沒反應。
+     加好友後在官方帳號內傳訊息,即會中轉給這張單的對方。 */
   try{
     var r = await sb.rpc('set_line_relay_context', { p_order_id: oid });
     if(r && r.error){ alert('目前無法開啟 LINE 聯絡:' + (r.error.message || '請稍後再試')); return; }
   }catch(e){ alert('連線異常,請稍後再試'); return; }
-  /* 用同一分頁直接前往官方帳號加好友頁,不要用 window.open 開新分頁:
-     手機瀏覽器在 await(等後台回應)之後再開新分頁會被彈窗攔截、按了沒反應。
-     加好友後在官方帳號內傳訊息,即會中轉給這張單的對方。 */
   location.href = 'https://line.me/R/ti/p/@303hceml';
+}
+
+/* 預覽這次解鎖會不會扣點(只為了先跳確認框,真正把關在 unlock_line_relay 後台函式)。
+   會扣點的條件:後台關了免費 或 已過免費到期日,且設了點數>0,且我是順咖(非案家),且這張單我還沒解鎖過。 */
+async function relayChargePreview(oid){
+  var cfg = await sb.from('app_config').select('line_relay_free_on,line_relay_free_until,line_relay_cost').eq('id',1).maybeSingle();
+  var c = (cfg && cfg.data) ? cfg.data : {};
+  var cost = c.line_relay_cost || 0;
+  // 台灣今天(YYYY-MM-DD),跟後台同一套日期比較
+  var today = new Date(Date.now() + 8*3600*1000).toISOString().slice(0,10);
+  var freeNow = (c.line_relay_free_on !== false) && (!c.line_relay_free_until || today <= String(c.line_relay_free_until).slice(0,10));
+  if(freeNow || cost <= 0) return { willCharge:false, cost:cost };
+  var sres = await sb.auth.getSession();
+  var uid = (sres.data && sres.data.session && sres.data.session.user) ? sres.data.session.user.id : null;
+  var ord = await sb.from('orders').select('client_id').eq('id', oid).maybeSingle();
+  if(ord && ord.data && uid && ord.data.client_id === uid) return { willCharge:false, cost:cost }; // 案家免費
+  var unl = await sb.from('line_relay_unlocks').select('order_id').eq('order_id', oid).eq('user_id', uid).maybeSingle();
+  if(unl && unl.data) return { willCharge:false, cost:cost }; // 解鎖過不重扣
+  return { willCharge:true, cost:cost };
 }
 
 async function init(){

@@ -754,6 +754,30 @@ textarea.form-input{min-height:80px;resize:vertical;}
           </div>
         </div>
 
+        <div class="setting-group">
+          <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>LINE 中轉收費</div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">免費期間(順咖用 LINE 聯絡不扣點)</div>
+              <div class="sr-desc">開啟=免費期,順咖按「LINE 聯絡」不扣點。關閉=立即開始收費。案家用 LINE 聯絡一律免費,不受這裡影響。一按就生效,不用跑 SQL。</div>
+              <span class="status-chip chip-on" id="chip-relay">目前:免費中</span>
+            </div>
+            <label class="toggle"><input type="checkbox" id="cfg-relay-free" checked onchange="saveSwitch(this,'line_relay_free_on','chip-relay','免費中','收費中')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">到期日與收費點數</div>
+              <div class="sr-desc">設了到期日:當天過後自動轉收費,不用人來關;留空=維持上面開關的狀態。點數=順咖解鎖一張單的 LINE 聯絡要扣幾點(扣順咖點數),同一張單只扣一次。改完按右邊「儲存」。</div>
+              <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;align-items:flex-end;">
+                <label style="font-size:12.5px;color:var(--ink-soft);">免費到期日<br><input class="text-input" id="cfg-relay-until" type="date" style="margin-top:4px;max-width:170px;"></label>
+                <label style="font-size:12.5px;color:var(--ink-soft);">解鎖一張單幾點<br><input class="text-input" id="cfg-relay-cost" type="number" min="0" max="9999" style="margin-top:4px;max-width:130px;"></label>
+                <button class="btn-gold-sm" style="padding:9px 22px;font-size:13px;" onclick="saveRelayPricing(this)">儲存</button>
+              </div>
+              <div id="relay-result" style="margin-top:8px;font-size:12.5px;color:var(--ink-soft);"></div>
+            </div>
+          </div>
+        </div>
+
         </div><!-- /sp-switch -->
 
         <div class="settings-pane" id="sp-members">
@@ -2212,6 +2236,11 @@ async function loadPricing(){
   var spu=document.getElementById('cfg-seedpromo-until'); if(spu) spu.value = (c.free_draw_promo_until ? String(c.free_draw_promo_until).slice(0,10) : '');
   var sps=document.getElementById('cfg-seedpromo-signup'); if(sps) sps.value = (c.free_draw_signup_n==null?'':c.free_draw_signup_n);
   var spr=document.getElementById('cfg-seedpromo-ref'); if(spr) spr.value = (c.free_draw_referrer_n==null?'':c.free_draw_referrer_n);
+
+  // LINE 中轉收費:免費開關(預設免費)、免費到期日、解鎖點數
+  var rf=document.getElementById('cfg-relay-free'); if(rf){ rf.checked = !(c.line_relay_free_on === false); updateChip(rf,'chip-relay','免費中','收費中'); }
+  var ru=document.getElementById('cfg-relay-until'); if(ru) ru.value = (c.line_relay_free_until ? String(c.line_relay_free_until).slice(0,10) : '');
+  var rc=document.getElementById('cfg-relay-cost'); if(rc) rc.value = (c.line_relay_cost==null?'':c.line_relay_cost);
 }
 
 /* 數字欄轉存:空字串→null(讓「單次永久」可存),其餘轉整數 */
@@ -2286,6 +2315,21 @@ async function saveSeedPromo(btn){
   if(btn) btn.disabled=false;
   if(up.error){ if(r) r.textContent='儲存失敗:'+up.error.message+'(若說找不到欄位,代表種子活動的 SQL A 段還沒跑)'; return; }
   if(r) r.textContent='已儲存。之後有人註冊/完成首單就照新設定送。';
+}
+/* LINE 中轉收費:到期日與點數寫回 app_config(沿用 app_config_admin_write 政策)。
+   免費開關 line_relay_free_on 走上面 saveSwitch 一按即存;這顆只存到期日與點數,改完按「儲存」。
+   收費真生效在後台函式 unlock_line_relay(讀這三欄判斷免費/收費、扣 suncar 點)。 */
+async function saveRelayPricing(btn){
+  var r=document.getElementById('relay-result'); if(r) r.textContent='儲存中…';
+  var payload={
+    line_relay_free_until: (document.getElementById('cfg-relay-until').value || null),
+    line_relay_cost:       (numOrNull('cfg-relay-cost')==null ? 0 : numOrNull('cfg-relay-cost'))
+  };
+  if(btn) btn.disabled=true;
+  var up=await sb.from('app_config').update(payload).eq('id',1);
+  if(btn) btn.disabled=false;
+  if(up.error){ if(r) r.textContent='儲存失敗:'+up.error.message+'(若說找不到欄位,代表 LINE 中轉的 SQL 第 1 段還沒跑)'; return; }
+  if(r) r.textContent='已儲存。順咖端立刻照新設定收費/免費。';
 }
 function saveOrderOpen(cb){ saveSwitch(cb,'order_open','chip-order','開放中','關閉中'); }
 function saveViewCounts(cb){ saveSwitch(cb,'show_view_counts','chip-views','開啟中','關閉中'); }
