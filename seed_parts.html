@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>種子配件總覽 · 去一下</title>
+<style>
+  :root{ --gold:#EF9F27; --green:#5FB58E; --ink:#3D2914; --soft:#8B7355; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:"Noto Sans TC","Microsoft JhengHei",sans-serif; color:var(--ink);
+        background:linear-gradient(180deg,#FFFDF7,#FBF3E0); padding:1.2rem 1rem 3rem; }
+  .head{ max-width:1100px; margin:0 auto 1rem; text-align:center; }
+  .head h1{ font-size:1.4rem; margin:0 0 .4rem; }
+  .head p{ font-size:.86rem; color:var(--soft); margin:.2rem 0; line-height:1.6; }
+  .wrap{ max-width:1100px; margin:0 auto; }
+  .pool-bar{ text-align:center; margin:.6rem 0 1.2rem; }
+  .pool-bar button{ font:inherit; font-size:.9rem; font-weight:700; border:none; cursor:pointer;
+        padding:.45rem 1.1rem; border-radius:99px; margin:0 .3rem; color:#fff; opacity:.5; }
+  .pool-bar button.client{ background:linear-gradient(135deg,#FFB84D,#EF9F27); }
+  .pool-bar button.suncar{ background:linear-gradient(135deg,#5FB58E,#2F6048); }
+  .pool-bar button.on{ opacity:1; box-shadow:0 3px 10px rgba(0,0,0,.18); }
+  .sec{ background:#fff; border:1.5px solid #E8C77A; border-radius:18px;
+        padding:1rem 1rem 1.3rem; margin-bottom:1.3rem; box-shadow:0 6px 18px rgba(186,117,23,.1); }
+  .sec h2{ font-size:1.05rem; margin:0 0 .2rem; }
+  .sec .sub{ font-size:.76rem; color:var(--soft); margin:0 0 .8rem; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:14px 6px; }
+  .cell{ text-align:center; }
+  .art{ width:76px; height:76px; margin:0 auto; }
+  .art svg{ width:100%; height:100%; display:block; }
+  .nm{ font-size:.72rem; font-weight:600; line-height:1.25; margin-top:3px; }
+  .cd{ font-size:.58rem; color:var(--soft); margin-top:1px; font-family:monospace; }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>🌱 種子配件總覽</h1>
+  <p>這頁把所有配件零件一次列出來給你核對。每顆下面是中文說明＋代碼。</p>
+  <p>切換「案家／順咖」可看同一個配件在兩種底色下的樣子（案家暖咖啡、順咖綠）。</p>
+</div>
+
+<div class="pool-bar">
+  <button id="b-client" class="client on" onclick="setPool('client')">案家底色</button>
+  <button id="b-suncar" class="suncar" onclick="setPool('suncar')">順咖底色</button>
+</div>
+
+<div class="wrap" id="wrap"></div>
+
+<script src="qyx-seed-art.js"></script>
+<script>
+/* 配件總覽:純檢視工具,不需登入、不連資料庫。直接用繪圖引擎把每個配件畫出來。
+   給負責人核對「妳列的配件都做出來了嗎、像不像」。沒有放任何全站入口。 */
+var POOL = 'client';
+
+/* 每筆:[中文說明, art 代碼(不含 b/f,預設 seed 身體), 表情]。
+   有些配件需要頭飾＋道具兩個一起(例:學生帽＋看報紙),就同時給 h 和 p。 */
+var GROUPS = [
+  ['妳指定的配件', '依你給的清單順序,逐一對照', [
+    ['放大鏡', {p:'magnifier'}, 'content'],
+    ['學生帽＋看報紙', {h:'schoolcap', p:'newspaper'}, 'content'],
+    ['愛心眼鏡', {p:'heartglasses'}, 'heart_eyes'],
+    ['降落傘', {p:'parachute'}, 'surprise'],
+    ['照相機', {p:'camera'}, 'wink'],
+    ['旗桿', {p:'flag'}, 'happy'],
+    ['彩虹旗', {p:'prideflag'}, 'joy'],
+    ['保暖圍巾', {p:'scarf'}, 'content'],
+    ['泡溫泉', {p:'hotspring'}, 'content'],
+    ['唱歌', {p:'sing'}, 'joy'],
+    ['麥克風', {p:'mic'}, 'joy'],
+    ['音符', {p:'notes'}, 'happy'],
+    ['畫家帽', {h:'beret'}, 'happy'],
+    ['畫畫(調色盤畫筆)', {p:'painting'}, 'wink'],
+    ['坐船', {p:'boat'}, 'happy'],
+    ['抱小白兔', {p:'rabbit'}, 'happy'],
+    ['抱小貓', {p:'cat'}, 'happy'],
+    ['舉啞鈴', {p:'dumbbell'}, 'grit'],
+    ['好點子(燈泡)', {p:'idea'}, 'wink'],
+    ['跑步頭巾', {h:'headband'}, 'grit'],
+    ['蛋殼', {p:'egg'}, 'surprise'],
+    ['幸運草', {p:'clover'}, 'happy'],
+    ['潛水鏡', {p:'divemask'}, 'happy'],
+    ['潛水呼吸管', {p:'snorkel'}, 'happy'],
+    ['魔術師禮帽', {h:'tophat'}, 'wink'],
+    ['喝飲料', {p:'drink'}, 'content'],
+    ['氣球', {p:'balloon'}, 'happy'],
+    ['星星氣球', {p:'starballoon'}, 'star_eyes'],
+    ['花環', {h:'wreath'}, 'shy'],
+    ['坐月亮', {p:'moon'}, 'sleepy'],
+    ['睡帽', {h:'nightcap'}, 'sleepy'],
+    ['照鏡子', {p:'mirror'}, 'content'],
+    ['禮物上發芽', {p:'gift'}, 'joy'],
+    ['貼愛心的信', {p:'letter'}, 'shy'],
+    ['門後偷看', {p:'door'}, 'shy'],
+    ['撐傘躲雨', {p:'rain'}, 'happy'],
+    ['泡木桶＋頭巾', {p:'tub'}, 'content'],
+    ['泡愛心杯子', {p:'cup'}, 'content'],
+    ['抱餅乾吃', {p:'cookie'}, 'joy'],
+    ['拉拉球加油', {p:'pompom'}, 'joy'],
+    ['3D眼鏡＋爆米花', {p:'popcorn'}, 'joy'],
+    ['衝浪', {p:'surf'}, 'joy'],
+    ['躺椅曬太陽', {p:'beachchair'}, 'content'],
+    ['生火烤棉花糖', {p:'campfire'}, 'happy'],
+    ['騎腳踏車(金桶)', {p:'bike'}, 'joy'],
+    ['拿喇叭', {p:'megaphone'}, 'joy'],
+    ['工地帽＋圖紙', {h:'hardhat', p:'blueprint'}, 'happy'],
+    ['王冠＋皇袍', {h:'crown', p:'robe'}, 'happy'],
+    ['登山裝備', {p:'hiking'}, 'grit'],
+    ['拿一根星星', {p:'star'}, 'star_eyes'],
+    ['在紙箱裡', {p:'box'}, 'wink'],
+    ['彈吉他＋音符', {p:'guitar'}, 'joy'],
+    ['鮮花冒愛心', {p:'bouquet'}, 'heart_eyes'],
+    ['戴耳機(開心)', {h:'headphones'}, 'joy'],
+    ['旁邊有問號', {p:'question'}, 'surprise'],
+    ['吃甜甜圈', {p:'donut'}, 'joy'],
+    ['忍者＋飛鏢', {h:'ninja', p:'shuriken'}, 'grit'],
+    ['天使(翅膀＋光圈)', {p:'angel'}, 'content'],
+    ['小惡魔(角＋翅膀＋叉)', {p:'devil'}, 'hmph'],
+    ['拿鉛筆', {p:'pencil'}, 'content'],
+    ['圓眼鏡＋指揮棒', {p:'conductor'}, 'content'],
+    ['坐熱氣球', {p:'hotairballoon'}, 'joy'],
+    ['轉圈圈＋音符', {p:'spin'}, 'joy'],
+    ['愛心氣球LOVE', {p:'loveballoon'}, 'heart_eyes'],
+    ['冠軍獎盃', {p:'trophy'}, 'star_eyes'],
+    ['雲朵上睡覺', {p:'cloud'}, 'sleepy'],
+    ['慶祝帽＋綵帶', {h:'partyhat', p:'confetti'}, 'joy']
+  ]],
+  ['原本就有的道具', '之前引擎已有的,保留不動', [
+    ['糖果', {p:'candy'}, 'joy'],
+    ['送愛心', {p:'heart'}, 'heart_eyes'],
+    ['撐傘', {p:'umbrella'}, 'happy'],
+    ['晴天', {p:'sun'}, 'wink'],
+    ['墨鏡', {p:'glasses'}, 'happy'],
+    ['彩虹', {p:'rainbow'}, 'joy'],
+    ['拐杖', {p:'cane'}, 'content'],
+    ['撒錢', {p:'coins'}, 'joy'],
+    ['寶石', {p:'gem'}, 'star_eyes'],
+    ['金幣桶', {p:'pot'}, 'happy']
+  ]],
+  ['表情(臉)', '配件可搭任一表情,這裡列全部表情代碼', [
+    ['開心 happy', {}, 'happy'],
+    ['眨眼 wink', {}, 'wink'],
+    ['大笑 joy', {}, 'joy'],
+    ['害羞 shy', {}, 'shy'],
+    ['驚訝 surprise', {}, 'surprise'],
+    ['滿足 content', {}, 'content'],
+    ['愛心眼 heart_eyes', {}, 'heart_eyes'],
+    ['想睡 sleepy', {}, 'sleepy'],
+    ['哭 cry', {}, 'cry'],
+    ['生氣 angry', {}, 'angry'],
+    ['脹紅 mad', {}, 'mad'],
+    ['哼 hmph', {}, 'hmph'],
+    ['咬牙 grit', {}, 'grit'],
+    ['發抖 tremble', {}, 'tremble'],
+    ['蹦跳 bounce', {}, 'bounce'],
+    ['星星眼 star_eyes', {}, 'star_eyes'],
+    ['頭暈 dizzy', {}, 'dizzy']
+  ]]
+];
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+
+function codeText(art){
+  var bits = [];
+  if(art.h) bits.push('h:' + art.h);
+  if(art.p) bits.push('p:' + art.p);
+  if(art.f) bits.push('f:' + art.f);
+  return bits.join(' ');
+}
+
+function cellHtml(row){
+  var name = row[0], codes = row[1], face = row[2];
+  var art = { b:'seed', f:face };
+  if(codes.h) art.h = codes.h;
+  if(codes.p) art.p = codes.p;
+  var svg = QyxSeedArt.svg({ art:art, rarity:'normal', pool:POOL, tier:30, size:76, got:true });
+  return '<div class="cell"><div class="art">' + svg + '</div>'
+       + '<div class="nm">' + esc(name) + '</div>'
+       + '<div class="cd">' + esc(codeText(art)) + '</div></div>';
+}
+
+function render(){
+  var html = '';
+  GROUPS.forEach(function(g){
+    var cells = g[2].map(cellHtml).join('');
+    html += '<div class="sec"><h2>' + esc(g[0]) + '（' + g[2].length + '）</h2>'
+          + '<div class="sub">' + esc(g[1]) + '</div>'
+          + '<div class="grid">' + cells + '</div></div>';
+  });
+  document.getElementById('wrap').innerHTML = html;
+}
+
+function setPool(p){
+  POOL = p;
+  document.getElementById('b-client').classList.toggle('on', p === 'client');
+  document.getElementById('b-suncar').classList.toggle('on', p === 'suncar');
+  render();
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  if(typeof QyxSeedArt === 'undefined'){
+    document.getElementById('wrap').innerHTML = '<div class="sec">qyx-seed-art.js 未載入,請確認檔案有上傳。</div>';
+    return;
+  }
+  render();
+});
+</script>
+</body>
+</html>
