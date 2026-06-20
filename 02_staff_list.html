@@ -317,6 +317,9 @@ var customBadgeMap = {};
 /* 會員編號:memberMap = {順咖id: 'U-...'}。撞名辨認用。public_suncars 不吐編號,案家又跟多數順咖沒訂單關係讀不到,
    所以走後台 get_suncar_member_nos(只回 active 順咖的編號)批次拿,前端不直接讀 users。 */
 var memberMap = {};
+/* 信箱已驗證:emailOkSet = 已驗證信箱的順咖 id 集合。走後台 get_suncar_email_verified 批次拿(只回 id、不吐信箱),
+   因為信箱驗證真值在 auth.users.email_confirmed_at,案家無權讀別人的 auth 資料,故跟自訂證件同套用定義者權限函式跨人讀。 */
+var emailOkSet = new Set();
 var myId = null; /* 登入者自己的 id:用來擋「點自己卡片變成指定自己下單」 */
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -393,8 +396,8 @@ async function loadStaff() {
     if (r.is_realname && r.show_realname !== false) badges.push('verified');           /* 身分證過審 */
     if (r.has_caregiver_cert && r.show_caregiver !== false) badges.push('cna');        /* 照服員證過審 */
     if (r.has_good_conduct && r.show_good_conduct !== false) badges.push('safe');      /* 良民證過審 */
-    if (r.has_cpr && r.show_cpr !== false) badges.push('cpr');
-    if (r.is_email_verified) badges.push('email');                         /* CPR/AED 急救證過審 */
+    if (r.has_cpr && r.show_cpr !== false) badges.push('cpr');             /* CPR/AED 急救證過審 */
+    /* 信箱徽章不在這裡判:public_suncars 不吐信箱驗證狀態,改在下方批次 RPC 拿到 emailOkSet 後補進 badges */
     var areas = Array.isArray(p.areas) ? p.areas : [];
     return {
       id: r.id,
@@ -450,6 +453,17 @@ async function loadStaff() {
     var mn = await sb.rpc('get_suncar_member_nos', { p_targets: ids });
     if (mn && mn.data) mn.data.forEach(function(row){ memberMap[row.user_id] = row.member_no; });
   }
+
+  /* 信箱已驗證徽章:批次拿哪些順咖信箱已驗證(後台只回 id),補進各順咖的 badges。
+     函式沒建好或報錯時 emailOkSet 留空＝不顯示信箱徽章,頁面照常。 */
+  emailOkSet = new Set();
+  if (ids.length) {
+    var ev = await sb.rpc('get_suncar_email_verified', { p_targets: ids });
+    if (ev && ev.data) ev.data.forEach(function(row){ emailOkSet.add(row.user_id); });
+  }
+  staffList.forEach(function(s){
+    if (emailOkSet.has(s.id) && s.badges.indexOf('email') === -1) s.badges.push('email');
+  });
 
   renderStaff();
 }

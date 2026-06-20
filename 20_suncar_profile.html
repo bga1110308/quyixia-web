@@ -237,7 +237,8 @@ async function init(){
     sb.rpc('get_suncar_member_nos', { p_targets: ids }),
     sb.rpc('get_active_suncar_perks', { p_targets: ids }),
     sb.rpc('get_user_seeds', { p_target: TARGET, p_pool: 'suncar' }),
-    sb.rpc('get_public_reviews', { p_reviewee: TARGET, p_mode: 'client_reviews_suncar' })
+    sb.rpc('get_public_reviews', { p_reviewee: TARGET, p_mode: 'client_reviews_suncar' }),
+    sb.rpc('get_suncar_email_verified', { p_targets: ids })
   ]);
 
   var data = {
@@ -249,7 +250,9 @@ async function init(){
     member: pickOne(results[4]),
     perks: (results[5] && results[5].data) ? results[5].data : [],
     seeds: (results[6] && results[6].data) ? results[6].data : [],
-    publicReviews: (results[7] && results[7].data) ? results[7].data : []
+    publicReviews: (results[7] && results[7].data) ? results[7].data : [],
+    /* 信箱已驗證:後台只回 id,有回到本人就代表已驗證(走 auth.users.email_confirmed_at,案家無權直接讀) */
+    emailVerified: !!(results[8] && results[8].data && results[8].data.length)
   };
   render(data);
 }
@@ -286,7 +289,7 @@ function render(d){
   if(sun.has_caregiver_cert && sun.show_caregiver!==false) badges += badge('b-cna','i-star','照服員');
   if(sun.has_good_conduct && sun.show_good_conduct!==false) badges += badge('b-safe','i-shield','良民');
   if(sun.has_cpr && sun.show_cpr!==false) badges += badge('b-cpr','i-heart-cross','急救');
-  if(sun.is_email_verified) badges += badge('b-email','i-mail','信箱');
+  if(d.emailVerified) badges += badge('b-email','i-mail','信箱');
   if(perkMap.referral_badge) badges += badge('b-ref','i-star','推薦達人');
   d.customs.forEach(function(c){ badges += '<span class="bm b-custom">'+esc(c.name)+'</span>'; });
   if(badges) html += '<div class="badge-row">'+badges+'</div>';
