@@ -223,6 +223,9 @@ body.suncar .free-draw-btn:hover{background:var(--mint-pale)!important;}
 .tw-hit-art{width:54px;height:54px;flex:0 0 auto;}
 .tw-hit-t{font-size:0.86rem;font-weight:700;color:var(--amber-darker);}
 .tw-hit-n{font-size:0.74rem;color:var(--ink-soft);font-weight:600;margin-top:2px;}
+/* 十連抽沒抽中台灣款(或已收集滿)的提示,語氣輕、不搶戲 */
+.tw-miss{margin:0 0 0.9rem;padding:0.6rem 0.8rem;border-radius:12px;text-align:center;
+  background:#FBF3E0;border:1px dashed var(--border);color:var(--ink-soft);font-size:0.8rem;font-weight:600;}
 </style>
 </head>
 <body>
@@ -706,11 +709,17 @@ function showReveal10(d){
   var twEl = document.getElementById('ten-tw');
   if(twEl){
     _twWin = d.taiwan || null;
-    twEl.innerHTML = d.taiwan
-      ? '<div class="tw-hit" onclick="showTwWinCard()" style="cursor:pointer"><div class="tw-hit-art">' + seedMarkup({ art:d.taiwan.art, name:d.taiwan.name }, true, 54) + '</div>'
+    if(d.taiwan){
+      twEl.innerHTML = '<div class="tw-hit" onclick="showTwWinCard()" style="cursor:pointer"><div class="tw-hit-art">' + seedMarkup({ art:d.taiwan.art, name:d.taiwan.name }, true, 54) + '</div>'
         + '<div><div class="tw-hit-t">🇹🇼 額外抽中台灣限定!</div>'
-        + '<div class="tw-hit-n">' + esc(d.taiwan.name) + '款 · 點我看大圖 · 分享</div></div></div>'
-      : '';
+        + '<div class="tw-hit-n">' + esc(d.taiwan.name) + '款 · 點我看大圖 · 分享</div></div></div>';
+    } else if(d.taiwan_full){
+      twEl.innerHTML = '<div class="tw-miss">🇹🇼 台灣限定 · 你已全部收集完成 ✓</div>';
+    } else if(d.taiwan_try){
+      twEl.innerHTML = '<div class="tw-miss">🇹🇼 台灣限定 · 這次沒抽中,下次十連抽再拚 💪</div>';
+    } else {
+      twEl.innerHTML = '';
+    }
   }
   var msg = d.partial
     ? ('點數只夠抽 ' + (d.drawn || draws.length) + ' 顆 · 新種子 ' + (d.new_count || 0) + ' 顆')
