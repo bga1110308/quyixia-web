@@ -217,6 +217,12 @@ body.suncar .free-draw-btn:hover{background:var(--mint-pale)!important;}
 .ten-cell .nm{font-size:0.56rem;color:var(--ink);font-weight:600;line-height:1.1;}
 .ten-cell .tnew{font-size:0.54rem;font-weight:700;color:var(--forest);}
 .ten-cell .tdup{font-size:0.54rem;font-weight:700;color:var(--ink-light);}
+/* 十連抽額外抽中台灣限定的橫幅 */
+.tw-hit{display:flex;align-items:center;gap:10px;margin:0 0 0.9rem;padding:0.7rem 0.8rem;border-radius:14px;
+  background:linear-gradient(135deg,#FFF3CF,#FFE0A8);border:1.5px solid var(--gold);box-shadow:0 4px 14px rgba(224,169,60,0.28);}
+.tw-hit-art{width:54px;height:54px;flex:0 0 auto;}
+.tw-hit-t{font-size:0.86rem;font-weight:700;color:var(--amber-darker);}
+.tw-hit-n{font-size:0.74rem;color:var(--ink-soft);font-weight:600;margin-top:2px;}
 </style>
 </head>
 <body>
@@ -298,6 +304,7 @@ body.suncar .free-draw-btn:hover{background:var(--mint-pale)!important;}
 <div class="reveal-mask" id="reveal10" onclick="if(event.target===this)close10()">
   <div class="reveal-box ten-box">
     <div class="ten-title">🌱 十連抽結果</div>
+    <div id="ten-tw"></div>
     <div class="ten-grid" id="ten-grid"></div>
     <div class="reveal-meta" id="ten-meta" style="margin-top:1rem"></div>
     <div class="reveal-btns">
@@ -646,7 +653,9 @@ async function doDonate10(){
   _busy = true;
   var b1 = document.getElementById('donate-btn'), b2 = document.getElementById('donate10-btn');
   b1.disabled = true; b2.disabled = true;
-  var r = await sb.rpc('donate_seed_bulk', { p_pool: POOL, p_tier: TIER, p_n: 10 });
+  /* 走包裝函式:裡面先跑原本的十連抽(扣點抽10顆),成功才擲一次台灣限定。
+     中獎邏輯綁在付費十連抽裡,前端叫不到單獨的擲獎,防止繞過去免費刷台灣款。 */
+  var r = await sb.rpc('donate10_with_tw', { p_pool: POOL, p_tier: TIER });
   _busy = false;
   if(r.error){ alert('十連抽失敗,請稍後再試。'); b1.disabled = false; b2.disabled = false; return; }
   var d = r.data || {};
@@ -658,7 +667,7 @@ async function doDonate10(){
   showReveal10(d);
   var s = await sb.auth.getSession();
   var user = s && s.data && s.data.session ? s.data.session.user : null;
-  if(user) await loadAll(user.id);
+  if(user){ await loadAll(user.id); await loadTaiwan(); }   // 抽完順便刷台灣冊(中了會多一顆)
 }
 
 function showReveal10(d){
@@ -671,6 +680,15 @@ function showReveal10(d){
       +   (x.is_new ? '<div class="tnew">新!</div>' : '<div class="tdup">重複</div>')
       + '</div>';
   }).join('');
+  /* 台灣限定中獎橫幅:有中(d.taiwan)才顯示在十連抽結果上方 */
+  var twEl = document.getElementById('ten-tw');
+  if(twEl){
+    twEl.innerHTML = d.taiwan
+      ? '<div class="tw-hit"><div class="tw-hit-art">' + seedMarkup({ art:d.taiwan.art, name:d.taiwan.name }, true, 54) + '</div>'
+        + '<div><div class="tw-hit-t">🇹🇼 額外抽中台灣限定!</div>'
+        + '<div class="tw-hit-n">' + esc(d.taiwan.name) + '款 · 台灣冊 ' + (d.taiwan.collected || 0) + ' / ' + (d.taiwan.total || 0) + '</div></div></div>'
+      : '';
+  }
   var msg = d.partial
     ? ('點數只夠抽 ' + (d.drawn || draws.length) + ' 顆 · 新種子 ' + (d.new_count || 0) + ' 顆')
     : ('本次新種子 ' + (d.new_count || 0) + ' 顆');
