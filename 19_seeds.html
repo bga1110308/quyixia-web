@@ -269,6 +269,13 @@ body.suncar .free-draw-btn:hover{background:var(--mint-pale)!important;}
   <div class="dex-title">種子圖鑑</div>
   <div class="dex-grid" id="dex"></div>
 
+  <!-- 台灣隱藏款:全站共用一本,不分案家/順咖;只有十連抽有機會掉落。沒種子(SQL沒跑)時整段隱藏 -->
+  <div id="tw-section" style="display:none">
+    <div class="dex-title">🇹🇼 台灣限定 · 活動款</div>
+    <div class="prog-legend" style="margin:-0.4rem 0 0.8rem">限定款不算進上面的制霸,只有十連抽有機會額外掉落,台灣冊全站共用一本。已收集 <b id="tw-got">0</b> / <span id="tw-tot">0</span></div>
+    <div class="dex-grid" id="tw-dex"></div>
+  </div>
+
   <div class="foot-hint">收集庫目前只有你自己看得到。之後會開放在你的名片上秀給別人看。</div>
 </div>
 
@@ -364,6 +371,34 @@ async function init(){
   try{ await sb.rpc('claim_signup_free_draw'); }catch(e){}
   renderAmtBar();
   await loadAll(_uid);
+  await loadTaiwan();   // 台灣冊全站共用、跟金額無關,進頁讀一次
+}
+
+/* 台灣隱藏款圖鑑:全站一本(只綁 user_id、不分池)。沒建台灣款就整段隱藏。
+   未收集一樣走 seedMarkup 的灰剪影+?(台灣款都有 art.img)。 */
+async function loadTaiwan(){
+  var sec = document.getElementById('tw-section');
+  var cat = await sb.from('taiwan_seeds').select('id,code,name,rarity,sort,art').order('sort');
+  var seeds = (cat && cat.data) ? cat.data : [];
+  if(!seeds.length){ if(sec) sec.style.display = 'none'; return; }
+  var mine = await sb.from('user_taiwan_seeds').select('seed_id,cnt');
+  var owned = {};
+  if(mine && mine.data){ mine.data.forEach(function(r){ owned[r.seed_id] = r.cnt; }); }
+  var got = 0, html = '';
+  seeds.forEach(function(s){
+    var hasIt = (owned[s.id] || 0) > 0;
+    if(hasIt) got++;
+    var cls = (s.rarity === 'gold') ? ' gold' : (s.rarity === 'rare' ? ' rare' : '');
+    html += '<div class="cell ' + (hasIt ? 'got' : 'locked') + cls + '">'
+          +   '<div class="seedwrap">' + seedMarkup(s, hasIt, 50) + '</div>'
+          +   '<div class="nm">' + (hasIt ? esc(s.name) : '？？？') + '</div>'
+          +   '<div class="rate">' + (hasIt ? '已收集' : '&nbsp;') + '</div>'
+          + '</div>';
+  });
+  document.getElementById('tw-dex').innerHTML = html;
+  document.getElementById('tw-got').textContent = got;
+  document.getElementById('tw-tot').textContent = seeds.length;
+  sec.style.display = '';
 }
 
 /* 金額切換列:七個級距,點了換收集庫重抓 */
