@@ -191,7 +191,7 @@ body.suncar .amt-chip.on{background:linear-gradient(135deg,var(--mint),var(--for
 .cell.got.gold .qsa-wrap{animation:qsaBob 3s ease-in-out infinite, qsaGlow 2.4s ease-in-out infinite;}
 .reveal-seed .qsa-wrap{animation:qsaBob 2.6s ease-in-out infinite;}
 .seed-img{width:100%;height:100%;object-fit:contain;display:block;}
-.seed-img.locked{filter:grayscale(1) blur(5px) brightness(1.08);opacity:0.55;}
+/* 未收集已改用引擎畫灰殼+?,不再用 blur 圖片,故移除舊的 .seed-img.locked */
 
 /* 十連抽:第二顆按鈕(金色,跟單抽區隔)＋十連結果彈窗 */
 .donate10-btn{background:linear-gradient(135deg,#FFD27A,#E0A93C);box-shadow:0 8px 24px rgba(224,169,60,0.32);margin-top:0.8rem;}
@@ -376,16 +376,21 @@ function switchAmount(t){
   if(_uid) loadAll(_uid);
 }
 
-/* 一顆種子的畫面:有圖片路徑就顯示圖片(未收集轉灰),否則用引擎畫向量 */
+/* 一顆種子的畫面:
+   未收集→一律用引擎畫「灰殼+?」剪影(不洩漏圖案,也不會像 blur 那樣被當成壞圖/沒載完);
+   已收集→有圖片路徑就顯圖片,否則用引擎畫向量。 */
 function seedMarkup(s, got, size){
   var art = s.art || {};
   if(typeof art === 'string'){ try{ art = JSON.parse(art); }catch(e){ art = {}; } }
+  if(!got){
+    if(typeof window.QyxSeedArt === 'undefined'){ return '?'; }
+    return QyxSeedArt.svg({ art:{ b:(art && art.b) || 'seed' }, rarity:s.rarity, pool:POOL, tier:TIER, size:size, got:false });
+  }
   if(art && art.img){
     /* loading=lazy：捲到才載圖,圖鑑再多也不會一次塞爆網路;decoding=async 不卡畫面 */
-    return '<img class="seed-img' + (got ? '' : ' locked') + '" loading="lazy" decoding="async" src="' + esc(art.img) + '" alt="">';
+    return '<img class="seed-img" loading="lazy" decoding="async" src="' + esc(art.img) + '" alt="">';
   }
-  if(typeof window.QyxSeedArt === 'undefined'){ return got ? esc(s.emoji || '🌱') : '?'; }
-  if(!got) return QyxSeedArt.svg({ art:{ b:(art && art.b) || 'seed' }, rarity:s.rarity, pool:POOL, tier:TIER, size:size, got:false });
+  if(typeof window.QyxSeedArt === 'undefined'){ return esc(s.emoji || '🌱'); }
   return '<span class="qsa-wrap">' + QyxSeedArt.svg({ art:art, rarity:s.rarity, pool:POOL, tier:TIER, size:size, got:true }) + '</span>';
 }
 

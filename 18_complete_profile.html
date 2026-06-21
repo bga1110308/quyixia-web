@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>補完基本資料 · 去一下</title>
+<!-- Google Analytics(GA4) 訪客分析：載入共用追蹤檔，編號集中在 qyx-analytics.js -->
+<script src="qyx-analytics.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -164,6 +166,9 @@ async function saveProfile(){
     );
     // 角色沒建成不擋使用者進站(主檔已存),只記 log 方便日後查
     if(roleUp.error){ console.error('建立案家角色失敗', roleUp.error); }
+    // GA:只有「全新會員」才記一筆 sign_up 事件,讓 GA 算出有多少訪客真的變成會員,
+    // 並接續首頁記到的 FB/IG 來源(舊帳號回來補資料不算,避免灌水)。
+    if(window.gtag){ gtag('event', 'sign_up', { method: 'web' }); }
   }
   await routeHome(user.id);
 }
