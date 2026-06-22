@@ -170,6 +170,15 @@ body.suncar .reveal-share{color:var(--forest);border-color:var(--mint);}
 .sh-btn.th{background:#000;}
 .sh-btn.ig{background:linear-gradient(135deg,#F58529,#DD2A7B,#8134AF);}
 .sh-btn.cp{background:#fff;color:var(--amber-deep);border:1.5px solid var(--amber);}
+/* 分享種子圖卡:把抽到的種子畫成 PNG 直接分享,LINE/IG/FB 都看得到清楚的種子(不靠連結預覽圖) */
+.share-seed-group{display:none;flex-direction:column;gap:10px;margin-top:1.1rem;}
+.share-seed-group.show{display:flex;}
+.sh-card{padding:0.95rem;border-radius:13px;border:none;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;color:#fff;background:linear-gradient(135deg,var(--honey),var(--amber));transition:all 0.2s;}
+.sh-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(239,159,39,0.35);}
+.sh-card.dl{background:#fff;color:var(--amber-deep);border:1.5px solid var(--amber);}
+body.suncar .sh-card{background:linear-gradient(135deg,var(--mint),var(--forest));}
+body.suncar .sh-card.dl{background:#fff;color:var(--forest);border-color:var(--mint);}
+.share-divider{font-size:0.74rem;color:var(--ink-light);text-align:center;margin-top:0.3rem;}
 .share-close{width:100%;margin-top:1rem;background:#fff;color:var(--ink-soft);border:1.5px solid var(--border);
   padding:0.85rem;border-radius:13px;font-size:0.9rem;font-weight:600;cursor:pointer;font-family:inherit;}
 
@@ -368,6 +377,12 @@ body.suncar .sc-btn{background:linear-gradient(135deg,var(--mint),var(--forest))
   <div class="share-box">
     <div class="share-title">分享給朋友</div>
     <div class="share-desc" id="share-desc">朋友點連結進來註冊會自動帶入你的推薦碼,雙方都有推薦獎勵。</div>
+    <!-- 有抽到種子才出現:把種子畫成圖片分享,LINE/IG/FB 都看得到清楚的種子卡片 -->
+    <div class="share-seed-group" id="share-seed-group">
+      <button class="sh-card" onclick="shareSeedImage()">📤 分享種子圖卡（圖片）</button>
+      <button class="sh-card dl" onclick="downloadSeedImage()">⬇️ 存成圖片</button>
+      <div class="share-divider">或用連結分享 · 自動帶推薦碼</div>
+    </div>
     <div class="share-btns">
       <button class="sh-btn fb" onclick="shareTo('fb')">分享到 Facebook</button>
       <button class="sh-btn th" onclick="shareTo('th')">分享到 Threads(脆)</button>
@@ -956,8 +971,19 @@ function showSeedDetail(id){
 }
 
 /* ---- 分享 ---- */
-function openShare(seed){ _shareSeed = seed || null; document.getElementById('share-mask').classList.add('show'); }
-function openShareFromReveal(){ openShare(_lastReveal); }
+function openShare(seed){
+  _shareSeed = seed || null;
+  /* 有抽到的種子(帶得到視覺)才顯示「分享圖卡」;一般推薦分享沒種子,只給連結 */
+  var g = document.getElementById('share-seed-group');
+  if(g) g.classList.toggle('show', !!(_shareSeed && _shareSeed.artHtml));
+  document.getElementById('share-mask').classList.add('show');
+}
+/* 炫耀分享:連同揭曉視窗裡畫好的種子視覺一起帶走,等下畫成圖片用 */
+function openShareFromReveal(){
+  var sd = _lastReveal ? Object.assign({}, _lastReveal) : {};
+  sd.artHtml = document.getElementById('rv-art').innerHTML;
+  openShare(sd);
+}
 function closeShare(){ document.getElementById('share-mask').classList.remove('show'); }
 function shareUrl(){
   return _refCode
@@ -993,6 +1019,117 @@ function shareTo(kind){
   } else {
     copyText(text + '\n' + url); alert('已複製連結,可貼到任何地方分享。');
   }
+}
+
+/* ---- 種子圖卡(把抽到的種子畫成 PNG 直接分享) ----
+   為什麼這樣做:LINE/FB 貼「連結」只會抓網頁固定的預覽圖,沒辦法每顆種子都不同;
+   IG 貼文裡的連結還不能點。所以直接把種子畫成一張圖片分享,三個平台都看得到清楚的種子。 */
+
+/* 把種子的視覺(webp 圖檔或向量 svg)轉成能畫到 canvas 的 Image 物件 */
+function seedArtToImage(html){
+  return new Promise(function(resolve){
+    if(!html){ resolve(null); return; }
+    var src = '';
+    var im = html.match(/src="([^"]+)"/);
+    if(im){ src = im[1]; }
+    else {
+      var sv = html.match(/<svg[\s\S]*?<\/svg>/i);
+      if(sv){ src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(sv[0]); }
+    }
+    if(!src){ resolve(null); return; }
+    var img = new Image();
+    img.crossOrigin = 'anonymous';   // 種子圖跟網站同網域,設這個不會汙染 canvas,才能匯出
+    img.onload = function(){ resolve(img); };
+    img.onerror = function(){ resolve(null); };
+    img.src = src;
+  });
+}
+
+/* 圓角矩形(畫卡片外框用) */
+function roundRect(c, x, y, w, h, r){
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+/* 畫一張 800x1000 分享圖卡:品牌底 + 種子大圖 + 名稱 + 稀有度 + 連結與推薦碼 */
+function buildShareCardBlob(){
+  var seed = _shareSeed || {};
+  var suncar = (POOL === 'suncar');
+  var accent  = suncar ? '#3E9D72' : '#BA7517';
+  var accent2 = suncar ? '#5FB58E' : '#EF9F27';
+  var plate   = suncar ? '#E9F6EF' : '#FBEFD7';
+  return seedArtToImage(seed.artHtml).then(function(artImg){
+    var W = 800, H = 1000;
+    var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var c = cv.getContext('2d');
+    c.textAlign = 'center';
+    c.fillStyle = '#F3E7CE'; c.fillRect(0, 0, W, H);                 // 外底
+    roundRect(c, 40, 40, W - 80, H - 80, 36);
+    c.fillStyle = '#FFFCF5'; c.fill();
+    c.lineWidth = 3; c.strokeStyle = accent2; c.stroke();           // 內卡
+    c.fillStyle = accent; c.font = '700 46px sans-serif';
+    c.fillText('🌱 去一下', W / 2, 142);                            // 品牌字
+    c.fillStyle = '#7A6A52'; c.font = '500 26px sans-serif';
+    c.fillText('打賞平台 · 種子收集', W / 2, 186);
+    c.beginPath(); c.arc(W / 2, 470, 210, 0, Math.PI * 2);
+    c.fillStyle = plate; c.fill();                                  // 種子底圓盤
+    if(artImg){
+      var s = 320; c.drawImage(artImg, (W - s) / 2, 470 - s / 2, s, s);
+    } else {
+      c.font = '160px sans-serif'; c.fillStyle = accent;
+      c.fillText(seed.emoji || '🌱', W / 2, 525);
+    }
+    c.fillStyle = '#3D2914'; c.font = '700 54px sans-serif';
+    c.fillText(seed.name || '我的種子', W / 2, 762);                 // 名稱
+    var rl = (RARITY[seed.rarity] ? RARITY[seed.rarity].label + '種子' : '收集到一顆');
+    c.fillStyle = accent; c.font = '600 30px sans-serif';
+    c.fillText(rl, W / 2, 814);                                     // 稀有度
+    c.fillStyle = '#9A8A70'; c.font = '500 26px sans-serif';
+    c.fillText('一起來收集 · quyixia-web.vercel.app', W / 2, 902);
+    if(_refCode){
+      c.fillStyle = accent2; c.font = '700 28px sans-serif';
+      c.fillText('推薦碼 ' + _refCode, W / 2, 944);
+    }
+    return new Promise(function(res){ cv.toBlob(res, 'image/png', 0.95); });
+  });
+}
+
+/* 下載圖卡到裝置(桌機、或不支援系統分享時的備案) */
+function saveBlob(blob){
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'quyixia-seed.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+
+/* 用手機系統分享面板把種子圖卡送出去(可選 LINE / IG / FB / 訊息…) */
+async function shareSeedImage(){
+  try{
+    var blob = await buildShareCardBlob();
+    if(!blob){ alert('圖片產生失敗,請改用「存成圖片」。'); return; }
+    var file = new File([blob], 'quyixia-seed.png', { type: 'image/png' });
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      await navigator.share({ files: [file], text: shareText() + '\n' + shareUrl() });
+    } else {
+      /* 桌機或瀏覽器不支援分享檔案:自動下載 + 複製連結,讓她手動貼 */
+      saveBlob(blob);
+      copyText(shareText() + '\n' + shareUrl());
+      alert('已下載種子圖卡,連結也複製好了,貼到 LINE / IG / FB 就行。');
+    }
+  }catch(e){ /* 使用者在分享面板按取消會走到這,不需報錯 */ }
+}
+
+/* 只下載圖片,不開分享面板 */
+async function downloadSeedImage(){
+  var blob = await buildShareCardBlob();
+  if(!blob){ alert('圖片產生失敗,請再試一次。'); return; }
+  saveBlob(blob);
 }
 
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){

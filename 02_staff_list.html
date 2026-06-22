@@ -96,7 +96,9 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .staff-wrap{padding:1.5rem 1.5rem 3rem;max-width:1200px;margin:0 auto;}
 .staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
 
-.staff-card{position:relative;background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:20px 18px 18px;text-align:center;transition:all 0.25s;cursor:pointer;overflow:hidden;}
+/* 卡片改成直向 flex,讓底部按鈕用 margin-top:auto 永遠貼齊卡片底部,
+   不論上面內容(面議/時薪、有無地區標籤、有無提示)多寡,同一排按鈕都對齊 */
+.staff-card{position:relative;background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:20px 18px 18px;text-align:center;transition:all 0.25s;cursor:pointer;overflow:hidden;display:flex;flex-direction:column;}
 .staff-card::before{content:'';position:absolute;top:-30px;right:-30px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.08) 0%,transparent 70%);transition:all 0.3s;}
 .staff-card:hover{transform:translateY(-4px);border-color:var(--amber);box-shadow:0 14px 32px rgba(239,159,39,0.18);}
 .staff-card:hover::before{width:140px;height:140px;}
@@ -145,7 +147,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .mini-tags{position:relative;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:10px;z-index:1;}
 .mtag{font-size:0.68rem;background:var(--champagne-soft);color:var(--ink-soft);padding:3px 9px;border-radius:99px;border:1px solid var(--border-soft);}
 
-.card-cta{position:relative;margin-top:1rem;background:#fff;border:1.5px solid var(--amber);color:var(--amber-deep);padding:9px 0;width:100%;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;z-index:1;}
+.card-cta{position:relative;margin-top:auto;background:#fff;border:1.5px solid var(--amber);color:var(--amber-deep);padding:9px 0;width:100%;border-radius:10px;font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;z-index:1;}
 .card-cta:hover{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(239,159,39,0.3);}
 
 .no-result{text-align:center;padding:4rem 1rem;color:var(--ink-soft);font-size:0.92rem;}
