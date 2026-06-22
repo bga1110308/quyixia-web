@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>種子的故事 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;--amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;--champagne-soft:#FFFCF5;--cream:#FAEEDA;
+  --forest:#2F6048;--forest-deep:#1F4A36;--mint:#5FB58E;--mint-pale:#E8F5EE;--border-mint:rgba(95,181,142,0.3);
+  --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+  --border:#FFE9B8;--border-soft:#F5EBD8;
+  --warn:#E89544;--warn-pale:#FFF1E0;--danger:#D9534F;--danger-pale:#FCE8E7;--info:#3A7CB8;--info-pale:#E8F1F8;
+  --gold:#E0A92E;--gold-soft:#FBF0D2;
+  --line-green:#06C755;--bg:var(--champagne-soft);--surface:#fff;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;
+  background:var(--champagne-soft);color:var(--ink);min-height:100vh;line-height:1.7;}
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;
+  background:#fff;border:1px solid var(--border);color:var(--amber-deep);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;
+  box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.wrap{max-width:760px;margin:0 auto;padding:5rem 1.25rem 4rem;}
+
+.page-head{text-align:center;margin-bottom:1.6rem;}
+.page-head h1{font-size:2rem;font-weight:600;letter-spacing:-0.5px;margin-bottom:0.5rem;}
+.page-head p{font-size:0.95rem;color:var(--ink-soft);}
+
+.toc{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:1.8rem;}
+.toc a{font-size:0.8rem;font-weight:600;color:var(--ink-soft);background:#fff;border:1.5px solid var(--border);
+  padding:6px 13px;border-radius:99px;text-decoration:none;transition:all 0.2s;}
+.toc a:hover{background:var(--champagne);color:var(--amber-deep);border-color:var(--amber);}
+
+.card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.4rem 1.5rem;margin-bottom:1.1rem;
+  box-shadow:0 2px 8px rgba(186,117,23,0.04);scroll-margin-top:5rem;}
+.sec-title{font-size:1.12rem;font-weight:600;color:var(--ink);margin-bottom:0.9rem;display:flex;align-items:center;gap:10px;}
+.sec-title svg{width:22px;height:22px;flex-shrink:0;fill:var(--amber);}
+.card p{font-size:0.92rem;color:var(--ink);margin-bottom:0.7rem;}
+.card p:last-child{margin-bottom:0;}
+.card b{color:var(--amber-darker);font-weight:600;}
+.card .soft{color:var(--ink-soft);font-size:0.86rem;}
+
+.points{list-style:none;display:flex;flex-direction:column;gap:0.6rem;margin:0.3rem 0;}
+.points li{position:relative;padding-left:1.5rem;font-size:0.92rem;}
+.points li::before{content:'';position:absolute;left:0;top:0.6rem;width:8px;height:8px;border-radius:50%;background:var(--amber);}
+
+/* 三階段成長 */
+.stages{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:0.4rem;}
+.stage{border:1.5px solid var(--border);border-radius:14px;padding:1rem 0.6rem;text-align:center;background:var(--champagne-soft);}
+.stage .emo{font-size:1.8rem;}
+.stage .pt{font-weight:700;color:var(--amber-deep);font-size:1.05rem;margin-top:0.2rem;}
+.stage .nm{font-weight:600;font-size:0.9rem;margin-top:0.2rem;}
+.stage .ds{font-size:0.78rem;color:var(--ink-soft);margin-top:0.3rem;line-height:1.5;}
+@media(max-width:480px){.stages{grid-template-columns:1fr;}}
+
+/* 機率表 */
+.odds{width:100%;border-collapse:collapse;margin-top:0.5rem;font-size:0.9rem;}
+.odds th,.odds td{border:1px solid var(--border);padding:8px 10px;text-align:center;}
+.odds th{background:var(--champagne);color:var(--amber-darker);font-weight:600;}
+.odds td.lv{text-align:left;font-weight:600;}
+#tw-odds{margin-top:0.6rem;}
+.tw-line{display:flex;justify-content:space-between;padding:7px 12px;border:1px solid var(--border);
+  border-radius:10px;margin-bottom:6px;font-size:0.9rem;background:var(--gold-soft);}
+.tw-line b{color:var(--amber-darker);}
+
+.note{display:flex;gap:9px;align-items:flex-start;border-radius:12px;padding:0.8rem 1rem;font-size:0.86rem;margin-top:0.8rem;line-height:1.6;}
+.note svg{width:18px;height:18px;flex-shrink:0;margin-top:2px;}
+.note.info{background:var(--info-pale);color:#2C6A9E;}
+.note.info svg{fill:var(--info);}
+.note.warn{background:var(--warn-pale);color:#9A5B16;}
+.note.warn svg{fill:var(--warn);}
+.note.danger{background:var(--danger-pale);color:#A23A36;}
+.note.danger svg{fill:var(--danger);}
+.note.ok{background:var(--mint-pale);color:var(--forest-deep);}
+.note.ok svg{fill:var(--mint);}
+
+.cta-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:1.4rem;}
+.cta{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:600;font-size:0.95rem;
+  padding:0.8rem 1.4rem;border-radius:99px;color:#fff;transition:all 0.2s;}
+.cta svg{width:18px;height:18px;fill:currentColor;}
+.cta.gold{background:linear-gradient(135deg,var(--honey),var(--amber));}
+.cta.green{background:var(--forest);}
+.cta:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(186,117,23,0.2);}
+
+.foot{text-align:center;color:var(--ink-light);font-size:0.82rem;margin-top:2rem;line-height:1.7;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-seed" viewBox="0 0 24 24"><path d="M20 4s-7-1-11 3-3 11-3 11 7 1 11-3 3-11 3-11zm-9 12c0-3 2-6 6-7-3 0-7 1-9 4-1 2-1 4-1 4s2 0 4-1z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-grow" viewBox="0 0 24 24"><path d="M12 22c4-1 7-5 7-10V5l-7-3-7 3v7c0 5 3 9 7 10zm0-2.3c-2.6-1-5-4-5-7.7V6.3l5-2.1 5 2.1V12c0 3.7-2.4 6.7-5 7.7z"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><path d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm3 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-4 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm-4 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/></symbol>
+  <symbol id="i-tw" viewBox="0 0 24 24"><path d="M12 2L2 7v6c0 5 4 8 10 9 6-1 10-4 10-9V7L12 2z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12 19 16.5 12 21 12 21z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="wrap">
+
+  <div class="page-head">
+    <h1>🌱 種子的故事</h1>
+    <p>每一顆種子，都是 <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span> 跟大家一起長大的紀念。</p>
+  </div>
+
+  <div class="toc">
+    <a href="#what">種子是什麼</a>
+    <a href="#grow">三階段成長</a>
+    <a href="#why">為什麼要收集</a>
+    <a href="#special">隱藏款與限定款</a>
+    <a href="#champ">制霸徽章</a>
+    <a href="#odds">抽獎辦法與機率</a>
+  </div>
+
+  <!-- 種子是什麼 -->
+  <div class="card" id="what">
+    <div class="sec-title"><svg><use href="#i-seed"/></svg>種子是什麼</div>
+    <p>種子是 <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span> 的<b>吉祥物</b>，也是你<b>打賞支持平台</b>後收到的小回饋。你每打賞一次，就會隨機收到一顆種子寶寶，把牠收進你的圖鑑。</p>
+    <p>這些種子代表<b>順咖、案家跟平台一起長大</b>的過程。平台要走得長遠，需要大家一起幫忙澆水，種子就是這份心意的紀念。</p>
+    <div class="note ok"><svg><use href="#i-check"/></svg><span>種子是吉祥物與收集樂趣，跟真人服務（順咖）是兩回事。打賞支持的是平台，不是某一筆服務的報酬。</span></div>
+  </div>
+
+  <!-- 三階段成長 -->
+  <div class="card" id="grow">
+    <div class="sec-title"><svg><use href="#i-grow"/></svg>三階段成長</div>
+    <p class="soft">打賞金額分三個級距，對應種子寶寶成長的三個階段、三種心情。</p>
+    <div class="stages">
+      <div class="stage">
+        <div class="emo">🌱</div><div class="pt">30 點</div>
+        <div class="nm">萌芽 · XX芽</div>
+        <div class="ds">剛冒出頭的小芽，陪你過每天的小確幸。</div>
+      </div>
+      <div class="stage">
+        <div class="emo">🌸</div><div class="pt">50 點</div>
+        <div class="nm">綻放 · XX花</div>
+        <div class="ds">勇敢開出花，給你一碗暖暖的雞湯。</div>
+      </div>
+      <div class="stage">
+        <div class="emo">🍀</div><div class="pt">100 點</div>
+        <div class="nm">結果 · XX果</div>
+        <div class="ds">結成果實，帶著感恩與祝福送給你。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 為什麼要收集 -->
+  <div class="card" id="why">
+    <div class="sec-title"><svg><use href="#i-heart"/></svg>為什麼要收集</div>
+    <ul class="points">
+      <li><b>陪伴的紀念</b>：每一顆都長得不一樣，有自己的表情和名字，收集起來像養一座小花園。</li>
+      <li><b>支持平台一起走</b>：你的打賞讓平台能繼續維護、把服務做得更好。種子是這份支持的回禮。</li>
+      <li><b>案家與順咖各自收集</b>：案家有案家的收集庫、順咖有順咖的收集庫，兩邊完全分開，互不流通。</li>
+    </ul>
+  </div>
+
+  <!-- 隱藏款與限定款 -->
+  <div class="card" id="special">
+    <div class="sec-title"><svg><use href="#i-tw"/></svg>隱藏款與限定款</div>
+    <p><b>台灣隱藏款</b>：以台灣各縣市為主題的特別款，只在<b>付費十連抽</b>才有機會額外掉落，全站共用一本圖鑑。</p>
+    <p><b>四季限定款</b>：春夏秋冬各一顆，加 <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span> 官方 LINE 好友、在活動期間打關鍵字限時領取，<b>過季就絕版</b>。</p>
+    <p class="soft">限定款與台灣款都不算進下面的「制霸」，是額外的收集樂趣。</p>
+  </div>
+
+  <!-- 制霸徽章 -->
+  <div class="card" id="champ">
+    <div class="sec-title"><svg><use href="#i-check"/></svg>制霸徽章</div>
+    <p>把一個金額池的種子<b>全部集滿</b>，就會拿到那一池的「制霸徽章」：</p>
+    <ul class="points">
+      <li>集滿 30 點池 → <b>迷你制霸</b></li>
+      <li>集滿 50 點池 → <b>中型制霸</b></li>
+      <li>集滿 100 點池 → <b>大型制霸</b></li>
+      <li>台灣縣市全部收集 → 最高的 <b>台灣制霸</b></li>
+    </ul>
+    <p class="soft">拿到的徽章可以點開放大、分享炫耀；還沒拿到的會顯示灰色剪影。</p>
+  </div>
+
+  <!-- 抽獎辦法與機率公開 -->
+  <div class="card" id="odds">
+    <div class="sec-title"><svg><use href="#i-dice"/></svg>抽獎辦法與機率公開</div>
+    <p><span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span> 依台灣法規，公開種子的抽取規則與機率。</p>
+    <ul class="points">
+      <li><b>怎麼抽</b>：每打賞一次（單抽）隨機掉一顆種子；也可以一次<b>十連抽</b>，一次抽十顆。</li>
+      <li><b>機率怎麼算</b>：每一顆種子都有自己的稀有度與掉落機率。越稀有（普通 → 高級 → 稀有 → ✨金）越難掉。</li>
+      <li><b>每一顆的確切機率</b>都標在抽卡頁的每個格子上，是<b>即時公開</b>的，點下面按鈕就能看。</li>
+    </ul>
+
+    <p style="margin-top:1rem"><b>台灣限定款中獎機率</b>（只在付費十連抽，活動期間）：</p>
+    <div id="tw-odds"><p class="soft">讀取中…</p></div>
+
+    <div class="note info"><svg><use href="#i-info"/></svg><span>機率為隨機，抽到什麼由系統即時亂數決定，沒有保證一定抽到特定種子。圖中名稱含「XX」者為該系列的命名範例。</span></div>
+    <div class="note warn"><svg><use href="#i-warn"/></svg><span>請理性打賞、量力而為。打賞是支持平台，不是投資，也不保證任何回報。</span></div>
+    <div class="note danger"><svg><use href="#i-warn"/></svg><span>未滿 18 歲請勿打賞。</span></div>
+  </div>
+
+  <div class="cta-row">
+    <a href="19_seeds.html?as=client" class="cta gold"><svg><use href="#i-seed"/></svg>看我的種子庫</a>
+    <a href="24_guide.html" class="cta green"><svg><use href="#i-info"/></svg>平台使用說明</a>
+  </div>
+
+  <div class="foot">種子內容與機率會隨活動更新，實際以抽卡頁顯示為準。</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
+<script>
+/* 台灣限定款中獎率：走唯讀定義者函式 get_tw_seed_rates 即時抓 app_config，
+   不寫死數字，這樣後台改機率後這頁自動同步（轉蛋揭示要正確）。 */
+var TW_TIERS = [
+  { key:'r30',  label:'30 點十連抽' },
+  { key:'r50',  label:'50 點十連抽' },
+  { key:'r100', label:'100 點十連抽' }
+];
+
+function renderTwOdds(d){
+  var box = document.getElementById('tw-odds');
+  if(!d || !d.promo_on){
+    box.innerHTML = '<p class="soft">台灣限定款活動目前未開放，沒有掉落。活動開放時會在這裡公開各級距的中獎機率。</p>';
+    return;
+  }
+  box.innerHTML = TW_TIERS.map(function(t){
+    var rate = Number(d[t.key] || 0);
+    return '<div class="tw-line"><span>' + t.label + '</span><b>每抽中獎機率 ' + rate + '%</b></div>';
+  }).join('');
+}
+
+async function loadTwOdds(){
+  try{
+    var r = await sb.rpc('get_tw_seed_rates');
+    if(r && !r.error){ renderTwOdds(r.data); return; }
+  }catch(e){}
+  document.getElementById('tw-odds').innerHTML =
+    '<p class="soft">機率資料暫時讀不到，請到抽卡頁查看即時機率。</p>';
+}
+
+document.addEventListener('DOMContentLoaded', loadTwOdds);
+</script>
+</body>
+</html>
