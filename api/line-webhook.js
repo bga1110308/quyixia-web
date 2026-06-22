@@ -140,6 +140,13 @@ async function callRpc(fnName, args) {
 async function handleTextMessage(ev) {
   const lineUserId = ev.source && ev.source.userId;
   if (!lineUserId) return;
+  // 先比對「四季限定」領取關鍵字:有對到就回領取連結並結束,不進中轉。
+  // 關鍵字/連結/開關全在 app_config,由 season_claim_reply 一支函式決定,邏輯不散落。
+  const kw = await callRpc('season_claim_reply', { p_text: ev.message.text });
+  if (kw && kw.match) {
+    if (kw.reply) await lineReply(ev.replyToken, kw.reply);
+    return;
+  }
   const result = await callRpc('line_relay_intake', {
     p_line_user_id: lineUserId,
     p_body: ev.message.text,
