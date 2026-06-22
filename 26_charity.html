@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公益 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;--amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;--champagne-soft:#FFFCF5;--cream:#FAEEDA;
+  --forest:#2F6048;--forest-deep:#1F4A36;--mint:#5FB58E;--mint-pale:#E8F5EE;
+  --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+  --border:#FFE9B8;--border-soft:#F5EBD8;
+  --warn:#E89544;--warn-pale:#FFF1E0;--danger:#D9534F;--danger-pale:#FCE8E7;--info:#3A7CB8;--info-pale:#E8F1F8;
+  --bg:var(--champagne-soft);--surface:#fff;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;
+  background:var(--champagne-soft);color:var(--ink);min-height:100vh;line-height:1.7;}
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;
+  background:#fff;border:1px solid var(--border);color:var(--amber-deep);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;
+  box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.wrap{max-width:760px;margin:0 auto;padding:5rem 1.25rem 4rem;}
+.page-head{text-align:center;margin-bottom:1.4rem;}
+.page-head h1{font-size:2rem;font-weight:600;letter-spacing:-0.5px;margin-bottom:0.5rem;}
+.page-head p{font-size:0.95rem;color:var(--ink-soft);}
+
+/* 提撥計數器 */
+.counter{background:linear-gradient(160deg,#fff,var(--champagne));border:1.5px solid var(--border);
+  border-radius:20px;padding:1.6rem 1.4rem;text-align:center;margin-bottom:1.1rem;box-shadow:0 2px 10px rgba(186,117,23,0.06);}
+.counter .lbl{font-size:0.9rem;color:var(--ink-soft);}
+.counter .num{font-size:2.6rem;font-weight:800;color:var(--amber-deep);letter-spacing:-1px;margin:0.2rem 0;}
+.counter .num small{font-size:1.1rem;font-weight:600;}
+.counter .meta{font-size:0.85rem;color:var(--ink-soft);}
+
+.card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.4rem 1.5rem;margin-bottom:1.1rem;
+  box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.sec-title{font-size:1.12rem;font-weight:600;color:var(--ink);margin-bottom:0.9rem;display:flex;align-items:center;gap:10px;}
+.sec-title svg{width:22px;height:22px;flex-shrink:0;fill:var(--amber);}
+.card p{font-size:0.92rem;color:var(--ink);margin-bottom:0.7rem;}
+.card p:last-child{margin-bottom:0;}
+.card b{color:var(--amber-darker);font-weight:600;}
+.points{list-style:none;display:flex;flex-direction:column;gap:0.6rem;margin:0.3rem 0;}
+.points li{position:relative;padding-left:1.5rem;font-size:0.92rem;}
+.points li::before{content:'';position:absolute;left:0;top:0.6rem;width:8px;height:8px;border-radius:50%;background:var(--forest);}
+
+/* 活動列表 */
+.act{display:flex;flex-direction:column;gap:0;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:0.9rem;}
+.act img.cover{width:100%;height:160px;object-fit:cover;display:block;background:var(--champagne);}
+.act .body{padding:0.9rem 1.1rem;}
+.act .top{display:flex;align-items:center;gap:8px;margin-bottom:0.3rem;flex-wrap:wrap;}
+.act .ttl{font-weight:700;font-size:1rem;}
+.badge{font-size:0.72rem;font-weight:700;padding:2px 9px;border-radius:99px;}
+.badge.planned{background:var(--info-pale);color:#2C6A9E;}
+.badge.ongoing{background:var(--warn-pale);color:#9A5B16;}
+.badge.done{background:var(--mint-pale);color:var(--forest-deep);}
+.act .when{font-size:0.8rem;color:var(--ink-soft);}
+.act .sum{font-size:0.88rem;color:var(--ink);margin-top:0.4rem;}
+.empty{text-align:center;color:var(--ink-light);font-size:0.9rem;padding:1.2rem 0;}
+
+/* 照片牆 */
+.photos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.photos figure{margin:0;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--champagne);}
+.photos img{width:100%;height:110px;object-fit:cover;display:block;}
+.photos figcaption{font-size:0.74rem;color:var(--ink-soft);padding:5px 7px;}
+@media(max-width:480px){.photos{grid-template-columns:1fr 1fr;}.photos img{height:120px;}}
+
+/* 表單 */
+.field{margin-bottom:0.8rem;}
+.field label{display:block;font-size:0.85rem;font-weight:600;color:var(--ink-soft);margin-bottom:0.3rem;}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;
+  padding:0.6rem 0.8rem;font-size:0.92rem;font-family:inherit;color:var(--ink);background:#fff;}
+.field textarea{resize:vertical;min-height:60px;}
+.btn{width:100%;border:none;border-radius:12px;padding:0.85rem;font-size:0.98rem;font-weight:700;color:#fff;
+  background:linear-gradient(135deg,var(--honey),var(--amber));cursor:pointer;transition:all 0.2s;}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(186,117,23,0.2);}
+.btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;box-shadow:none;}
+.form-msg{font-size:0.85rem;margin-top:0.6rem;text-align:center;}
+.form-msg.ok{color:var(--forest);}
+.form-msg.err{color:var(--danger);}
+
+.note{display:flex;gap:9px;align-items:flex-start;border-radius:12px;padding:0.8rem 1rem;font-size:0.86rem;margin-top:0.8rem;line-height:1.6;}
+.note svg{width:18px;height:18px;flex-shrink:0;margin-top:2px;}
+.note.info{background:var(--info-pale);color:#2C6A9E;}
+.note.info svg{fill:var(--info);}
+.note.ok{background:var(--mint-pale);color:var(--forest-deep);}
+.note.ok svg{fill:var(--mint);}
+.foot{text-align:center;color:var(--ink-light);font-size:0.82rem;margin-top:2rem;line-height:1.7;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C1 8.5 3 5 6.5 5 9 5 12 8 12 8s3-3 5.5-3C21 5 23 8.5 21.5 12 19 16.5 12 21 12 21z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V9h14v11z"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5z"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M13 2a2 2 0 0 0-2 2v6.5a.5.5 0 0 1-1 0V6a2 2 0 0 0-4 0v9a7 7 0 0 0 7 7 7 7 0 0 0 7-7V8a2 2 0 0 0-4 0v2.5a.5.5 0 0 1-1 0V4a2 2 0 0 0-2-2z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="wrap">
+
+  <div class="page-head">
+    <h1>❤️ 去一下 · 公益</h1>
+    <p>把平台賺到的，回饋給需要的人。</p>
+  </div>
+
+  <!-- 提撥計數器 -->
+  <div class="counter">
+    <div class="lbl">平台累積提撥公益金額</div>
+    <div class="num">NT$ <span id="cnt-total">--</span></div>
+    <div class="meta" id="cnt-meta">讀取中…</div>
+  </div>
+
+  <!-- 理念 -->
+  <div class="card">
+    <div class="sec-title"><svg><use href="#i-heart"/></svg>我們怎麼做公益</div>
+    <p><span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span> 採<b>平台提撥制</b>：由平台從自己的營收提撥一部分投入公益，<b>不向大眾募款、不收善款</b>。</p>
+    <ul class="points">
+      <li><b>不募款</b>：這裡不會跟你收任何捐款，也沒有公益錢包或捐款功能。</li>
+      <li><b>透明公開</b>：累積提撥金額、做了哪些活動、成果照片，都公開在這頁。</li>
+      <li><b>歡迎一起來</b>：想出一份力的人，可以報名當志工，跟我們一起做。</li>
+    </ul>
+    <div class="note info"><svg><use href="#i-info"/></svg><span>提撥金額與活動會持續更新。這頁是公益資訊與志工招募，沒有任何收款行為。</span></div>
+  </div>
+
+  <!-- 公益活動列表 -->
+  <div class="card">
+    <div class="sec-title"><svg><use href="#i-cal"/></svg>公益活動</div>
+    <div id="act-list"><div class="empty">讀取中…</div></div>
+  </div>
+
+  <!-- 成果照片牆 -->
+  <div class="card">
+    <div class="sec-title"><svg><use href="#i-photo"/></svg>成果照片牆</div>
+    <div id="photo-wall"><div class="empty">讀取中…</div></div>
+  </div>
+
+  <!-- 志工報名 -->
+  <div class="card">
+    <div class="sec-title"><svg><use href="#i-hand"/></svg>報名當志工</div>
+    <p class="soft" style="font-size:0.86rem;color:var(--ink-soft);margin-bottom:0.9rem">留下聯絡方式，我們籌備活動時會通知你。資料只有你本人和平台看得到，不會公開。</p>
+    <div class="field">
+      <label>想參加的活動（可不選，當一般志工）</label>
+      <select id="vol-act"><option value="">不指定 · 一般志工</option></select>
+    </div>
+    <div class="field">
+      <label>稱呼 *</label>
+      <input id="vol-name" type="text" placeholder="怎麼稱呼你" maxlength="40">
+    </div>
+    <div class="field">
+      <label>聯絡電話 *</label>
+      <input id="vol-phone" type="tel" placeholder="方便聯絡的電話" maxlength="30">
+    </div>
+    <div class="field">
+      <label>想說的話（可留空）</label>
+      <textarea id="vol-note" placeholder="例如:可以幫忙的時段、專長" maxlength="300"></textarea>
+    </div>
+    <button class="btn" id="vol-btn" onclick="submitVolunteer()">送出報名</button>
+    <div class="form-msg" id="vol-msg"></div>
+  </div>
+
+  <div class="foot">公益活動內容會隨進度更新。有任何問題，歡迎加 <span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span> 官方 LINE 詢問。</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
+<script>
+/* 公益頁:提撥計數＋活動列表＋成果照片牆＋志工報名。
+   提撥計數走唯讀函式 get_charity_summary;活動與照片是公開讀;
+   志工報名要登入、走 apply_charity_volunteer(security definer)寫入,資料不公開。 */
+var STATUS_TXT = { planned:'籌備中', ongoing:'進行中', done:'已完成' };
+var _acts = [];
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+
+async function currentUser(){
+  var s = await sb.auth.getSession();
+  if(s && s.data && s.data.session){ return s.data.session.user; }
+  var u = await sb.auth.getUser();
+  return (u && u.data) ? u.data.user : null;
+}
+
+async function loadSummary(){
+  try{
+    var r = await sb.rpc('get_charity_summary');
+    var d = (r && !r.error) ? r.data : null;
+    if(d){
+      document.getElementById('cnt-total').textContent = Number(d.total_twd || 0).toLocaleString('en-US');
+      document.getElementById('cnt-meta').textContent =
+        '已舉辦 ' + (d.activity_count || 0) + ' 場公益活動 · ' + (d.photo_count || 0) + ' 張成果紀錄';
+      return;
+    }
+  }catch(e){}
+  document.getElementById('cnt-meta').textContent = '資料讀取中,請稍後重整';
+}
+
+async function loadActivities(){
+  var box = document.getElementById('act-list');
+  var sel = document.getElementById('vol-act');
+  var r = await sb.from('charity_activities')
+    .select('id,title,summary,status,happened_on,location,cover_url')
+    .eq('is_public', true).order('sort', { ascending:false }).order('id', { ascending:false });
+  _acts = (r && r.data) ? r.data : [];
+  if(!_acts.length){ box.innerHTML = '<div class="empty">公益活動籌備中,敬請期待。</div>'; return; }
+  box.innerHTML = _acts.map(function(a){
+    var when = a.happened_on ? a.happened_on : '';
+    var loc = a.location ? ' · ' + esc(a.location) : '';
+    return '<div class="act">'
+      + (a.cover_url ? '<img class="cover" loading="lazy" src="' + esc(a.cover_url) + '" alt="">' : '')
+      + '<div class="body">'
+      +   '<div class="top"><span class="ttl">' + esc(a.title) + '</span>'
+      +     '<span class="badge ' + esc(a.status) + '">' + (STATUS_TXT[a.status] || '') + '</span></div>'
+      +   (when ? '<div class="when">' + esc(when) + loc + '</div>' : (loc ? '<div class="when">' + esc(a.location) + '</div>' : ''))
+      +   (a.summary ? '<div class="sum">' + esc(a.summary) + '</div>' : '')
+      + '</div></div>';
+  }).join('');
+  // 報名下拉帶入活動
+  _acts.forEach(function(a){
+    var o = document.createElement('option');
+    o.value = a.id; o.textContent = a.title;
+    sel.appendChild(o);
+  });
+}
+
+async function loadPhotos(){
+  var box = document.getElementById('photo-wall');
+  var r = await sb.from('charity_photos').select('url,caption')
+    .order('sort', { ascending:false }).order('id', { ascending:false });
+  var ps = (r && r.data) ? r.data : [];
+  if(!ps.length){ box.innerHTML = '<div class="empty">活動成果照片陸續整理中。</div>'; return; }
+  box.innerHTML = '<div class="photos">' + ps.map(function(p){
+    return '<figure><img loading="lazy" src="' + esc(p.url) + '" alt="">'
+      + (p.caption ? '<figcaption>' + esc(p.caption) + '</figcaption>' : '') + '</figure>';
+  }).join('') + '</div>';
+}
+
+async function prefillVolunteer(){
+  var u = await currentUser();
+  if(!u) return;
+  var r = await sb.from('users').select('display_name,phone').eq('id', u.id).maybeSingle();
+  if(r && r.data){
+    if(r.data.display_name){ document.getElementById('vol-name').value = r.data.display_name; }
+    if(r.data.phone){ document.getElementById('vol-phone').value = r.data.phone; }
+  }
+}
+
+async function submitVolunteer(){
+  var msg = document.getElementById('vol-msg');
+  var btn = document.getElementById('vol-btn');
+  msg.className = 'form-msg'; msg.textContent = '';
+  var u = await currentUser();
+  if(!u){
+    msg.className = 'form-msg err';
+    msg.innerHTML = '報名志工要先登入。<a href="13_login.html">前往登入</a>';
+    return;
+  }
+  var name = document.getElementById('vol-name').value.trim();
+  var phone = document.getElementById('vol-phone').value.trim();
+  if(!name || !phone){ msg.className = 'form-msg err'; msg.textContent = '請填寫稱呼與聯絡電話。'; return; }
+  var actVal = document.getElementById('vol-act').value;
+  var note = document.getElementById('vol-note').value.trim();
+  btn.disabled = true;
+  try{
+    var r = await sb.rpc('apply_charity_volunteer', {
+      p_activity_id: actVal ? Number(actVal) : null,
+      p_name: name, p_phone: phone, p_note: note
+    });
+    if(r && !r.error && r.data && r.data.ok){
+      msg.className = 'form-msg ok';
+      msg.textContent = '報名成功! 我們籌備活動時會主動聯絡你,謝謝你願意一起做公益。';
+      document.getElementById('vol-note').value = '';
+    } else {
+      var reason = (r && r.data && r.data.reason) ? r.data.reason : (r && r.error ? r.error.message : '');
+      msg.className = 'form-msg err';
+      msg.textContent = reason === 'missing_field' ? '請填寫稱呼與聯絡電話。' : '報名沒有成功,請稍後再試。';
+    }
+  }catch(e){ msg.className = 'form-msg err'; msg.textContent = '報名沒有成功,請稍後再試。'; }
+  btn.disabled = false;
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  loadSummary();
+  loadActivities();
+  loadPhotos();
+  prefillVolunteer();
+});
+</script>
+</body>
+</html>
