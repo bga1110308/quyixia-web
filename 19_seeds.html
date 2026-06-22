@@ -377,13 +377,15 @@ body.suncar .sc-btn{background:linear-gradient(135deg,var(--mint),var(--forest))
   <div class="share-box">
     <div class="share-title">分享給朋友</div>
     <div class="share-desc" id="share-desc">朋友點連結進來註冊會自動帶入你的推薦碼,雙方都有推薦獎勵。</div>
-    <!-- 有抽到種子才出現:把種子畫成圖片分享,LINE/IG/FB 都看得到清楚的種子卡片 -->
+    <!-- 有抽到種子:把種子畫成圖片分享(手機系統面板選 FB/IG/LINE 圖都帶入),三個平台都看得到清楚種子。
+         做不到帶圖的 FB/IG 分開按鈕在這情況下藏起來,避免「點了沒帶圖」的誤會。 -->
     <div class="share-seed-group" id="share-seed-group">
       <button class="sh-card" onclick="shareSeedImage()">📤 分享種子圖卡（圖片）</button>
       <button class="sh-card dl" onclick="downloadSeedImage()">⬇️ 存成圖片</button>
-      <div class="share-divider">或用連結分享 · 自動帶推薦碼</div>
+      <button class="sh-card dl" onclick="shareTo('copy')">🔗 複製連結與文字</button>
     </div>
-    <div class="share-btns">
+    <!-- 沒種子(一般推薦朋友):純連結分享,不涉及種子圖,FB/脆/IG 在這裡才出現 -->
+    <div class="share-btns" id="share-link-group">
       <button class="sh-btn fb" onclick="shareTo('fb')">分享到 Facebook</button>
       <button class="sh-btn th" onclick="shareTo('th')">分享到 Threads(脆)</button>
       <button class="sh-btn ig" onclick="shareTo('native')">分享到 IG / 其他</button>
@@ -973,9 +975,13 @@ function showSeedDetail(id){
 /* ---- 分享 ---- */
 function openShare(seed){
   _shareSeed = seed || null;
-  /* 有抽到的種子(帶得到視覺)才顯示「分享圖卡」;一般推薦分享沒種子,只給連結 */
-  var g = document.getElementById('share-seed-group');
-  if(g) g.classList.toggle('show', !!(_shareSeed && _shareSeed.artHtml));
+  /* 有抽到的種子(帶得到視覺)→只顯示「分享圖卡」那組(能真正帶圖);
+     沒種子(一般推薦朋友)→只顯示純連結那組。兩組互斥,避免誤會。 */
+  var hasSeed = !!(_shareSeed && _shareSeed.artHtml);
+  var sg = document.getElementById('share-seed-group');
+  var lg = document.getElementById('share-link-group');
+  if(sg) sg.classList.toggle('show', hasSeed);
+  if(lg) lg.style.display = hasSeed ? 'none' : 'grid';
   document.getElementById('share-mask').classList.add('show');
 }
 /* 炫耀分享:連同揭曉視窗裡畫好的種子視覺一起帶走,等下畫成圖片用 */
