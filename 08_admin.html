@@ -755,6 +755,36 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
 
         <div class="setting-group">
+          <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>四季限定領取活動</div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">開啟四季限定領取</div>
+              <div class="sr-desc">開啟後:案家/順咖到種子頁會看到當季限定種子的「限時領取」橫幅,每個帳號限領一顆;也可在官方LINE打關鍵字自動拿到領取連結。關閉後橫幅消失、關鍵字不再回覆(已領的不收回)。一按就生效,不用跑 SQL。</div>
+              <span class="status-chip chip-off" id="chip-season">目前:已關閉</span>
+            </div>
+            <label class="toggle"><input type="checkbox" id="cfg-season" onchange="saveSwitch(this,'season_claim_on','chip-season','活動中','已關閉')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">當季、到期日、限量與關鍵字</div>
+              <div class="sr-desc">「當季」決定現在發哪一顆(春/夏/秋/冬)。到期日當天之後自動停發,留空=不設到期。限量填 0=不限量只限時。關鍵字=在官方LINE打這幾個字會自動回領取連結。改完按「儲存」。</div>
+              <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;align-items:flex-end;">
+                <label style="font-size:12.5px;color:var(--ink-soft);">當季<br>
+                  <select class="text-input" id="cfg-season-code" style="margin-top:4px;max-width:130px;">
+                    <option value="spring">春</option><option value="summer">夏</option>
+                    <option value="autumn">秋</option><option value="winter">冬</option>
+                  </select></label>
+                <label style="font-size:12.5px;color:var(--ink-soft);">活動到期日<br><input class="text-input" id="cfg-season-until" type="date" style="margin-top:4px;max-width:170px;"></label>
+                <label style="font-size:12.5px;color:var(--ink-soft);">限量(0=不限)<br><input class="text-input" id="cfg-season-limit" type="number" min="0" style="margin-top:4px;max-width:120px;"></label>
+                <label style="font-size:12.5px;color:var(--ink-soft);">LINE關鍵字<br><input class="text-input" id="cfg-season-keyword" type="text" style="margin-top:4px;max-width:160px;"></label>
+                <button class="btn-gold-sm" style="padding:9px 22px;font-size:13px;" onclick="saveSeasonClaim(this)">儲存</button>
+              </div>
+              <div id="season-result" style="margin-top:8px;font-size:12.5px;color:var(--ink-soft);"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
           <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>LINE 中轉收費</div>
           <div class="setting-row">
             <div class="sr-left">
@@ -2237,6 +2267,14 @@ async function loadPricing(){
   var sps=document.getElementById('cfg-seedpromo-signup'); if(sps) sps.value = (c.free_draw_signup_n==null?'':c.free_draw_signup_n);
   var spr=document.getElementById('cfg-seedpromo-ref'); if(spr) spr.value = (c.free_draw_referrer_n==null?'':c.free_draw_referrer_n);
 
+  /* 四季限定領取活動:開關＋當季＋到期日＋限量＋LINE關鍵字,讀同一列 app_config */
+  var se=document.getElementById('cfg-season');
+  if(se){ se.checked = (c.season_claim_on === true); updateChip(se,'chip-season','活動中','已關閉'); }
+  var sec2=document.getElementById('cfg-season-code'); if(sec2 && c.season_claim_code) sec2.value = c.season_claim_code;
+  var seu=document.getElementById('cfg-season-until'); if(seu) seu.value = (c.season_claim_until ? String(c.season_claim_until).slice(0,10) : '');
+  var sel=document.getElementById('cfg-season-limit'); if(sel) sel.value = (c.season_claim_limit==null?'':c.season_claim_limit);
+  var sek=document.getElementById('cfg-season-keyword'); if(sek) sek.value = (c.season_claim_keyword==null?'':c.season_claim_keyword);
+
   // LINE 中轉收費:免費開關(預設免費)、免費到期日、解鎖點數
   var rf=document.getElementById('cfg-relay-free'); if(rf){ rf.checked = !(c.line_relay_free_on === false); updateChip(rf,'chip-relay','免費中','收費中'); }
   var ru=document.getElementById('cfg-relay-until'); if(ru) ru.value = (c.line_relay_free_until ? String(c.line_relay_free_until).slice(0,10) : '');
@@ -2315,6 +2353,23 @@ async function saveSeedPromo(btn){
   if(btn) btn.disabled=false;
   if(up.error){ if(r) r.textContent='儲存失敗:'+up.error.message+'(若說找不到欄位,代表種子活動的 SQL A 段還沒跑)'; return; }
   if(r) r.textContent='已儲存。之後有人註冊/完成首單就照新設定送。';
+}
+/* 四季限定領取活動:當季/到期日/限量/關鍵字寫回 app_config(沿用 app_config_admin_write 政策)。
+   開關 season_claim_on 走上面 saveSwitch 一按即存;這顆只存其餘四項,改完按「儲存」。
+   真正發種子在後台函式 claim_season_seed/season_claim_reply(讀這幾欄判開關/到期/限量/關鍵字)。 */
+async function saveSeasonClaim(btn){
+  var r=document.getElementById('season-result'); if(r) r.textContent='儲存中…';
+  var payload={
+    season_claim_code:    (document.getElementById('cfg-season-code').value || 'summer'),
+    season_claim_until:   (document.getElementById('cfg-season-until').value || null),
+    season_claim_limit:   (numOrNull('cfg-season-limit')==null ? 0 : numOrNull('cfg-season-limit')),
+    season_claim_keyword: (document.getElementById('cfg-season-keyword').value || '夏季限定')
+  };
+  if(btn) btn.disabled=true;
+  var up=await sb.from('app_config').update(payload).eq('id',1);
+  if(btn) btn.disabled=false;
+  if(up.error){ if(r) r.textContent='儲存失敗:'+up.error.message+'(若說找不到欄位,代表四季限定的 SQL 還沒跑)'; return; }
+  if(r) r.textContent='已儲存。種子頁橫幅與 LINE 關鍵字立刻照新設定。';
 }
 /* LINE 中轉收費:到期日與點數寫回 app_config(沿用 app_config_admin_write 政策)。
    免費開關 line_relay_free_on 走上面 saveSwitch 一按即存;這顆只存到期日與點數,改完按「儲存」。

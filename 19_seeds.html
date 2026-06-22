@@ -239,6 +239,24 @@ body.suncar .free-draw-btn:hover{background:var(--mint-pale)!important;}
 .cwl-sub{font-size:0.58rem;font-weight:600;color:var(--ink-light);}
 .cwl.got .cwl-sub{color:var(--gold);}
 body.suncar .cwl.got .cwl-sub{color:var(--forest);}
+
+/* 四季限定·限時領取橫幅(加官方LINE好友打關鍵字,或直接在這領) */
+.season-claim{margin-top:1.1rem;padding:1rem 1.1rem;border-radius:18px;display:flex;gap:12px;align-items:center;
+  background:linear-gradient(135deg,#FFF3CF,#FFE0A8);border:1.5px solid var(--gold);box-shadow:0 8px 24px rgba(224,169,60,0.28);}
+body.suncar .season-claim{background:linear-gradient(135deg,#E8F5EE,#CFEBDD);border-color:var(--mint);box-shadow:0 8px 24px rgba(47,96,72,0.22);}
+.season-claim.done{background:var(--champagne-soft);border-style:dashed;box-shadow:none;}
+.sc-art{width:62px;height:62px;flex:0 0 auto;}
+.sc-art .seed-img,.sc-art .seed-sil{width:100%;height:100%;}
+.sc-body{flex:1;min-width:0;}
+.sc-title{font-size:0.96rem;font-weight:700;color:var(--amber-darker);}
+body.suncar .sc-title{color:var(--forest-deep);}
+.sc-desc{font-size:0.74rem;color:var(--ink-soft);font-weight:600;margin-top:3px;line-height:1.5;}
+.sc-btn{margin-top:8px;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border:none;
+  padding:0.6rem 1.2rem;border-radius:12px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;}
+body.suncar .sc-btn{background:linear-gradient(135deg,var(--mint),var(--forest));}
+.sc-btn:disabled{opacity:0.55;cursor:not-allowed;}
+.sc-line{display:block;margin-top:7px;font-size:0.72rem;font-weight:600;color:var(--line-green);text-decoration:none;}
+.sc-line:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
@@ -275,6 +293,9 @@ body.suncar .cwl.got .cwl-sub{color:var(--forest);}
     <button class="share-link-btn" onclick="openShare(null)">📣 分享給朋友 · 自動帶我的推薦碼</button>
   </div>
 
+  <!-- 四季限定·限時領取橫幅:活動開著且我還沒領才顯示;領過顯示已領狀態。JS 從 get_season_claim 填 -->
+  <div id="season-claim" class="season-claim" style="display:none"></div>
+
   <div class="amt-bar" id="amt-bar"></div>
 
   <div class="prog-card">
@@ -301,6 +322,13 @@ body.suncar .cwl.got .cwl-sub{color:var(--forest);}
     <div class="dex-title">🇹🇼 台灣限定 · 活動款</div>
     <div class="prog-legend" style="margin:-0.4rem 0 0.8rem">限定款不算進上面的制霸,只有十連抽有機會額外掉落,台灣冊全站共用一本。已收集 <b id="tw-got">0</b> / <span id="tw-tot">0</span></div>
     <div class="dex-grid" id="tw-dex"></div>
+  </div>
+
+  <!-- 四季限定:加官方LINE好友限時領取的活動款,跟金額池與台灣冊都分開、不算進任何制霸 -->
+  <div id="season-section" style="display:none">
+    <div class="dex-title">🌸 四季限定</div>
+    <div class="prog-legend" style="margin:-0.4rem 0 0.8rem">活動期間加官方LINE好友就能限時領取當季種子,每季一顆、過季絕版。已領 <b id="season-got">0</b> / <span id="season-tot">0</span> 季</div>
+    <div class="dex-grid" id="season-dex"></div>
   </div>
 
   <div class="foot-hint">收集庫目前只有你自己看得到。之後會開放在你的名片上秀給別人看。</div>
@@ -405,6 +433,13 @@ async function init(){
   await loadAll(_uid);
   await loadTaiwan();   // 台灣冊全站共用、跟金額無關,進頁讀一次
   await loadChamp();    // 制霸徽章牆(三金額池＋台灣),進頁算一次
+  await loadSeason();   // 四季限定圖鑑
+  await renderSeasonClaim();   // 四季限時領取橫幅
+  /* 從 LINE 關鍵字連結帶 ?claim= 進來→自動捲到領取橫幅 */
+  if(new URLSearchParams(location.search).get('claim')){
+    var sc = document.getElementById('season-claim');
+    if(sc && sc.style.display !== 'none') sc.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
 }
 
 /* 台灣隱藏款圖鑑:全站一本(只綁 user_id、不分池)。沒建台灣款就整段隱藏。
@@ -494,6 +529,113 @@ function renderChamp(){
          +   '<div class="cwl-sub">' + (done ? '已制霸 ✓' : b.sub) + '</div>'
          + '</div>';
   }).join('');
+}
+
+/* ===== 四季限定:加官方LINE好友限時領取(獨立一本,不算進金額池或台灣制霸) ===== */
+var SEASON_LINE_ADD = 'https://line.me/R/ti/p/@303hceml';   // 官方帳號加好友連結
+var _seasonById = {};
+
+/* 四季圖鑑:春夏秋冬,已領顯圖、未領灰剪影(跟種子同套 seedMarkup) */
+async function loadSeason(){
+  var sec = document.getElementById('season-section');
+  var cat = await sb.from('season_seeds').select('id,code,name,sort,art').order('sort');
+  var seeds = (cat && cat.data) ? cat.data : [];
+  if(!seeds.length){ if(sec) sec.style.display = 'none'; return; }
+  var mine = await sb.from('user_season_seeds').select('seed_id');
+  var owned = {};
+  if(mine && mine.data){ mine.data.forEach(function(r){ owned[r.seed_id] = 1; }); }
+  var got = 0, html = '';
+  _seasonById = {};
+  seeds.forEach(function(s){
+    _seasonById[s.id] = s;
+    var hasIt = !!owned[s.id];
+    if(hasIt) got++;
+    var clk = hasIt ? ' role="button" tabindex="0" style="cursor:pointer" onclick="showSeasonDetail(' + s.id + ')"' : '';
+    html += '<div class="cell ' + (hasIt ? 'got gold' : 'locked') + '"' + clk + '>'
+          +   '<div class="seedwrap">' + seedMarkup({ art:s.art, name:s.name, rarity:'gold' }, hasIt, 50) + '</div>'
+          +   '<div class="nm">' + (hasIt ? esc(s.name) + '季' : '？？？') + '</div>'
+          +   '<div class="rate">' + (hasIt ? '限定' : '&nbsp;') + '</div>'
+          + '</div>';
+  });
+  document.getElementById('season-dex').innerHTML = html;
+  document.getElementById('season-got').textContent = got;
+  document.getElementById('season-tot').textContent = seeds.length;
+  sec.style.display = '';
+}
+
+/* 點四季圖鑑已領的→放大(共用揭曉彈窗) */
+function showSeasonDetail(id){
+  var s = _seasonById[id]; if(!s) return;
+  document.getElementById('reveal-box').classList.add('gold');
+  document.getElementById('rv-art').innerHTML = seedMarkup({ art:s.art, name:s.name, rarity:'gold' }, true, 104);
+  document.getElementById('rv-name').textContent = (s.name || '') + '季限定';
+  var tag = document.getElementById('rv-tag');
+  tag.className = 'reveal-tag tag-gold';
+  tag.textContent = '🌸 四季限定';
+  document.getElementById('rv-meta').textContent = '加好友限時領取的活動款';
+  document.getElementById('rv-desc').textContent = '每季一顆,過季絕版。';
+  _lastReveal = { name: (s.name || '') + '季限定種子', emoji: '🌸' };
+  document.getElementById('reveal').classList.add('show');
+}
+
+/* 領取橫幅:讀 get_season_claim 決定樣子(沒開→藏;領過→已領;否則→領取鈕＋加好友連結) */
+async function renderSeasonClaim(){
+  var bar = document.getElementById('season-claim'); if(!bar) return;
+  var r = await sb.rpc('get_season_claim');
+  var d = (r && r.data) ? r.data : null;
+  if(!d || !d.on){ bar.style.display = 'none'; return; }
+  var art = seedMarkup({ art:d.art, name:d.name, rarity:'gold' }, true, 62);
+  if(d.already){
+    bar.className = 'season-claim done';
+    bar.innerHTML = '<div class="sc-art">' + art + '</div>'
+      + '<div class="sc-body"><div class="sc-title">🌸 ' + esc(d.name) + '季限定 · 已領取 ✓</div>'
+      + '<div class="sc-desc">這顆已經在你的四季收集庫裡了,謝謝支持。</div></div>';
+    bar.style.display = 'flex';
+    return;
+  }
+  var soldOut = (d.remaining != null && d.remaining <= 0);
+  var left = (d.remaining != null) ? ('限量剩 ' + d.remaining + ' 份') : '限時領取';
+  bar.className = 'season-claim';
+  bar.innerHTML = '<div class="sc-art">' + art + '</div>'
+    + '<div class="sc-body">'
+    +   '<div class="sc-title">🌻 ' + esc(d.name) + '季限定種子 · ' + left + '</div>'
+    +   '<div class="sc-desc">加官方LINE好友就能領,每個帳號限領一顆'
+    +     (d.until ? (',活動到 ' + String(d.until).slice(5).replace('-', '/') + ' 為止') : '') + '。</div>'
+    +   (soldOut
+        ? '<button class="sc-btn" disabled>已被領完</button>'
+        : '<button class="sc-btn" id="sc-btn" onclick="doClaimSeason()">領取這顆</button>')
+    +   '<a class="sc-line" href="' + SEASON_LINE_ADD + '" target="_blank" rel="noopener">還沒加官方LINE好友?先點我加 →</a>'
+    + '</div>';
+  bar.style.display = 'flex';
+}
+
+/* 領取:走 claim_season_seed(後台驗開關/到期/限量/重複),成功用揭曉彈窗給看那顆 */
+async function doClaimSeason(){
+  var btn = document.getElementById('sc-btn');
+  if(btn) btn.disabled = true;
+  var r = await sb.rpc('claim_season_seed');
+  if(r.error){ alert('領取失敗,請稍後再試。'); if(btn) btn.disabled = false; return; }
+  var d = r.data || {};
+  if(!d.ok){
+    if(d.reason === 'not_login'){ location.href = '13_login.html'; return; }
+    if(d.reason === 'sold_out'){ alert('來晚了,這次限量已經被領完。'); }
+    else if(d.reason === 'expired' || d.reason === 'closed'){ alert('這季的領取活動已經結束囉。'); }
+    else { alert('領取失敗,請稍後再試。'); }
+    await renderSeasonClaim();
+    return;
+  }
+  document.getElementById('reveal-box').classList.add('gold');
+  document.getElementById('rv-art').innerHTML = seedMarkup({ art:d.art, name:d.name, rarity:'gold' }, true, 104);
+  document.getElementById('rv-name').textContent = (d.name || '') + '季限定';
+  var tag = document.getElementById('rv-tag');
+  tag.className = 'reveal-tag tag-gold';
+  tag.textContent = d.already ? '🌸 你已領過' : '🌸 領取成功';
+  document.getElementById('rv-meta').textContent = '四季限定 · 加好友限時款';
+  document.getElementById('rv-desc').textContent = '已收進你的四季收集庫,過季絕版。';
+  _lastReveal = { name: (d.name || '') + '季限定種子', emoji: '🌸' };
+  document.getElementById('reveal').classList.add('show');
+  await loadSeason();
+  await renderSeasonClaim();
 }
 
 /* 金額切換列:七個級距,點了換收集庫重抓 */
