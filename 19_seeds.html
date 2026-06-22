@@ -352,7 +352,7 @@ body.suncar .sc-btn{background:linear-gradient(135deg,var(--mint),var(--forest))
     <div class="reveal-meta" id="rv-meta"></div>
     <div class="reveal-desc" id="rv-desc"></div>
     <div class="reveal-btns">
-      <button class="reveal-share" onclick="openShareFromReveal()">炫耀 · 分享</button>
+      <button class="reveal-share" id="rv-share" onclick="openShareFromReveal()">炫耀 · 分享</button>
       <button class="reveal-close" onclick="closeReveal()">收下</button>
     </div>
   </div>
@@ -535,17 +535,42 @@ async function loadChamp(){
 
 function renderChamp(){
   var wall = document.getElementById('champ-wall'); if(!wall) return;
-  wall.innerHTML = CHAMP_BADGES.map(function(b){
+  wall.innerHTML = CHAMP_BADGES.map(function(b, i){
     var done = b.tw ? _twDone : !!_tierDone[b.tier];
     var art = done
       ? '<img class="seed-img" loading="lazy" decoding="async" src="' + b.img + '" alt="">'
       : '<span class="seed-sil"><img class="seed-img" loading="lazy" decoding="async" src="' + b.img + '" alt=""><span class="q">?</span></span>';
-    return '<div class="cwl ' + (done ? 'got' : 'locked') + '">'
+    return '<div class="cwl ' + (done ? 'got' : 'locked') + '" style="cursor:pointer" onclick="showChampDetail(' + i + ')">'
          +   '<div class="cwl-art">' + art + '</div>'
          +   '<div class="cwl-nm">' + b.nm + '</div>'
          +   '<div class="cwl-sub">' + (done ? '已制霸 ✓' : b.sub) + '</div>'
          + '</div>';
   }).join('');
+}
+
+/* 制霸徽章放大卡:點徽章→共用種子那套揭曉彈窗放大顯示。
+   已制霸=真徽章+金卡+可炫耀分享;未制霸=灰剪影+說明、藏分享鈕(沒拿到不能炫耀)。 */
+function showChampDetail(i){
+  var b = CHAMP_BADGES[i]; if(!b) return;
+  var done = b.tw ? _twDone : !!_tierDone[b.tier];
+  document.getElementById('reveal-box').classList.toggle('gold', done);
+  document.getElementById('rv-art').innerHTML = '<div style="width:104px;height:104px;margin:0 auto">'
+    + (done
+        ? '<img class="seed-img" src="' + b.img + '" alt="">'
+        : '<span class="seed-sil"><img class="seed-img" src="' + b.img + '" alt=""><span class="q">?</span></span>')
+    + '</div>';
+  document.getElementById('rv-name').textContent = b.nm;
+  var tag = document.getElementById('rv-tag');
+  tag.className = 'reveal-tag ' + (done ? 'tag-gold' : 'tag-normal');
+  tag.textContent = done ? '🏆 已制霸' : '🔒 尚未制霸';
+  document.getElementById('rv-meta').textContent = b.sub;
+  document.getElementById('rv-desc').textContent = done
+    ? '恭喜! 你拿到了「' + b.nm + '」徽章,可以分享炫耀。'
+    : '完成「' + b.sub + '」就能拿到這枚徽章。';
+  var sh = document.getElementById('rv-share');
+  if(sh) sh.style.display = done ? '' : 'none';   // 沒制霸不能炫耀分享
+  _lastReveal = done ? { name: b.nm, emoji: '🏆', champ: true } : null;
+  document.getElementById('reveal').classList.add('show');
 }
 
 /* ===== 四季限定:加官方LINE好友限時領取(獨立一本,不算進金額池或台灣制霸) ===== */
@@ -886,7 +911,7 @@ function showReveal(d){
   _lastReveal = { name: d.name, emoji: d.emoji, rarity: d.rarity };
   document.getElementById('reveal').classList.add('show');
 }
-function closeReveal(){ document.getElementById('reveal').classList.remove('show'); }
+function closeReveal(){ document.getElementById('reveal').classList.remove('show'); var sh=document.getElementById('rv-share'); if(sh) sh.style.display=''; }
 
 /* ---- 十連抽 ---- 後端 donate_seed_bulk 連抽 10 次(原子,逐次扣點),回傳 10 顆結果 */
 async function doDonate10(){
@@ -998,7 +1023,8 @@ function shareUrl(){
 }
 function shareText(){
   var t = '我在「去一下」打賞平台';
-  if(_shareSeed && _shareSeed.name){ t += '抽到種子【' + _shareSeed.name + '】' + (_shareSeed.emoji || ''); }
+  if(_shareSeed && _shareSeed.champ){ t += '集滿了種子庫,拿到【' + _shareSeed.name + '】徽章 🏆'; }
+  else if(_shareSeed && _shareSeed.name){ t += '抽到種子【' + _shareSeed.name + '】' + (_shareSeed.emoji || ''); }
   t += '! 一起來收集種子、支持平台 🌱';
   return t;
 }
@@ -1092,7 +1118,7 @@ function buildShareCardBlob(){
     }
     c.fillStyle = '#3D2914'; c.font = '700 54px sans-serif';
     c.fillText(seed.name || '我的種子', W / 2, 762);                 // 名稱
-    var rl = (RARITY[seed.rarity] ? RARITY[seed.rarity].label + '種子' : '收集到一顆');
+    var rl = seed.champ ? '🏆 制霸徽章' : (RARITY[seed.rarity] ? RARITY[seed.rarity].label + '種子' : '收集到一顆');
     c.fillStyle = accent; c.font = '600 30px sans-serif';
     c.fillText(rl, W / 2, 814);                                     // 稀有度
     c.fillStyle = '#9A8A70'; c.font = '500 26px sans-serif';
