@@ -554,11 +554,9 @@ function showChampDetail(i){
   var b = CHAMP_BADGES[i]; if(!b) return;
   var done = b.tw ? _twDone : !!_tierDone[b.tier];
   document.getElementById('reveal-box').classList.toggle('gold', done);
-  document.getElementById('rv-art').innerHTML = '<div style="width:104px;height:104px;margin:0 auto">'
-    + (done
-        ? '<img class="seed-img" src="' + b.img + '" alt="">'
-        : '<span class="seed-sil"><img class="seed-img" src="' + b.img + '" alt=""><span class="q">?</span></span>')
-    + '</div>';
+  document.getElementById('rv-art').innerHTML = done
+    ? '<img class="seed-img" src="' + b.img + '" alt="">'
+    : '<span class="seed-sil"><img class="seed-img" src="' + b.img + '" alt=""><span class="q">?</span></span>';
   document.getElementById('rv-name').textContent = b.nm;
   var tag = document.getElementById('rv-tag');
   tag.className = 'reveal-tag ' + (done ? 'tag-gold' : 'tag-normal');
