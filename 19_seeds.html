@@ -226,6 +226,19 @@ body.suncar .free-draw-btn:hover{background:var(--mint-pale)!important;}
 /* 十連抽沒抽中台灣款(或已收集滿)的提示,語氣輕、不搶戲 */
 .tw-miss{margin:0 0 0.9rem;padding:0.6rem 0.8rem;border-radius:12px;text-align:center;
   background:#FBF3E0;border:1px dashed var(--border);color:var(--ink-soft);font-size:0.8rem;font-weight:600;}
+
+/* 制霸徽章牆:四顆獎章(30迷你/50中型/100大型/台灣制霸);未達成用跟種子同套的灰剪影 */
+.champ-wall{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 8px;}
+.cwl{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;}
+.cwl-art{width:100%;max-width:80px;aspect-ratio:1;}
+.cwl-art .seed-img,.cwl-art .seed-sil{width:100%;height:100%;}
+.cwl-art .q{font-size:1.3rem;}
+.cwl.got .cwl-art{animation:qsaBob 3s ease-in-out infinite;}
+.cwl-nm{font-size:0.68rem;font-weight:700;color:var(--ink);line-height:1.2;}
+.cwl.locked .cwl-nm{color:var(--ink-light);}
+.cwl-sub{font-size:0.58rem;font-weight:600;color:var(--ink-light);}
+.cwl.got .cwl-sub{color:var(--gold);}
+body.suncar .cwl.got .cwl-sub{color:var(--forest);}
 </style>
 </head>
 <body>
@@ -284,6 +297,11 @@ body.suncar .free-draw-btn:hover{background:var(--mint-pale)!important;}
     <div class="prog-legend" style="margin:-0.4rem 0 0.8rem">限定款不算進上面的制霸,只有十連抽有機會額外掉落,台灣冊全站共用一本。已收集 <b id="tw-got">0</b> / <span id="tw-tot">0</span></div>
     <div class="dex-grid" id="tw-dex"></div>
   </div>
+
+  <!-- 制霸徽章牆:集滿一個金額池→該池制霸;台灣25縣市全收集→台灣制霸;未達成顯示灰剪影 -->
+  <div class="dex-title">🏆 制霸徽章</div>
+  <div class="prog-legend" style="margin:-0.4rem 0 0.8rem">集滿一個金額池的全部種子,就拿到該池的制霸獎章;台灣 25 縣市全部收集,拿到最高的「台灣制霸」。未達成的先顯示灰色剪影。</div>
+  <div class="champ-wall" id="champ-wall"></div>
 
   <div class="foot-hint">收集庫目前只有你自己看得到。之後會開放在你的名片上秀給別人看。</div>
 </div>
@@ -360,6 +378,8 @@ var _shareSeed = null;
 var _twById = {};     // 台灣款 id → 資料,點圖鑑放大用
 var _twWin = null;    // 這次十連抽中到的台灣款,點橫幅看大圖用
 var _freeLeft = 0;    // 這池目前可用的免費抽次數(推薦活動贈送,不扣點)
+var _twDone = false;  // 台灣25縣市是否全收集(loadTaiwan 設,制霸徽章用)
+var _tierDone = {};   // {30,50,100}→本池該金額是否集滿(loadChamp 設)
 
 function setupTheme(){
   if(POOL === 'suncar'){
@@ -384,6 +404,7 @@ async function init(){
   renderAmtBar();
   await loadAll(_uid);
   await loadTaiwan();   // 台灣冊全站共用、跟金額無關,進頁讀一次
+  await loadChamp();    // 制霸徽章牆(三金額池＋台灣),進頁算一次
 }
 
 /* 台灣隱藏款圖鑑:全站一本(只綁 user_id、不分池)。沒建台灣款就整段隱藏。
@@ -392,7 +413,7 @@ async function loadTaiwan(){
   var sec = document.getElementById('tw-section');
   var cat = await sb.from('taiwan_seeds').select('id,code,name,rarity,sort,art').order('sort');
   var seeds = (cat && cat.data) ? cat.data : [];
-  if(!seeds.length){ if(sec) sec.style.display = 'none'; return; }
+  if(!seeds.length){ if(sec) sec.style.display = 'none'; _twDone = false; renderChamp(); return; }
   var mine = await sb.from('user_taiwan_seeds').select('seed_id,cnt');
   var owned = {};
   if(mine && mine.data){ mine.data.forEach(function(r){ owned[r.seed_id] = r.cnt; }); }
@@ -414,6 +435,8 @@ async function loadTaiwan(){
   document.getElementById('tw-got').textContent = got;
   document.getElementById('tw-tot').textContent = seeds.length;
   sec.style.display = '';
+  _twDone = (got >= seeds.length);   // 25縣市全收集→台灣制霸亮
+  renderChamp();
 }
 
 /* 台灣款放大卡片:跟一般種子共用同一個揭曉彈窗,可炫耀分享;稀有度顯示「期間限定」 */
@@ -432,6 +455,46 @@ function showTaiwanDetail(s){
 }
 function showTwDetail(id){ showTaiwanDetail(_twById[id]); }
 function showTwWinCard(){ if(_twWin){ close10(); showTaiwanDetail(_twWin); } }
+
+/* 制霸徽章牆:四顆獎章。30/50/100 各金額池集滿→該池制霸;台灣25縣市全收集→台灣制霸。
+   未達成用「該徽章圖轉灰剪影＋?」呈現(跟種子未收集同一套 seed-sil)。 */
+var CHAMP_BADGES = [
+  { tier:30,  img:'seeds/badge_30.webp',  nm:'迷你制霸', sub:'集滿30點池' },
+  { tier:50,  img:'seeds/badge_50.webp',  nm:'中型制霸', sub:'集滿50點池' },
+  { tier:100, img:'seeds/badge_100.webp', nm:'大型制霸', sub:'集滿100點池' },
+  { tw:true,  img:'seeds/badge_tw.webp',  nm:'台灣制霸', sub:'25縣市全收集' }
+];
+
+/* 一次抓本池全部種子(id,tier)與我收集的 seed_id,算三個金額池各自集滿沒,不逐池查省往返 */
+async function loadChamp(){
+  var cat = await sb.from('seed_catalog').select('id,tier').eq('pool', POOL);
+  var mine = await sb.from('user_seeds').select('seed_id').eq('pool', POOL);
+  var own = {};
+  if(mine && mine.data){ mine.data.forEach(function(r){ own[r.seed_id] = 1; }); }
+  var tot = {}, got = {};
+  if(cat && cat.data){ cat.data.forEach(function(s){
+    tot[s.tier] = (tot[s.tier] || 0) + 1;
+    if(own[s.id]) got[s.tier] = (got[s.tier] || 0) + 1;
+  }); }
+  _tierDone = {};
+  [30, 50, 100].forEach(function(t){ _tierDone[t] = (tot[t] > 0 && got[t] >= tot[t]); });
+  renderChamp();
+}
+
+function renderChamp(){
+  var wall = document.getElementById('champ-wall'); if(!wall) return;
+  wall.innerHTML = CHAMP_BADGES.map(function(b){
+    var done = b.tw ? _twDone : !!_tierDone[b.tier];
+    var art = done
+      ? '<img class="seed-img" loading="lazy" decoding="async" src="' + b.img + '" alt="">'
+      : '<span class="seed-sil"><img class="seed-img" loading="lazy" decoding="async" src="' + b.img + '" alt=""><span class="q">?</span></span>';
+    return '<div class="cwl ' + (done ? 'got' : 'locked') + '">'
+         +   '<div class="cwl-art">' + art + '</div>'
+         +   '<div class="cwl-nm">' + b.nm + '</div>'
+         +   '<div class="cwl-sub">' + (done ? '已制霸 ✓' : b.sub) + '</div>'
+         + '</div>';
+  }).join('');
+}
 
 /* 金額切換列:七個級距,點了換收集庫重抓 */
 function renderAmtBar(){
@@ -602,7 +665,7 @@ async function doDonate(){
   showReveal(d);
   var s = await sb.auth.getSession();
   var user = s && s.data && s.data.session ? s.data.session.user : null;
-  if(user) await loadAll(user.id);
+  if(user){ await loadAll(user.id); await loadChamp(); }
 }
 
 /* 免費抽鈕:有次數才顯示,沒有就藏起來 */
@@ -642,7 +705,7 @@ async function doFreeDraw(){
   }
   if(typeof d.free_left === 'number') _freeLeft = d.free_left;
   showReveal(d);
-  if(_uid) await loadAll(_uid);   // 重畫圖鑑與免費次數
+  if(_uid){ await loadAll(_uid); await loadChamp(); }   // 重畫圖鑑、免費次數與制霸徽章
 }
 
 function showReveal(d){
@@ -692,7 +755,7 @@ async function doDonate10(){
   showReveal10(d);
   var s = await sb.auth.getSession();
   var user = s && s.data && s.data.session ? s.data.session.user : null;
-  if(user){ await loadAll(user.id); await loadTaiwan(); }   // 抽完順便刷台灣冊(中了會多一顆)
+  if(user){ await loadAll(user.id); await loadTaiwan(); await loadChamp(); }   // 抽完刷圖鑑、台灣冊與制霸徽章
 }
 
 function showReveal10(d){
