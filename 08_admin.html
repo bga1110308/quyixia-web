@@ -752,6 +752,24 @@ textarea.form-input{min-height:80px;resize:vertical;}
               <div id="seedpromo-result" style="margin-top:8px;font-size:12.5px;color:var(--ink-soft);"></div>
             </div>
           </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">開幕期加碼:推薦註冊「當下」就送推薦人免費抽</div>
+              <div class="sr-desc">開啟後:開幕期間,朋友用你的人推薦連結註冊並領了見面禮,推薦人「當下」就拿到上面「首單送幾抽」那麼多次免費抽,不用等對方完成第一筆服務。關閉後回到原本「要完成首單才送」。一按就生效,不用跑 SQL。</div>
+              <span class="status-chip chip-off" id="chip-refsignup">目前:已關閉</span>
+            </div>
+            <label class="toggle"><input type="checkbox" id="cfg-refsignup" onchange="saveSwitch(this,'referrer_signup_promo_on','chip-refsignup','開幕期中','已關閉')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">每位推薦人開幕期上限(防刷)</div>
+              <div class="sr-desc">防止有人狂拉人頭灌免費抽。設 5 = 一個人開幕期最多靠「拉註冊」拿 5 份免費抽;0 = 不限。改完按「儲存」。</div>
+              <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;align-items:flex-end;">
+                <label style="font-size:12.5px;color:var(--ink-soft);">上限(0=不限)<br><input class="text-input" id="cfg-refsignup-cap" type="number" min="0" max="9999" style="margin-top:4px;max-width:130px;"></label>
+                <button class="btn-gold-sm" style="padding:9px 22px;font-size:13px;" onclick="saveSeedPromo(this)">儲存</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="setting-group">
@@ -2266,6 +2284,9 @@ async function loadPricing(){
   var spu=document.getElementById('cfg-seedpromo-until'); if(spu) spu.value = (c.free_draw_promo_until ? String(c.free_draw_promo_until).slice(0,10) : '');
   var sps=document.getElementById('cfg-seedpromo-signup'); if(sps) sps.value = (c.free_draw_signup_n==null?'':c.free_draw_signup_n);
   var spr=document.getElementById('cfg-seedpromo-ref'); if(spr) spr.value = (c.free_draw_referrer_n==null?'':c.free_draw_referrer_n);
+  var rs=document.getElementById('cfg-refsignup');
+  if(rs){ rs.checked = (c.referrer_signup_promo_on === true); updateChip(rs,'chip-refsignup','開幕期中','已關閉'); }
+  var rsc=document.getElementById('cfg-refsignup-cap'); if(rsc) rsc.value = (c.referrer_signup_cap==null?'':c.referrer_signup_cap);
 
   /* 四季限定領取活動:開關＋當季＋到期日＋限量＋LINE關鍵字,讀同一列 app_config */
   var se=document.getElementById('cfg-season');
@@ -2346,7 +2367,9 @@ async function saveSeedPromo(btn){
   var payload={
     free_draw_promo_until: (document.getElementById('cfg-seedpromo-until').value || null),
     free_draw_signup_n:   (numOrNull('cfg-seedpromo-signup')==null ? 1 : numOrNull('cfg-seedpromo-signup')),
-    free_draw_referrer_n: (numOrNull('cfg-seedpromo-ref')==null ? 10 : numOrNull('cfg-seedpromo-ref'))
+    free_draw_referrer_n: (numOrNull('cfg-seedpromo-ref')==null ? 10 : numOrNull('cfg-seedpromo-ref')),
+    // 開幕期推薦註冊加碼的防刷上限,跟次數同一顆儲存鈕一起存,少一個按鈕少一個踩雷點
+    referrer_signup_cap:  (numOrNull('cfg-refsignup-cap')==null ? 0 : numOrNull('cfg-refsignup-cap'))
   };
   if(btn) btn.disabled=true;
   var up=await sb.from('app_config').update(payload).eq('id',1);
