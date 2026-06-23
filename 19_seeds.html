@@ -296,10 +296,13 @@ body.suncar .sc-btn{background:linear-gradient(135deg,var(--mint),var(--forest))
       <svg style="width:1.1em;height:1.1em;fill:currentColor;"><use href="#i-seed"/></svg>
       十連抽 · <span id="ten-cost">300</span> 點 · 一次抽 10 顆
     </button>
+    <button class="donate-btn free-draw-btn" id="free10-btn" onclick="doFreeDraw10()" style="display:none;">
+      🎁 免費十連抽 · 用掉 10 次 · 一次抽 10 顆
+    </button>
     <button class="donate-btn free-draw-btn" id="free-btn" onclick="doFreeDraw()" style="display:none;">
       🎁 免費抽 · 剩 <span id="free-left">0</span> 次
     </button>
-    <div class="donate-note" id="free-note" style="display:none;">推薦活動贈送的免費抽,不扣點數,直接抽一顆種子。</div>
+    <div class="donate-note" id="free-note" style="display:none;">推薦活動贈送的免費抽,不扣點數,直接抽一顆種子。十次以上可用「免費十連抽」一次抽完。</div>
     <button class="share-link-btn" onclick="openShare(null)">📣 分享給朋友 · 自動帶我的推薦碼</button>
   </div>
 
@@ -854,6 +857,7 @@ async function doDonate(){
 /* 免費抽鈕:有次數才顯示,沒有就藏起來 */
 function renderFreeBtn(){
   var btn = document.getElementById('free-btn');
+  var btn10 = document.getElementById('free10-btn');
   var note = document.getElementById('free-note');
   var span = document.getElementById('free-left');
   if(!btn) return;
@@ -865,6 +869,11 @@ function renderFreeBtn(){
   } else {
     btn.style.display = 'none';
     if(note) note.style.display = 'none';
+  }
+  // 免費十連抽:湊滿 10 次才出現(剛好對應一份推薦獎勵),不滿就只用單抽
+  if(btn10){
+    if(_freeLeft >= 10){ btn10.style.display = ''; btn10.disabled = _empty; }
+    else { btn10.style.display = 'none'; }
   }
 }
 
@@ -889,6 +898,31 @@ async function doFreeDraw(){
   if(typeof d.free_left === 'number') _freeLeft = d.free_left;
   showReveal(d);
   if(_uid){ await loadAll(_uid); await loadChamp(); }   // 重畫圖鑑、免費次數與制霸徽章
+}
+
+/* 免費十連抽:走後台 redeem_free_seed_bulk(用掉最多 10 次免費抽、不扣點),
+   回傳跟付費十連抽同款(draws 陣列＋taiwan),所以結果共用 showReveal10。
+   開幕期免費側第一次會保底掉一顆台灣限定(後台 promo_tw_pity_on 控)。 */
+async function doFreeDraw10(){
+  if(_busy || _empty || _freeLeft < 10) return;
+  if(!confirm('免費十連抽? 會用掉 10 次免費抽,一次抽 10 顆種子。')) return;
+  _busy = true;
+  var b = document.getElementById('free10-btn');
+  if(b) b.disabled = true;
+  var r = await sb.rpc('redeem_free_seed_bulk', { p_pool: POOL, p_tier: TIER });
+  _busy = false;
+  if(r.error){ alert('免費十連抽失敗,請稍後再試。'); if(b) b.disabled = false; return; }
+  var d = r.data || {};
+  var draws = d.draws || [];
+  if(!draws.length){
+    if(d.reason === 'no_free'){ alert('免費抽次數不夠十連抽。'); _freeLeft = 0; renderFreeBtn(); return; }
+    if(d.reason === 'no_seed'){ alert('這個金額的種子還沒建好,免費次數沒被扣掉。'); if(b) b.disabled = false; return; }
+    if(d.reason === 'not_login'){ location.href = '13_login.html'; return; }
+    alert('免費十連抽失敗,請稍後再試。'); if(b) b.disabled = false; return;
+  }
+  if(typeof d.free_left === 'number') _freeLeft = d.free_left;
+  showReveal10(d);
+  if(_uid){ await loadAll(_uid); await loadTaiwan(); await loadChamp(); }
 }
 
 function showReveal(d){
@@ -926,7 +960,7 @@ async function doDonate10(){
   b1.disabled = true; b2.disabled = true;
   /* 走包裝函式:裡面先跑原本的十連抽(扣點抽10顆),成功才擲一次台灣限定。
      中獎邏輯綁在付費十連抽裡,前端叫不到單獨的擲獎,防止繞過去免費刷台灣款。 */
-  var r = await sb.rpc('donate10_with_tw', { p_pool: POOL, p_tier: TIER });
+  var r = await sb.rpc('donate10_with_tw_pity', { p_pool: POOL, p_tier: TIER });
   _busy = false;
   if(r.error){ alert('十連抽失敗,請稍後再試。'); b1.disabled = false; b2.disabled = false; return; }
   var d = r.data || {};

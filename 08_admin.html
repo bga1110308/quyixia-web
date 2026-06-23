@@ -770,6 +770,14 @@ textarea.form-input{min-height:80px;resize:vertical;}
               </div>
             </div>
           </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">開幕期·十連抽保底台灣限定種子</div>
+              <div class="sr-desc">開啟後:開幕期間,每個帳號「第一次付費十連抽」與「第一次免費十連抽」各保證掉一顆台灣限定種子(付費、免費各一次,每帳號最多兩顆);之後回到看機率。關閉後十連抽完全看機率。一按就生效,不用跑 SQL。⚠ 要先跑過保底的 SQL 這顆開關才有作用。</div>
+              <span class="status-chip chip-off" id="chip-tw-pity">目前:已關閉</span>
+            </div>
+            <label class="toggle"><input type="checkbox" id="cfg-tw-pity" onchange="saveSwitch(this,'promo_tw_pity_on','chip-tw-pity','保底中','已關閉')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
         </div>
 
         <div class="setting-group">
@@ -2287,6 +2295,8 @@ async function loadPricing(){
   var rs=document.getElementById('cfg-refsignup');
   if(rs){ rs.checked = (c.referrer_signup_promo_on === true); updateChip(rs,'chip-refsignup','開幕期中','已關閉'); }
   var rsc=document.getElementById('cfg-refsignup-cap'); if(rsc) rsc.value = (c.referrer_signup_cap==null?'':c.referrer_signup_cap);
+  var twp=document.getElementById('cfg-tw-pity');
+  if(twp){ twp.checked = (c.promo_tw_pity_on === true); updateChip(twp,'chip-tw-pity','保底中','已關閉'); }
 
   /* 四季限定領取活動:開關＋當季＋到期日＋限量＋LINE關鍵字,讀同一列 app_config */
   var se=document.getElementById('cfg-season');
