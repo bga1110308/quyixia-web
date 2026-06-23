@@ -43,8 +43,8 @@ body.suncar{background:#F2F7F4;}
 .tag{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:2;
   display:flex;align-items:center;justify-content:center;text-align:center;
   transition:transform 0.18s ease;}
-.tag .pv{color:#6B4A22;font-size:clamp(8px,1.95vw,14px);line-height:1.08;
-  width:86%;word-break:break-all;pointer-events:none;}
+.tag .pv{color:#6B4A22;font-size:clamp(8px,1.7vw,13px);line-height:1.14;
+  max-width:78%;max-height:84%;overflow:hidden;word-break:break-all;pointer-events:none;}
 .tag:hover{transform:translate(-50%,-50%) scale(1.2);z-index:20;}
 .tag .tip{position:absolute;bottom:118%;left:50%;transform:translateX(-50%);width:150px;
   background:rgba(61,41,20,0.94);color:#fff;border-radius:9px;padding:7px 9px;font-size:0.72rem;
@@ -89,10 +89,10 @@ body.suncar .text-input:focus,body.suncar .text-area:focus{border-color:var(--mi
 .tagcard{position:relative;width:300px;max-width:82vw;animation:pop 0.32s cubic-bezier(.2,1.1,.3,1);}
 @keyframes pop{0%{transform:scale(0.4);opacity:0;}100%{transform:scale(1);opacity:1;}}
 .tagcard img{width:100%;display:block;filter:drop-shadow(0 16px 30px rgba(0,0,0,0.4));}
-.tagcard .txt{position:absolute;left:17%;right:17%;top:40%;bottom:24%;display:flex;
+.tagcard .txt{position:absolute;left:18%;right:18%;top:51%;bottom:18%;display:flex;
   align-items:center;justify-content:center;text-align:center;}
 .tagcard .txt .wish{color:var(--wood);font-size:1.5rem;line-height:1.5;word-break:break-word;}
-.tagcard .by{position:absolute;right:20%;bottom:17%;color:var(--wood-soft);font-size:0.92rem;
+.tagcard .by{position:absolute;right:20%;bottom:14%;color:var(--wood-soft);font-size:0.92rem;
   white-space:nowrap;}
 .modal-close{position:absolute;top:-44px;right:0;background:rgba(255,255,255,0.9);border:none;
   width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;color:var(--ink);}
@@ -191,10 +191,11 @@ var _uid = null, _wishes = [];
 
 /* 空白木牌位置:中心x%, 中心y%, 寬%, 高%(相對場景);由樹圖偵測得到 */
 var TAGS = [
-  [47.8,9.5,7.8,8.6],[32.5,14.2,7.8,6.5],[56.7,19.2,7.8,8.1],[23.6,22.8,7.2,7.6],
-  [42.9,26.8,8.6,8.1],[86.7,27.4,8.3,7.3],[74.4,28.1,8.3,8.1],[12.4,34.1,7.5,7.6],
-  [31.0,37.1,8.1,7.3],[57.6,37.2,8.6,7.6],[46.9,41.6,8.3,7.0],[22.1,43.0,7.5,7.0],
-  [72.4,49.1,8.1,8.4],[30.4,55.2,8.1,7.6]
+  [26.1,21.1,5.1,10.1],[41.1,14.6,5.1,10.4],[52.8,14.8,5.1,10.4],[67.1,20.4,5.6,10.4],
+  [11.9,27.5,5.1,9.9],[45.7,28.9,5.6,10.1],[60.1,28.4,4.8,10.1],[81.8,28.3,4.8,10.4],
+  [34.2,34.0,5.1,10.1],[53.3,36.4,5.1,9.9],[71.2,34.6,5.6,10.4],[13.5,44.9,4.8,9.6],
+  [25.0,40.7,5.1,9.9],[41.4,43.8,5.1,9.9],[65.0,47.5,5.1,9.6],[22.6,56.2,4.8,9.3],
+  [32.5,56.2,5.1,9.9],[76.9,50.0,4.3,9.6]
 ];
 /* 放大彈窗用的木牌底圖(空白款,文字區方正的優先,句子才好讀) */
 var MODAL_SHAPES = ['rounded','square','scallop','circle'];
