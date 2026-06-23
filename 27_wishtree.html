@@ -47,10 +47,10 @@ body.suncar{background:#F2F7F4;}
   max-width:78%;max-height:84%;overflow:hidden;word-break:break-all;pointer-events:none;}
 .tag:hover{transform:translate(-50%,-50%) scale(1.12);z-index:20;}
 /* 滑過跳出的小吊牌(取代黑框):點下去看大張 */
-.tag .mini{position:absolute;bottom:108%;left:50%;width:130px;
+.tag .mini{position:absolute;bottom:108%;left:50%;width:130px;cursor:pointer;
   transform:translateX(-50%) scale(0.6);transform-origin:bottom center;
   opacity:0;visibility:hidden;transition:all 0.18s ease;z-index:40;pointer-events:none;}
-.tag:hover .mini{opacity:1;visibility:visible;transform:translateX(-50%) scale(1);}
+.tag:hover .mini{opacity:1;visibility:visible;transform:translateX(-50%) scale(1);pointer-events:auto;}
 .tag .mini img{width:100%;display:block;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.3));}
 .tag .mini .mtxt{position:absolute;left:17%;right:17%;top:50%;bottom:20%;display:flex;
   align-items:center;justify-content:center;text-align:center;color:#6B4A22;
@@ -206,8 +206,8 @@ var TAGS = [
   [25.0,40.7,5.1,9.9],[41.4,43.8,5.1,9.9],[65.0,47.5,5.1,9.6],[22.6,56.2,4.8,9.3],
   [32.5,56.2,5.1,9.9],[76.9,50.0,4.3,9.6]
 ];
-/* 放大彈窗用的木牌底圖(空白款,文字區方正的優先,句子才好讀) */
-var MODAL_SHAPES = ['rounded','square','scallop','circle'];
+/* 每則心願隨機分到一款木牌(全部 9 款都會用到),用 id 決定所以同一則固定同款 */
+var MODAL_SHAPES = ['heart','star','scallop','square','circle','house','cloud','hexagon','rounded'];
 
 var DEMO = [
   {id:-1,nickname:'阿美',content:'希望媽媽的膝蓋早日康復，能再一起去散步。',blessings:12,blessed:false},
