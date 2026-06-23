@@ -113,7 +113,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 /* Hero 視覺(右側) */
 .hero-visual{position:relative;height:480px;}
-.hv-circle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,#fff 30%,var(--champagne) 70%,transparent 100%);box-shadow:0 20px 60px rgba(186,117,23,0.18),inset 0 0 0 1.5px var(--border);display:flex;align-items:center;justify-content:center;}
+.hv-circle{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,#fff 30%,var(--champagne) 70%,transparent 100%);box-shadow:0 20px 60px rgba(186,117,23,0.18),inset 0 0 0 1.5px var(--border),0 0 0 14px rgba(255,255,255,0.5),0 0 0 15px rgba(255,233,184,0.7);display:flex;align-items:center;justify-content:center;}
 .hv-logo-big{font-weight:500;font-size:3.2rem;letter-spacing:-2px;line-height:1;color:var(--amber-darker);display:flex;flex-direction:column;align-items:center;}
 .hv-logo-big .qu,.hv-logo-big .xia{color:var(--amber-darker);}
 .hv-logo-big .yi{color:var(--forest);}
@@ -123,7 +123,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .hv-card-1{top:30px;left:0;animation-delay:0s;}
 .hv-card-2{top:130px;right:-10px;animation-delay:-2s;}
 .hv-card-3{bottom:90px;left:-10px;animation-delay:-4s;}
-.hv-card-4{bottom:10px;right:30px;animation-delay:-1s;}
 @keyframes hvFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
 .hv-avatar{width:36px;height:36px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--amber-deep);font-weight:600;font-size:0.95rem;flex-shrink:0;box-shadow:0 2px 8px rgba(186,117,23,0.15),inset 0 0 0 1px var(--border);}
 .hv-name{font-weight:600;font-size:0.82rem;color:var(--ink);}
@@ -394,10 +393,10 @@ async function goMyHome(){
         現在有 <strong id="online-now">23</strong> 位順咖在線
       </div>
       <h1 class="hero-title">
-        什麼都幫你<br>
-        <span class="em"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span>
+        找人幫忙<br>
+        比你想像<span style="color:var(--amber-darker);">更簡單</span>
       </h1>
-      <p class="hero-sub">代排、遛狗、陪看醫生、幫長輩備餐<br>真人媒合,簡單下單,離你最近的順咖會主動聯絡你。</p>
+      <p class="hero-sub">生活中的大小事，不一定都要自己扛。<br>當你需要支援時，來<span style="font-weight:600;color:var(--amber-darker);">去</span><span style="font-weight:600;color:var(--forest);">一</span><span style="font-weight:600;color:var(--amber-darker);">下</span>找幫忙。</p>
       <div class="hero-ctas">
         <a href="04_order_form.html" class="btn-primary">
           我要預約服務
@@ -449,13 +448,6 @@ async function goMyHome(){
           <div class="hv-task">備餐 · 三重</div>
         </div>
         <span class="hv-tag">急救</span>
-      </div>
-      <div class="hv-card hv-card-4">
-        <div class="hv-avatar" style="color:var(--forest);box-shadow:0 2px 8px rgba(47,96,72,0.15),inset 0 0 0 1px var(--mint);">+</div>
-        <div>
-          <div class="hv-name">本週新加入</div>
-          <div class="hv-task">12 位順咖</div>
-        </div>
       </div>
     </div>
   </div>
