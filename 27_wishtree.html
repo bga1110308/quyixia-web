@@ -248,9 +248,15 @@ function renderTree(){
     el.style.width = t[2] + '%';
     el.style.height = t[3] + '%';
     var mwish = (w.content||'').slice(0,16) + ((w.content||'').length>16?'…':'');
+    // 小吊牌位置:上排(cy<35)往下顯示避免被螢幕上緣切掉,其餘往上;並往畫面中心偏一點
+    var below = t[1] < 35;
+    var dx = Math.round(Math.max(-44, Math.min(44, (50 - t[0]) * 1.1)));
+    var mstyle = (below ? 'top:96%;bottom:auto;transform-origin:top center;'
+                        : 'bottom:96%;top:auto;transform-origin:bottom center;')
+               + 'left:calc(50% + ' + dx + 'px);';
     el.innerHTML =
       '<div class="pv hand">'+esc((w.content||'').slice(0,4))+'</div>' +
-      '<div class="mini"><img src="wish/tag_'+modalShape(w,i)+'.webp" alt="">' +
+      '<div class="mini" style="'+mstyle+'"><img src="wish/tag_'+modalShape(w,i)+'.webp" alt="">' +
         '<div class="mtxt hand">'+esc(mwish)+'</div>' +
         '<div class="mby hand">'+esc(displayName(w.nickname))+'</div></div>';
     (function(idx){ el.addEventListener('click', function(){ openTag(idx); }); })(i);
