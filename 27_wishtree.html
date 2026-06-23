@@ -230,6 +230,13 @@ var TAGS = [
 ];
 /* 每則心願隨機分到一款木牌(全部 9 款都會用到),用 id 決定所以同一則固定同款 */
 var MODAL_SHAPES = ['heart','star','scallop','square','circle','house','cloud','hexagon','rounded'];
+/* 每款木牌的「文字位置」可分開調(避開各自的表情/裝飾):[上%,下%]。
+   小吊牌(滑過預覽)用這個;數字越大越往下。要調哪一款只改這一行對應值。 */
+var SHAPE_BAND = {
+  heart:[50,21], star:[61,17], scallop:[50,22], square:[50,22], circle:[51,21],
+  house:[51,21], cloud:[47,23], hexagon:[57,18], rounded:[50,22]
+};
+function shapeBand(shape){ return SHAPE_BAND[shape] || [53,20]; }
 
 var DEMO = [
   {id:-1,nickname:'阿美',content:'希望媽媽的膝蓋早日康復，能再一起去散步。',blessings:12,blessed:false},
@@ -276,10 +283,11 @@ function renderTree(){
     var mstyle = (below ? 'top:96%;bottom:auto;transform-origin:top center;'
                         : 'bottom:96%;top:auto;transform-origin:bottom center;')
                + 'left:calc(50% + ' + dx + 'px);';
+    var shp = modalShape(w,i), bd = shapeBand(shp);
     el.innerHTML =
       '<div class="pv hand">'+esc((w.content||'').slice(0,4))+'</div>' +
-      '<div class="mini" style="'+mstyle+'"><img src="wish/tag_'+modalShape(w,i)+'.webp" alt="">' +
-        '<div class="mtxt hand">'+esc(mwish)+'</div>' +
+      '<div class="mini" style="'+mstyle+'"><img src="wish/tag_'+shp+'.webp" alt="">' +
+        '<div class="mtxt hand" style="top:'+bd[0]+'%;bottom:'+bd[1]+'%;">'+esc(mwish)+'</div>' +
         '<div class="mby hand">'+esc(displayName(w.nickname))+'</div></div>';
     (function(idx){ el.addEventListener('click', function(){ openTag(idx); }); })(i);
     scene.appendChild(el);
@@ -396,6 +404,9 @@ function openWishObj(w, idx){
   if(!w) return;
   _openWish = w; _openShape = modalShape(w, idx||0);
   document.getElementById('mc-img').src = 'wish/tag_' + _openShape + '.webp';
+  var bd = shapeBand(_openShape);
+  var txtBox = document.querySelector('.tagcard .txt');
+  if(txtBox){ txtBox.style.top = bd[0] + '%'; txtBox.style.bottom = bd[1] + '%'; }
   var wishEl = document.getElementById('mc-wish');
   wishEl.textContent = w.content || '';
   wishEl.style.fontSize = wishFontSize(w.content);
