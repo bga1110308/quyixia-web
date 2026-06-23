@@ -45,12 +45,17 @@ body.suncar{background:#F2F7F4;}
   transition:transform 0.18s ease;}
 .tag .pv{color:#6B4A22;font-size:clamp(8px,1.7vw,13px);line-height:1.14;
   max-width:78%;max-height:84%;overflow:hidden;word-break:break-all;pointer-events:none;}
-.tag:hover{transform:translate(-50%,-50%) scale(1.2);z-index:20;}
-.tag .tip{position:absolute;bottom:118%;left:50%;transform:translateX(-50%);width:150px;
-  background:rgba(61,41,20,0.94);color:#fff;border-radius:9px;padding:7px 9px;font-size:0.72rem;
-  line-height:1.5;opacity:0;visibility:hidden;transition:opacity 0.16s;z-index:30;pointer-events:none;
-  text-align:center;font-family:'Noto Sans TC',sans-serif;}
-.tag:hover .tip{opacity:1;visibility:visible;}
+.tag:hover{transform:translate(-50%,-50%) scale(1.12);z-index:20;}
+/* 滑過跳出的小吊牌(取代黑框):點下去看大張 */
+.tag .mini{position:absolute;bottom:108%;left:50%;width:130px;
+  transform:translateX(-50%) scale(0.6);transform-origin:bottom center;
+  opacity:0;visibility:hidden;transition:all 0.18s ease;z-index:40;pointer-events:none;}
+.tag:hover .mini{opacity:1;visibility:visible;transform:translateX(-50%) scale(1);}
+.tag .mini img{width:100%;display:block;filter:drop-shadow(0 6px 12px rgba(0,0,0,0.3));}
+.tag .mini .mtxt{position:absolute;left:17%;right:17%;top:50%;bottom:20%;display:flex;
+  align-items:center;justify-content:center;text-align:center;color:#6B4A22;
+  font-size:11px;line-height:1.3;overflow:hidden;}
+.tag .mini .mby{position:absolute;right:19%;bottom:15%;color:var(--wood-soft);font-size:8px;white-space:nowrap;}
 
 .stat-bar{text-align:center;margin-top:0.9rem;font-size:0.9rem;color:var(--ink-soft);}
 .stat-bar b{color:var(--forest);font-size:1.05rem;}
@@ -102,6 +107,10 @@ body.suncar .text-input:focus,body.suncar .text-area:focus{border-color:var(--mi
   cursor:pointer;font-family:inherit;transition:all 0.18s;}
 .bless-btn:hover{background:var(--mint-pale);transform:translateY(-1px);}
 .bless-btn.done{background:var(--mint-pale);cursor:default;}
+.share-btn{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--amber);
+  color:var(--amber-deep);border-radius:99px;padding:0.55rem 1.2rem;font-size:0.95rem;font-weight:700;
+  cursor:pointer;font-family:inherit;transition:all 0.18s;}
+.share-btn:hover{background:var(--champagne);transform:translateY(-1px);}
 .report-link{display:block;margin:0.7rem auto 0;background:none;border:none;color:#fff;opacity:0.85;
   font-size:0.82rem;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:2px;}
 
@@ -187,7 +196,7 @@ body.suncar .text-input:focus,body.suncar .text-area:focus{border-color:var(--mi
    沒寫到的木牌就留空(背景本來就有空白木牌)。
    看樹不需登入;寫心願/祝福要登入。個資擋與每天 1 則在後台 post_wish。 */
 var POOL = (new URLSearchParams(location.search).get('as') === 'suncar') ? 'suncar' : 'client';
-var _uid = null, _wishes = [];
+var _uid = null, _wishes = [], _refCode = '';
 
 /* 空白木牌位置:中心x%, 中心y%, 寬%, 高%(相對場景);由樹圖偵測得到 */
 var TAGS = [
@@ -238,9 +247,12 @@ function renderTree(){
     el.style.top  = t[1] + '%';
     el.style.width = t[2] + '%';
     el.style.height = t[3] + '%';
+    var mwish = (w.content||'').slice(0,16) + ((w.content||'').length>16?'…':'');
     el.innerHTML =
       '<div class="pv hand">'+esc((w.content||'').slice(0,4))+'</div>' +
-      '<div class="tip">'+esc((w.content||'').slice(0,30))+((w.content||'').length>30?'…':'')+'<br>— '+esc(displayName(w.nickname))+'</div>';
+      '<div class="mini"><img src="wish/tag_'+modalShape(w,i)+'.webp" alt="">' +
+        '<div class="mtxt hand">'+esc(mwish)+'</div>' +
+        '<div class="mby hand">'+esc(displayName(w.nickname))+'</div></div>';
     (function(idx){ el.addEventListener('click', function(){ openTag(idx); }); })(i);
     scene.appendChild(el);
   }
@@ -249,6 +261,7 @@ function renderTree(){
 async function init(){
   if(typeof window.sb === 'undefined'){ console.error('supabase-init.js 未載入'); return; }
   setupTheme();
+  captureRef();   // 分享連結帶 ?ref= 進來,存起來給之後註冊歸推薦
 
   var on = true;
   try{ var r = await sb.rpc('wish_tree_on'); on = (r && r.data === true); }catch(e){ on = false; }
@@ -258,11 +271,36 @@ async function init(){
   _uid = user ? user.id : null;
 
   if(!on){ document.getElementById('closed-banner').style.display = 'block'; }
-  else if(_uid){ document.getElementById('write-card').style.display = 'block'; await prefillNick(); }
+  else if(_uid){ document.getElementById('write-card').style.display = 'block'; await prefillNick(); await loadRefCode(); }
   else { document.getElementById('login-card').style.display = 'block'; }
 
   await loadStats();
   await loadTree();
+  await openFromLink();   // 分享連結 ?wish=ID 直接打開那張卡片
+}
+
+/* 取自己的推薦碼,分享連結帶上去(朋友註冊算你推薦) */
+async function loadRefCode(){
+  try{
+    var u = await sb.from('users').select('ref_code').eq('id', _uid).maybeSingle();
+    _refCode = (u && u.data && u.data.ref_code) ? u.data.ref_code : '';
+  }catch(e){}
+}
+
+/* 分享連結進來:?wish=ID 自動打開該心願的卡片 */
+async function openFromLink(){
+  var id = parseInt(new URLSearchParams(location.search).get('wish'), 10);
+  if(!id) return;
+  var hit = -1;
+  for(var i=0;i<_wishes.length;i++){ if(_wishes[i].id === id){ hit = i; break; } }
+  if(hit >= 0){ openTag(hit); return; }
+  // 不在樹上(較舊的心願):單獨抓一筆來開
+  try{
+    var r = await sb.rpc('list_wishes', { p_limit: 200, p_offset: 0 });
+    var rows = (r && r.data) ? r.data : [];
+    var w = rows.filter(function(x){ return x.id === id; })[0];
+    if(w){ _wishes.push(w); openTag(_wishes.length - 1); }
+  }catch(e){}
 }
 
 async function prefillNick(){
@@ -306,9 +344,15 @@ function wishFontSize(s){
   if(n <= 60) return '0.98rem';
   return '0.84rem';
 }
+var _openShape = 'rounded', _openWish = null;
+function captureRef(){
+  var rf = (new URLSearchParams(location.search).get('ref') || '').trim();
+  if(rf){ try{ localStorage.setItem('signup_ref', rf.toUpperCase()); }catch(e){} }
+}
 function openTag(i){
   var w = _wishes[i]; if(!w) return;
-  document.getElementById('mc-img').src = 'wish/tag_' + modalShape(w,i) + '.webp';
+  _openWish = w; _openShape = modalShape(w,i);
+  document.getElementById('mc-img').src = 'wish/tag_' + _openShape + '.webp';
   var wishEl = document.getElementById('mc-wish');
   wishEl.textContent = w.content || '';
   wishEl.style.fontSize = wishFontSize(w.content);
@@ -323,10 +367,13 @@ function renderControls(w){
   box.innerHTML =
     '<div class="tag-actions">' +
       '<button class="bless-btn'+(blessed?' done':'')+'" id="mc-bless" '+(blessed?'disabled':'')+'>🙏 祝福 <b>'+(w.blessings||0)+'</b></button>' +
+      '<button class="share-btn" id="mc-share">📤 分享打氣</button>' +
     '</div>' +
     (demo ? '' : '<button class="report-link" id="mc-report">檢舉這則心願</button>');
   var bb = document.getElementById('mc-bless');
   if(bb) bb.addEventListener('click', function(){ doBless(w, bb); });
+  var sh = document.getElementById('mc-share');
+  if(sh) sh.addEventListener('click', function(){ shareWish(w, sh); });
   var rp = document.getElementById('mc-report');
   if(rp) rp.addEventListener('click', function(){ doReport(w, rp); });
 }
@@ -356,6 +403,75 @@ async function doReport(w, btn){
   if(!confirm('確定要檢舉這則心願嗎？\n（內容不當或疑似留個資，平台會盡快查核）')) return;
   await sb.rpc('report_wish', { p_wish_id: w.id, p_reason: '使用者檢舉' });
   btn.textContent = '已檢舉，謝謝你'; btn.disabled = true;
+}
+
+/* === 分享心願卡片(做法仿種子分享):把這張木牌畫成圖,帶邀請文與連結 === */
+function wishShareUrl(w){
+  var base = location.origin + location.pathname;
+  var p = [];
+  if(typeof w.id==='number' && w.id>0) p.push('wish='+w.id);
+  if(_refCode) p.push('ref='+_refCode);
+  return base + (p.length ? ('?'+p.join('&')) : '');
+}
+function loadImg(src){ return new Promise(function(res,rej){ var im=new Image(); im.onload=function(){res(im);}; im.onerror=rej; im.src=src; }); }
+function wrapLines(ctx, text, maxw){
+  var lines=[], cur='';
+  for(var i=0;i<text.length;i++){
+    var ch=text[i];
+    if(ch==='\n'){ lines.push(cur); cur=''; continue; }
+    if(ctx.measureText(cur+ch).width<=maxw) cur+=ch; else { if(cur)lines.push(cur); cur=ch; }
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
+/* 把木牌＋願望＋名字＋邀請語畫成一張 PNG */
+async function buildWishCardBlob(w, shape){
+  var Wd=720, Hd=1040, cv=document.createElement('canvas');
+  cv.width=Wd; cv.height=Hd;
+  var ctx=cv.getContext('2d');
+  ctx.fillStyle='#FBF3E3'; ctx.fillRect(0,0,Wd,Hd);
+  try{ await document.fonts.load('700 48px "LXGW WenKai TC"'); await document.fonts.ready; }catch(e){}
+  var img=await loadImg('wish/tag_'+shape+'.webp');
+  var tw=540, th=tw*img.height/img.width, tx=(Wd-tw)/2, ty=40;
+  ctx.drawImage(img, tx, ty, tw, th);
+  // 願望:畫在木牌下半(避開表情)
+  var wish=w.content||'';
+  var fs = wish.length<=10?54 : wish.length<=24?42 : wish.length<=48?33 : 26;
+  ctx.fillStyle='#6B4A22'; ctx.textAlign='center';
+  ctx.font='700 '+fs+'px "LXGW WenKai TC","Noto Serif CJK TC",serif';
+  var lines=wrapLines(ctx, wish, tw*0.62), lh=fs*1.4;
+  var aTop=ty+th*0.52, aBot=ty+th*0.84, startY=(aTop+aBot)/2 - lh*(lines.length-1)/2;
+  for(var i=0;i<lines.length;i++) ctx.fillText(lines[i], Wd/2, startY+i*lh);
+  ctx.font='400 26px "LXGW WenKai TC","Noto Serif CJK TC",serif'; ctx.fillStyle='#8A6233'; ctx.textAlign='right';
+  ctx.fillText(displayName(w.nickname), tx+tw*0.80, ty+th*0.905);
+  // 邀請語＋連結
+  ctx.textAlign='center';
+  ctx.fillStyle='#2F6048'; ctx.font='700 42px "Noto Sans TC",sans-serif';
+  ctx.fillText('《去一下》心願樹', Wd/2, ty+th+78);
+  ctx.fillStyle='#8B7355'; ctx.font='400 30px "Noto Sans TC",sans-serif';
+  ctx.fillText('來幫我的心願打氣，也許下你的願 🌿', Wd/2, ty+th+128);
+  ctx.fillStyle='#BA7517'; ctx.font='400 24px "Noto Sans TC",sans-serif';
+  ctx.fillText('quyixia-web.vercel.app', Wd/2, ty+th+172);
+  return await new Promise(function(res){ cv.toBlob(function(b){ res(b); }, 'image/png'); });
+}
+async function shareWish(w, btn){
+  var url=wishShareUrl(w), txt='我在《去一下》心願樹許了一個願，來幫我打氣 🌿';
+  var old=btn.textContent; btn.disabled=true; btn.textContent='製作中…';
+  var blob=null;
+  try{ blob=await buildWishCardBlob(w, _openShape); }catch(e){ blob=null; }
+  btn.disabled=false; btn.textContent=old;
+  // 手機:系統分享面板帶圖(可選 LINE/IG/FB)
+  if(blob && navigator.canShare){
+    var file=new File([blob],'心願.png',{type:'image/png'});
+    if(navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], text:txt, url:url}); return; }
+      catch(e){ if(e && e.name==='AbortError') return; }
+    }
+  }
+  // 桌機:下載圖＋複製連結
+  if(blob){ var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='心願卡片.png'; a.click(); }
+  try{ await navigator.clipboard.writeText(txt+' '+url); alert('已下載分享圖，邀請連結也複製好了，貼到 LINE／FB 都行 🌿'); }
+  catch(e){ alert('已下載分享圖。邀請連結：'+url); }
 }
 
 var _wallLoaded = false;
