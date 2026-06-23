@@ -811,6 +811,26 @@ textarea.form-input{min-height:80px;resize:vertical;}
         </div>
 
         <div class="setting-group">
+          <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>心願樹</div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">開放心願樹</div>
+              <div class="sr-desc">開啟後:案家/順咖到心願樹頁(27_wishtree.html)可以寫心願、為別人的心願祝福;每人每天限掛 1 則。關閉後整頁顯示「休息中」、不能再寫或祝福(已掛的不刪)。一按就生效,不用跑 SQL。心願公開顯示,系統會自動擋電話/身分證/LINE ID 等個資;不當內容靠下面「被檢舉的心願」人工下架。</div>
+              <span class="status-chip chip-off" id="chip-wishtree">目前:已關閉</span>
+            </div>
+            <label class="toggle"><input type="checkbox" id="cfg-wishtree" onchange="saveSwitch(this,'wish_tree_on','chip-wishtree','開放中','已關閉')"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+          </div>
+          <div class="setting-row">
+            <div class="sr-left">
+              <div class="sr-label">被檢舉的心願</div>
+              <div class="sr-desc">使用者檢舉、或被同 3 人檢舉後自動下架的心願會列在這。判斷沒問題就「恢復」、確認不當就「下架」。下架後前台看不到、但保留紀錄。</div>
+              <button class="btn-gold-sm" style="padding:9px 22px;font-size:13px;margin-top:8px;" onclick="loadReportedWishes(this)">載入被檢舉的心願</button>
+              <div id="wish-report-list" style="margin-top:10px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-group">
           <div class="sg-title"><svg class="icon"><use href="#i-toggle"/></svg>LINE 中轉收費</div>
           <div class="setting-row">
             <div class="sr-left">
@@ -2306,6 +2326,10 @@ async function loadPricing(){
   var sel=document.getElementById('cfg-season-limit'); if(sel) sel.value = (c.season_claim_limit==null?'':c.season_claim_limit);
   var sek=document.getElementById('cfg-season-keyword'); if(sek) sek.value = (c.season_claim_keyword==null?'':c.season_claim_keyword);
 
+  /* 心願樹:總開關(預設關閉,要她開才上線) */
+  var wt=document.getElementById('cfg-wishtree');
+  if(wt){ wt.checked = (c.wish_tree_on === true); updateChip(wt,'chip-wishtree','開放中','已關閉'); }
+
   // LINE 中轉收費:免費開關(預設免費)、免費到期日、解鎖點數
   var rf=document.getElementById('cfg-relay-free'); if(rf){ rf.checked = !(c.line_relay_free_on === false); updateChip(rf,'chip-relay','免費中','收費中'); }
   var ru=document.getElementById('cfg-relay-until'); if(ru) ru.value = (c.line_relay_free_until ? String(c.line_relay_free_until).slice(0,10) : '');
@@ -2404,6 +2428,36 @@ async function saveSeasonClaim(btn){
   if(up.error){ if(r) r.textContent='儲存失敗:'+up.error.message+'(若說找不到欄位,代表四季限定的 SQL 還沒跑)'; return; }
   if(r) r.textContent='已儲存。種子頁橫幅與 LINE 關鍵字立刻照新設定。';
 }
+/* 心願樹被檢舉清單:呼叫 get_reported_wishes(管理員專用,後台已驗 is_admin),
+   列出被檢舉或自動下架的心願,逐則可下架/恢復(hide_wish)。 */
+async function loadReportedWishes(btn){
+  var box=document.getElementById('wish-report-list');
+  if(box) box.innerHTML='載入中…';
+  if(btn) btn.disabled=true;
+  var r=await sb.rpc('get_reported_wishes');
+  if(btn) btn.disabled=false;
+  if(r.error){ box.innerHTML='載入失敗:'+r.error.message+'(若說找不到函式,代表心願樹 SQL 還沒跑)'; return; }
+  var rows=r.data||[];
+  if(rows.length===0){ box.innerHTML='<div style="color:var(--ink-soft);font-size:12.5px;">目前沒有被檢舉的心願 👍</div>'; return; }
+  var html='';
+  rows.forEach(function(w){
+    var hidden=(w.status==='hidden');
+    html+='<div style="border:1px solid var(--border-soft);border-radius:10px;padding:10px 12px;margin-bottom:8px;">'+
+      '<div style="font-size:12px;color:var(--ink-soft);">'+escAdmin(w.nickname||'匿名朋友')+' · 被檢舉 '+(w.report_count||0)+' 次 · '+(hidden?'已下架':'顯示中')+'</div>'+
+      '<div style="font-size:13.5px;color:var(--ink);margin:5px 0;white-space:pre-wrap;word-break:break-word;">'+escAdmin(w.content)+'</div>'+
+      '<button class="btn-gold-sm" style="padding:6px 16px;font-size:12px;" onclick="hideWish(this,'+w.id+','+(hidden?'false':'true')+')">'+(hidden?'恢復顯示':'下架')+'</button>'+
+      '</div>';
+  });
+  box.innerHTML=html;
+}
+function escAdmin(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+async function hideWish(btn,id,hide){
+  if(btn) btn.disabled=true;
+  var r=await sb.rpc('hide_wish',{p_wish_id:id, p_hide:hide});
+  if(r.error || !(r.data&&r.data.ok)){ if(btn) btn.disabled=false; alert('操作失敗,請重試'); return; }
+  loadReportedWishes();
+}
+
 /* LINE 中轉收費:到期日與點數寫回 app_config(沿用 app_config_admin_write 政策)。
    免費開關 line_relay_free_on 走上面 saveSwitch 一按即存;這顆只存到期日與點數,改完按「儲存」。
    收費真生效在後台函式 unlock_line_relay(讀這三欄判斷免費/收費、扣 suncar 點)。 */
