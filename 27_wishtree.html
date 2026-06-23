@@ -6,7 +6,7 @@
 <title>心願樹 · 去一下</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -22,7 +22,7 @@
 body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;
   background:var(--champagne-soft);color:var(--ink);min-height:100vh;line-height:1.6;}
 body.suncar{background:#F2F7F4;}
-.hand{font-family:'Ma Shan Zheng','Noto Sans TC',cursive;}
+.hand{font-family:'LXGW WenKai TC','Noto Sans TC',cursive;}
 
 .home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;
   background:#fff;border:1px solid var(--border);color:var(--amber-deep);
@@ -39,15 +39,13 @@ body.suncar{background:#F2F7F4;}
 .scene-cap{text-align:center;font-size:0.82rem;color:var(--ink-soft);margin-top:0.5rem;line-height:1.7;}
 .scene-cap b{color:var(--forest);}
 
-/* 有心願的木牌:只在背景木牌上加柔光提示可點,不寫字(內容在點開的卡片) */
+/* 有心願的木牌:在背景空白木牌上直接寫前 4 字(手寫體),點開看全文卡片 */
 .tag{position:absolute;transform:translate(-50%,-50%);cursor:pointer;z-index:2;
+  display:flex;align-items:center;justify-content:center;text-align:center;
   transition:transform 0.18s ease;}
-.tag .glow{position:absolute;inset:-10%;border-radius:45%;pointer-events:none;
-  background:radial-gradient(circle, rgba(255,212,118,0.55) 0%, rgba(255,212,118,0) 70%);
-  opacity:0.45;animation:tagpulse 2.6s ease-in-out infinite;}
-@keyframes tagpulse{0%,100%{opacity:0.3;}50%{opacity:0.62;}}
-.tag:hover{transform:translate(-50%,-50%) scale(1.13);z-index:20;}
-.tag:hover .glow{opacity:0.95;}
+.tag .pv{color:#6B4A22;font-size:clamp(8px,1.95vw,14px);line-height:1.08;
+  width:86%;word-break:break-all;pointer-events:none;}
+.tag:hover{transform:translate(-50%,-50%) scale(1.2);z-index:20;}
 .tag .tip{position:absolute;bottom:118%;left:50%;transform:translateX(-50%);width:150px;
   background:rgba(61,41,20,0.94);color:#fff;border-radius:9px;padding:7px 9px;font-size:0.72rem;
   line-height:1.5;opacity:0;visibility:hidden;transition:opacity 0.16s;z-index:30;pointer-events:none;
@@ -91,10 +89,10 @@ body.suncar .text-input:focus,body.suncar .text-area:focus{border-color:var(--mi
 .tagcard{position:relative;width:300px;max-width:82vw;animation:pop 0.32s cubic-bezier(.2,1.1,.3,1);}
 @keyframes pop{0%{transform:scale(0.4);opacity:0;}100%{transform:scale(1);opacity:1;}}
 .tagcard img{width:100%;display:block;filter:drop-shadow(0 16px 30px rgba(0,0,0,0.4));}
-.tagcard .txt{position:absolute;left:16%;right:16%;top:31%;bottom:24%;display:flex;
+.tagcard .txt{position:absolute;left:17%;right:17%;top:40%;bottom:24%;display:flex;
   align-items:center;justify-content:center;text-align:center;}
 .tagcard .txt .wish{color:var(--wood);font-size:1.5rem;line-height:1.5;word-break:break-word;}
-.tagcard .by{position:absolute;right:19%;bottom:18%;color:var(--wood-soft);font-size:0.92rem;
+.tagcard .by{position:absolute;right:20%;bottom:17%;color:var(--wood-soft);font-size:0.92rem;
   white-space:nowrap;}
 .modal-close{position:absolute;top:-44px;right:0;background:rgba(255,255,255,0.9);border:none;
   width:36px;height:36px;border-radius:50%;font-size:1.1rem;cursor:pointer;color:var(--ink);}
@@ -219,6 +217,8 @@ function setupTheme(){
   }
 }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+/* 顯示名字:沒填或預設「匿名朋友」一律顯示「匿名」 */
+function displayName(nm){ nm = (nm && String(nm).trim()) || ''; return (nm==='' || nm==='匿名朋友') ? '匿名' : nm; }
 function modalShape(w,i){
   var n = (typeof w.id==='number' && w.id>0) ? w.id : i;
   return MODAL_SHAPES[Math.abs(n) % MODAL_SHAPES.length];
@@ -238,8 +238,8 @@ function renderTree(){
     el.style.width = t[2] + '%';
     el.style.height = t[3] + '%';
     el.innerHTML =
-      '<div class="glow"></div>' +
-      '<div class="tip">'+esc((w.content||'').slice(0,30))+((w.content||'').length>30?'…':'')+'<br>— '+esc(w.nickname||'匿名')+'</div>';
+      '<div class="pv hand">'+esc((w.content||'').slice(0,4))+'</div>' +
+      '<div class="tip">'+esc((w.content||'').slice(0,30))+((w.content||'').length>30?'…':'')+'<br>— '+esc(displayName(w.nickname))+'</div>';
     (function(idx){ el.addEventListener('click', function(){ openTag(idx); }); })(i);
     scene.appendChild(el);
   }
@@ -311,8 +311,7 @@ function openTag(i){
   var wishEl = document.getElementById('mc-wish');
   wishEl.textContent = w.content || '';
   wishEl.style.fontSize = wishFontSize(w.content);
-  var nm = (w.nickname && String(w.nickname).trim()) ? w.nickname : '匿名';
-  document.getElementById('mc-by').textContent = nm;
+  document.getElementById('mc-by').textContent = displayName(w.nickname);
   renderControls(w);
   document.getElementById('tag-modal').classList.add('show');
 }
