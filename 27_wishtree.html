@@ -60,6 +60,20 @@ body.suncar{background:#F2F7F4;}
 .stat-bar{text-align:center;margin-top:0.9rem;font-size:0.9rem;color:var(--ink-soft);}
 .stat-bar b{color:var(--forest);font-size:1.05rem;}
 
+/* 今日精選 聚光卡片 */
+.feat{position:relative;background:linear-gradient(135deg,#FFF6E0,#FFFCF5);border:1.5px solid var(--border);
+  border-radius:18px;padding:1.4rem 1.25rem 1.25rem;margin-top:2.4rem;text-align:center;
+  box-shadow:0 6px 22px rgba(224,169,60,0.18);}
+.feat-ribbon{display:inline-block;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;
+  font-size:0.8rem;font-weight:700;padding:4px 14px;border-radius:99px;margin-bottom:0.8rem;
+  box-shadow:0 3px 8px rgba(239,159,39,0.3);}
+.feat-wish{color:var(--wood);font-size:1.35rem;line-height:1.6;word-break:break-word;}
+.feat-by{color:var(--wood-soft);font-size:0.92rem;margin-top:0.6rem;}
+.feat-btn{margin-top:1rem;background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;border:none;
+  padding:0.6rem 1.7rem;border-radius:99px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;
+  box-shadow:0 6px 16px rgba(47,96,72,0.25);transition:all 0.2s;}
+.feat-btn:hover{transform:translateY(-2px);}
+
 .card{background:#fff;border:1.5px solid var(--border-soft);border-radius:18px;padding:1.25rem;margin-top:1.25rem;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
 body.suncar .card{border-color:var(--border-mint);}
 .card-title{font-size:1.02rem;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px;margin-bottom:0.85rem;}
@@ -130,6 +144,14 @@ body.suncar .text-input:focus,body.suncar .text-area:focus{border-color:var(--mi
 
 <div class="wrap">
 
+  <!-- 今日精選(聚光卡片):每天台灣 00:00 換一張 -->
+  <div class="feat" id="feat-card" style="display:none;">
+    <div class="feat-ribbon">🌟 今日精選心願</div>
+    <div class="feat-wish hand" id="feat-wish"></div>
+    <div class="feat-by hand" id="feat-by"></div>
+    <button class="feat-btn" id="feat-btn">🙏 為它打氣</button>
+  </div>
+
   <!-- 大樹場景:心願寫在空白木牌上 -->
   <div class="scene" id="scene">
     <img class="scene-img" src="wish/tree.webp" alt="心願樹">
@@ -196,7 +218,7 @@ body.suncar .text-input:focus,body.suncar .text-area:focus{border-color:var(--mi
    沒寫到的木牌就留空(背景本來就有空白木牌)。
    看樹不需登入;寫心願/祝福要登入。個資擋與每天 1 則在後台 post_wish。 */
 var POOL = (new URLSearchParams(location.search).get('as') === 'suncar') ? 'suncar' : 'client';
-var _uid = null, _wishes = [], _refCode = '';
+var _uid = null, _wishes = [], _refCode = '', _featured = null;
 
 /* 空白木牌位置:中心x%, 中心y%, 寬%, 高%(相對場景);由樹圖偵測得到 */
 var TAGS = [
@@ -282,7 +304,22 @@ async function init(){
 
   await loadStats();
   await loadTree();
+  await loadFeatured();   // 今日精選聚光卡片(每天台灣 00:00 換)
   await openFromLink();   // 分享連結 ?wish=ID 直接打開那張卡片
+}
+
+/* 今日精選:後台 get_featured_wish 每天 00:00 換一張(md5(id+台灣日期)穩定排序);
+   沒有真資料(示範模式)就用樹上第一則,讓版面不空。 */
+async function loadFeatured(){
+  var w = null;
+  try{ var r = await sb.rpc('get_featured_wish'); if(r && r.data && r.data.id) w = r.data; }catch(e){}
+  if(!w && _wishes.length) w = _wishes[0];
+  if(!w) return;
+  _featured = w;
+  document.getElementById('feat-wish').textContent = w.content || '';
+  document.getElementById('feat-by').textContent = '— ' + displayName(w.nickname);
+  document.getElementById('feat-btn').onclick = function(){ openWishObj(_featured, 0); };
+  document.getElementById('feat-card').style.display = 'block';
 }
 
 /* 取自己的推薦碼,分享連結帶上去(朋友註冊算你推薦) */
@@ -355,9 +392,9 @@ function captureRef(){
   var rf = (new URLSearchParams(location.search).get('ref') || '').trim();
   if(rf){ try{ localStorage.setItem('signup_ref', rf.toUpperCase()); }catch(e){} }
 }
-function openTag(i){
-  var w = _wishes[i]; if(!w) return;
-  _openWish = w; _openShape = modalShape(w,i);
+function openWishObj(w, idx){
+  if(!w) return;
+  _openWish = w; _openShape = modalShape(w, idx||0);
   document.getElementById('mc-img').src = 'wish/tag_' + _openShape + '.webp';
   var wishEl = document.getElementById('mc-wish');
   wishEl.textContent = w.content || '';
@@ -366,6 +403,7 @@ function openTag(i){
   renderControls(w);
   document.getElementById('tag-modal').classList.add('show');
 }
+function openTag(i){ openWishObj(_wishes[i], i); }
 function renderControls(w){
   var box = document.getElementById('mc-controls');
   var demo = (typeof w.id==='number' && w.id < 0);
