@@ -545,8 +545,8 @@ async function renderPublicReviews(revieweeId, mode){
   renderPubReviewPage(1, false); // 初次載入不捲動
 }
 
-/* 評價留言分頁:每頁 10 筆,數字頁碼。點頁碼只換這頁的留言內容,不重打後台。 */
-var PUB_PAGE_SIZE = 10;
+/* 評價留言分頁:每頁 1 筆,數字頁碼(只看第一筆,其餘收進頁碼)。點頁碼只換這頁的留言內容,不重打後台。 */
+var PUB_PAGE_SIZE = 1;
 var _pubReviews = [];
 function renderPubReviewPage(page, doScroll){
   var box = document.getElementById('public-reviews');
