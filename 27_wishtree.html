@@ -462,11 +462,16 @@ async function doReport(w, btn){
 
 /* === 分享心願卡片(做法仿種子分享):把這張木牌畫成圖,帶邀請文與連結 === */
 function wishShareUrl(w){
-  var base = location.origin + location.pathname;
-  var p = [];
-  if(typeof w.id==='number' && w.id>0) p.push('wish='+w.id);
-  if(_refCode) p.push('ref='+_refCode);
-  return base + (p.length ? ('?'+p.join('&')) : '');
+  /* 回「分享落地頁」網址:貼到 FB/LINE 顯示這則願望的預覽卡,真人點了導回心願樹該則願望。
+     暱稱用 displayName 跟公開顯示一致;示範願望(id<0)不帶 id,只導回心願樹。 */
+  var p = new URLSearchParams();
+  p.set('t', 'wish');
+  p.set('text', (w.content||'').slice(0,60));
+  var nm = displayName(w.nickname);
+  if(nm) p.set('nick', nm);
+  if(typeof w.id==='number' && w.id>0) p.set('id', w.id);
+  if(_refCode) p.set('ref', _refCode);
+  return 'https://quyixia-web.vercel.app/api/share?' + p.toString();
 }
 function loadImg(src){ return new Promise(function(res,rej){ var im=new Image(); im.onload=function(){res(im);}; im.onerror=rej; im.src=src; }); }
 function wrapLines(ctx, text, maxw){

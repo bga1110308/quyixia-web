@@ -1050,6 +1050,17 @@ function openShareFromReveal(){
 }
 function closeShare(){ document.getElementById('share-mask').classList.remove('show'); }
 function shareUrl(){
+  /* 有抽到種子→回「分享落地頁」網址:貼到 FB/LINE 會顯示這顆種子的預覽卡,
+     真人點了再導去註冊頁(帶推薦碼)。沒種子(一般邀請)→維持原本:有推薦碼導註冊頁,否則首頁。 */
+  if(_shareSeed && _shareSeed.name){
+    var p = new URLSearchParams();
+    p.set('t', 'seed');
+    p.set('name', _shareSeed.name);
+    p.set('pool', POOL);
+    if(_shareSeed.champ) p.set('champ', '1');
+    if(_refCode) p.set('ref', _refCode);
+    return 'https://quyixia-web.vercel.app/api/share?' + p.toString();
+  }
   return _refCode
     ? ('https://quyixia-web.vercel.app/14_signup.html?ref=' + encodeURIComponent(_refCode))
     : 'https://quyixia-web.vercel.app/';
