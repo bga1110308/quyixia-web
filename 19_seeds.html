@@ -424,6 +424,7 @@ var _totalW = 0;      // 整池 weight 總和,算掉落機率用
 var _refCode = '';    // 我的推薦碼
 var _lastReveal = null;
 var _shareSeed = null;
+var _shareCardPath = null;   // 這次分享已上傳到 Supabase 的卡片路徑(供連結預覽用),開新分享時重置
 var _twById = {};     // 台灣款 id → 資料,點圖鑑放大用
 var _twWin = null;    // 這次十連抽中到的台灣款,點橫幅看大圖用
 var _freeLeft = 0;    // 這池目前可用的免費抽次數(推薦活動贈送,不扣點)
@@ -1041,6 +1042,25 @@ function openShare(seed){
   if(sg) sg.classList.toggle('show', hasSeed);
   if(lg) lg.style.display = hasSeed ? 'none' : 'grid';
   document.getElementById('share-mask').classList.add('show');
+  /* 一開視窗就先在背景把這張種子卡上傳,等使用者點分享時連結預覽圖通常已就緒。
+     上傳是「為了連結預覽」,失敗也不影響原本的圖片分享。 */
+  _shareCardPath = null;
+  if(hasSeed) uploadShareCard();
+}
+/* 把畫好的種子卡上傳 Supabase(share-cards 桶),回傳路徑;只做一次,結果記在 _shareCardPath。
+   為什麼要上傳:伺服器產圖器解不了 webp 種子圖,改用瀏覽器畫好的真卡當連結預覽圖。 */
+async function uploadShareCard(){
+  if(_shareCardPath) return _shareCardPath;
+  if(typeof window.sb === 'undefined') return null;
+  try{
+    var blob = await buildShareCardBlob();
+    if(!blob) return null;
+    var path = 'seed/' + Date.now() + '-' + Math.random().toString(36).slice(2,8) + '.png';
+    var up = await sb.storage.from('share-cards').upload(path, blob, { contentType:'image/png', upsert:false });
+    if(up.error){ console.error('種子卡上傳失敗', up.error); return null; }
+    _shareCardPath = path;
+    return path;
+  }catch(e){ console.error('種子卡上傳例外', e); return null; }
 }
 /* 炫耀分享:連同揭曉視窗裡畫好的種子視覺一起帶走,等下畫成圖片用 */
 function openShareFromReveal(){
@@ -1059,6 +1079,7 @@ function shareUrl(){
     p.set('pool', POOL);
     if(_shareSeed.champ) p.set('champ', '1');
     if(_refCode) p.set('ref', _refCode);
+    if(_shareCardPath) p.set('img', _shareCardPath);   // 卡片已上傳→帶上,連結預覽就看得到這張卡
     return 'https://quyixia-web.vercel.app/api/share?' + p.toString();
   }
   return _refCode

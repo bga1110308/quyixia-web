@@ -461,9 +461,10 @@ async function doReport(w, btn){
 }
 
 /* === 分享心願卡片(做法仿種子分享):把這張木牌畫成圖,帶邀請文與連結 === */
-function wishShareUrl(w){
+function wishShareUrl(w, path){
   /* 回「分享落地頁」網址:貼到 FB/LINE 顯示這則願望的預覽卡,真人點了導回心願樹該則願望。
-     暱稱用 displayName 跟公開顯示一致;示範願望(id<0)不帶 id,只導回心願樹。 */
+     暱稱用 displayName 跟公開顯示一致;示範願望(id<0)不帶 id,只導回心願樹。
+     path＝已上傳的心願卡路徑,帶上後連結預覽就看得到這張卡。 */
   var p = new URLSearchParams();
   p.set('t', 'wish');
   p.set('text', (w.content||'').slice(0,60));
@@ -471,6 +472,7 @@ function wishShareUrl(w){
   if(nm) p.set('nick', nm);
   if(typeof w.id==='number' && w.id>0) p.set('id', w.id);
   if(_refCode) p.set('ref', _refCode);
+  if(path) p.set('img', path);
   return 'https://quyixia-web.vercel.app/api/share?' + p.toString();
 }
 function loadImg(src){ return new Promise(function(res,rej){ var im=new Image(); im.onload=function(){res(im);}; im.onerror=rej; im.src=src; }); }
@@ -514,11 +516,24 @@ async function buildWishCardBlob(w, shape){
   ctx.fillText('quyixia-web.vercel.app', Wd/2, ty+th+172);
   return await new Promise(function(res){ cv.toBlob(function(b){ res(b); }, 'image/png'); });
 }
+/* 把畫好的心願卡上傳 Supabase(share-cards 桶),回傳路徑當連結預覽圖。
+   為什麼:伺服器產圖器解不了 webp,改用瀏覽器畫好的真卡。失敗不影響原本的圖片分享。 */
+async function uploadWishCard(blob){
+  if(typeof window.sb === 'undefined' || !blob) return null;
+  try{
+    var path='wish/'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.png';
+    var up=await sb.storage.from('share-cards').upload(path, blob, {contentType:'image/png', upsert:false});
+    if(up.error){ console.error('心願卡上傳失敗', up.error); return null; }
+    return path;
+  }catch(e){ console.error('心願卡上傳例外', e); return null; }
+}
 async function shareWish(w, btn){
-  var url=wishShareUrl(w), txt='我在《去一下》心願樹許了一個願，來幫我打氣 🌿';
+  var txt='我在《去一下》心願樹許了一個願，來幫我打氣 🌿';
   var old=btn.textContent; btn.disabled=true; btn.textContent='製作中…';
   var blob=null;
   try{ blob=await buildWishCardBlob(w, _openShape); }catch(e){ blob=null; }
+  var path = blob ? await uploadWishCard(blob) : null;  // 上傳卡片,當連結預覽圖
+  var url = wishShareUrl(w, path);
   btn.disabled=false; btn.textContent=old;
   // 手機:系統分享面板帶圖(可選 LINE/IG/FB)
   if(blob && navigator.canShare){
