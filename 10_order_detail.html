@@ -223,6 +223,7 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
 .pub-page-btn{min-width:32px;height:32px;padding:0 9px;border:1.5px solid var(--border-soft);background:#fff;border-radius:9px;font-size:0.84rem;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;transition:all 0.15s;}
 .pub-page-btn:hover:not(.on){background:var(--champagne-soft);}
 .pub-page-btn.on{background:var(--amber-deep);color:#fff;border-color:var(--amber-deep);}
+.pub-more-btn{display:inline-block;margin-top:2px;background:none;border:none;color:var(--amber-deep);font-size:0.84rem;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:underline;padding:4px 0;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
@@ -541,38 +542,66 @@ async function renderPublicReviews(revieweeId, mode){
   }
   var r = await sb.rpc('get_public_reviews', { p_reviewee: revieweeId, p_mode: mode });
   if(r.error || !r.data || !r.data.length){ box.innerHTML = ''; _pubReviews = []; return; }
-  _pubReviews = r.data;          // 後台已依時間新到舊排序,第 1 頁即最新
-  renderPubReviewPage(1, false); // 初次載入不捲動
+  _pubReviews = r.data;   // 後台已依時間新到舊排序,第 1 則即最新
+  renderPubPreview();     // 外面只顯示最新 1 則,其餘點「查看全部」進彈窗
 }
 
-/* 評價留言分頁:每頁 1 筆,數字頁碼(只看第一筆,其餘收進頁碼)。點頁碼只換這頁的留言內容,不重打後台。 */
-var PUB_PAGE_SIZE = 1;
+var PUB_PAGE_SIZE = 5;   // 「查看全部」彈窗每頁 5 筆
 var _pubReviews = [];
-function renderPubReviewPage(page, doScroll){
+
+/* 單則留言卡片(預覽與彈窗共用,避免兩處 markup 不一致) */
+function pubReviewCard(rv){
+  var avg = avgOfRatings(rv.ratings);
+  var d = rv.created_at ? String(rv.created_at).slice(0,10) : '';
+  return '<div style="background:var(--champagne-soft);border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
+    '<div style="font-size:0.85rem;color:var(--amber-deep);font-weight:600;">' + (avg != null ? ('★ ' + avg) : '') + ' <span style="color:var(--ink-light);font-weight:400;font-size:0.75rem;">' + d + '</span></div>' +
+    (rv.comment ? '<div style="font-size:0.88rem;color:var(--ink);line-height:1.7;margin-top:4px;">' + esc(rv.comment) + (rv.truncated ? ' <span onclick="openReviewUnlock()" style="color:var(--amber-deep);font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:underline;">（付費解鎖看完整）</span>' : '') + '</div>' : '') +
+    '</div>';
+}
+
+/* 訂單頁外面:只顯示最新 1 則,多於 1 則時給「查看全部」開彈窗 */
+function renderPubPreview(){
   var box = document.getElementById('public-reviews');
-  if(!box) return;
+  if(!box || !_pubReviews.length) return;
+  var total = _pubReviews.length;
+  var html = '<div style="font-size:0.92rem;font-weight:600;color:var(--ink);margin-bottom:8px;">評價留言（匿名）<span style="color:var(--ink-light);font-weight:400;font-size:0.78rem;">　共 ' + total + ' 則</span></div>';
+  html += pubReviewCard(_pubReviews[0]);
+  if(total > 1){
+    html += '<button type="button" class="pub-more-btn" onclick="openReviewsModal()">查看全部 ' + total + ' 則評價 ›</button>';
+  }
+  box.innerHTML = html;
+}
+
+/* 查看全部:底部彈窗,每頁 5 筆數字分頁。點頁碼只換彈窗內容,不重打後台。 */
+function openReviewsModal(){
+  var m = document.getElementById('rv-list-modal');
+  if(!m) return;
+  m.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  renderReviewsModalPage(1);
+}
+function closeReviewsModal(){
+  var m = document.getElementById('rv-list-modal');
+  if(m) m.style.display = 'none';
+  document.body.style.overflow = '';
+}
+function renderReviewsModalPage(page){
+  var listEl = document.getElementById('rv-list-body');
+  var pagerEl = document.getElementById('rv-list-pager');
+  if(!listEl) return;
   var total = _pubReviews.length;
   var pages = Math.max(1, Math.ceil(total / PUB_PAGE_SIZE));
   page = Math.min(Math.max(1, page), pages);
   var slice = _pubReviews.slice((page-1)*PUB_PAGE_SIZE, (page-1)*PUB_PAGE_SIZE + PUB_PAGE_SIZE);
-  var html = '<div style="font-size:0.92rem;font-weight:600;color:var(--ink);margin-bottom:8px;">評價留言（匿名）<span style="color:var(--ink-light);font-weight:400;font-size:0.78rem;">　共 ' + total + ' 則</span></div>';
-  slice.forEach(function(rv){
-    var avg = avgOfRatings(rv.ratings);
-    var d = rv.created_at ? String(rv.created_at).slice(0,10) : '';
-    html += '<div style="background:var(--champagne-soft);border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
-      '<div style="font-size:0.85rem;color:var(--amber-deep);font-weight:600;">' + (avg != null ? ('★ ' + avg) : '') + ' <span style="color:var(--ink-light);font-weight:400;font-size:0.75rem;">' + d + '</span></div>' +
-      (rv.comment ? '<div style="font-size:0.88rem;color:var(--ink);line-height:1.7;margin-top:4px;">' + esc(rv.comment) + (rv.truncated ? ' <span onclick="openReviewUnlock()" style="color:var(--amber-deep);font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:underline;">（付費解鎖看完整）</span>' : '') + '</div>' : '') +
-      '</div>';
-  });
+  listEl.innerHTML = slice.map(pubReviewCard).join('');
+  listEl.scrollTop = 0;
+  var ph = '';
   if(pages > 1){
-    html += '<div class="pub-pager">';
     for(var p = 1; p <= pages; p++){
-      html += '<button type="button" class="pub-page-btn' + (p === page ? ' on' : '') + '" onclick="renderPubReviewPage(' + p + ', true)">' + p + '</button>';
+      ph += '<button type="button" class="pub-page-btn' + (p === page ? ' on' : '') + '" onclick="renderReviewsModalPage(' + p + ')">' + p + '</button>';
     }
-    html += '</div>';
   }
-  box.innerHTML = html;
-  if(doScroll){ box.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  if(pagerEl) pagerEl.innerHTML = ph;
 }
 
 /* 評價解鎖視窗:點「付費解鎖」開,選單次/月票,走後台 redeem_info 扣對的池(看順咖扣 client 點、看案家扣 suncar 點)。
@@ -1184,6 +1213,17 @@ qyxGuard(init, { color: '#EF9F27' });
     </button>
     <a onclick="goBuyForReview()" style="display:block;text-align:center;font-size:0.8rem;color:var(--amber-deep);margin:0.5rem 0 0.2rem;cursor:pointer;text-decoration:underline;">點數不足?去儲值</a>
     <button type="button" onclick="closeReviewUnlock()" style="width:100%;background:#fff;border:1.5px solid var(--border);color:var(--ink-soft);padding:0.85rem;border-radius:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:0.5rem;">取消</button>
+  </div>
+</div>
+
+<!-- 全部評價留言彈窗(底部彈出,每頁 5 筆) -->
+<div id="rv-list-modal" style="display:none;position:fixed;inset:0;background:rgba(61,41,20,0.55);z-index:1000;align-items:flex-end;justify-content:center;" onclick="if(event.target===this)closeReviewsModal()">
+  <div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:500px;max-height:82vh;display:flex;flex-direction:column;padding:1.4rem 1.4rem 1.6rem;box-shadow:0 -10px 40px rgba(0,0,0,0.25);">
+    <div style="width:46px;height:5px;background:var(--border);border-radius:99px;margin:0 auto 1rem;"></div>
+    <div style="font-size:1.05rem;font-weight:600;text-align:center;margin-bottom:0.9rem;color:var(--ink);">評價留言（匿名）</div>
+    <div id="rv-list-body" style="overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;"></div>
+    <div id="rv-list-pager" class="pub-pager" style="justify-content:center;margin-top:10px;"></div>
+    <button type="button" onclick="closeReviewsModal()" style="width:100%;background:#fff;border:1.5px solid var(--border);color:var(--ink-soft);padding:0.85rem;border-radius:12px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:0.9rem;">關閉</button>
   </div>
 </div>
 </body>
