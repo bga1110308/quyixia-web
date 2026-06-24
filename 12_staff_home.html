@@ -532,8 +532,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <!-- 接案歷史:已完成 -->
   <div class="order-panel" id="panel-history" style="display:none;">
     <div class="filter-bar">
-      <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt" id="hcnt-all">0</span></span>
-      <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt" id="hcnt-done">0</span></span>
+      <span class="filter-tag on" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt" id="hcnt-done">0</span></span>
+      <span class="filter-tag" data-filter="unreviewed" onclick="filterToggle(this)">待回評價<span class="cnt" id="hcnt-unreviewed">0</span></span>
     </div>
     <div id="history-list"></div>
     <div id="history-empty" class="income-hint" style="display:none;padding:1rem;text-align:center;">還沒有接案紀錄</div>
@@ -794,7 +794,8 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       '</div>';
   }
   function doneCard(o){
-    return '<div class="order-card done-order" data-status="done" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div>'+reviewRow(o)+'</div>';
+    var reviewed = myReviewedClientOrders[o.id] ? '1' : '0'; // 待回評價篩選用:0=還沒評價這位案家
+    return '<div class="order-card done-order" data-status="done" data-reviewed="'+reviewed+'" onclick="window.location.href=\'10_order_detail.html?id='+esc(o.id)+'\'">'+head(o,'<span class="status-tag s-done"><svg><use href="#i-check"/></svg>已完成</span>')+metaRow(o)+'<div class="oc-bottom"><div class="oc-actions"></div>'+price(o)+'</div>'+reviewRow(o)+'</div>';
   }
   function openCard(o, perks){
     // perks=這張單的案家目前有效的兌換加值。
@@ -1128,8 +1129,9 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     } else {
       $('history-empty').style.display = '';
     }
-    $('hcnt-all').textContent = doneOrders.length;
+    var unreviewedCnt = doneOrders.filter(function(o){ return !myReviewedClientOrders[o.id]; }).length;
     $('hcnt-done').textContent = doneOrders.length;
+    $('hcnt-unreviewed').textContent = unreviewedCnt;
     $('tcnt-history').textContent = doneOrders.length;
 
     /* 本月統計 */
@@ -1301,11 +1303,12 @@ function filterToggle(el) {
   var cards = document.querySelectorAll('#history-list .order-card');
 
   cards.forEach(function(c){
-    if (filter === 'all') {
-      c.style.display = '';
+    if (filter === 'unreviewed') {
+      // 待回評價:只顯示我還沒評價這位案家的已完成單
+      c.style.display = (c.getAttribute('data-reviewed') === '0') ? '' : 'none';
     } else {
-      var status = c.getAttribute('data-status') || '';
-      c.style.display = status.indexOf(filter) > -1 ? '' : 'none';
+      // 已完成:全部已完成的單都顯示
+      c.style.display = '';
     }
   });
 }
