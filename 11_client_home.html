@@ -378,7 +378,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div class="order-tabs">
     <span class="order-tab on" data-tab="matching" onclick="orderTab('matching')">媒合中<span class="cnt" id="tcnt-matching">0</span></span>
     <span class="order-tab" data-tab="active" onclick="orderTab('active')">進行中<span class="cnt" id="tcnt-active">0</span></span>
-    <span class="order-tab" data-tab="all" onclick="orderTab('all')">所有訂單<span class="cnt" id="tcnt-all">0</span></span>
+    <span class="order-tab" data-tab="await" onclick="orderTab('await')">待確認<span class="cnt" id="tcnt-await">0</span></span>
+    <span class="order-tab" data-tab="review" onclick="orderTab('review')">待評價<span class="cnt" id="tcnt-review">0</span></span>
   </div>
 
   <!-- 媒合中:還沒被順咖接的單,等待接單 -->
@@ -387,26 +388,26 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="panel-empty" id="empty-matching" style="display:none;">目前沒有媒合中的訂單</div>
   </div>
 
-  <!-- 進行中:順咖已接單(待服務/服務中/等待確認) -->
+  <!-- 進行中:順咖已接單,待服務 / 服務中 -->
   <div class="order-panel" id="panel-active" style="display:none;">
     <div id="active-list"></div>
     <div class="panel-empty" id="empty-active" style="display:none;">目前沒有進行中的訂單</div>
   </div>
 
-  <!-- 所有訂單:含已完成,保留內層篩選(全部/媒合中/進行中/已完成) -->
-  <div class="order-panel" id="panel-all" style="display:none;">
-    <div class="filter-bar">
-      <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt" id="cnt-all">0</span></span>
-      <span class="filter-tag" data-filter="matching" onclick="filterToggle(this)">媒合中<span class="cnt" id="cnt-matching">0</span></span>
-      <span class="filter-tag" data-filter="active" onclick="filterToggle(this)">進行中<span class="cnt" id="cnt-active">0</span></span>
-      <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt" id="cnt-done">0</span></span>
-    </div>
-    <div id="history-list"></div>
+  <!-- 待確認:順咖已標記完成,等你按確認才算完成 -->
+  <div class="order-panel" id="panel-await" style="display:none;">
+    <div id="await-list"></div>
+    <div class="panel-empty" id="empty-await" style="display:none;">目前沒有待你確認的訂單</div>
+  </div>
+
+  <!-- 待評價:已完成的單,還沒評價的排前面、可去評價 -->
+  <div class="order-panel" id="panel-review" style="display:none;">
+    <div id="review-list"></div>
     <!-- 空狀態 -->
     <div class="empty" id="empty-state" style="display:none;">
       <div class="empty-ico"><svg><use href="#i-empty-box"/></svg></div>
-      <div class="empty-title">這邊還沒有訂單</div>
-      <div class="empty-desc">下單後可以在這邊追蹤訂單狀態</div>
+      <div class="empty-title">這邊還沒有完成的訂單</div>
+      <div class="empty-desc">服務完成後可以在這邊回評價順咖</div>
       <a class="empty-cta" href="04_order_form.html">立刻下單</a>
     </div>
   </div>
@@ -915,15 +916,19 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       (sres.data||[]).forEach(function(s){ nameById[s.id] = s.display_name; noById[s.id] = s.member_no||''; });
     }
 
-    var cnt = { matching:0, active:0, done:0 };
-    orders.forEach(function(o){ var g=(STATUS[o.status]||{}).group; if(g==='matching')cnt.matching++; else if(g==='active')cnt.active++; else if(g==='done')cnt.done++; });
+    // 頁籤分組:進行中只含待服務+服務中;待確認(await_confirm)、待評價(done)各自獨立成頁籤
+    var cnt = { matching:0, active:0, await:0, done:0 };
+    orders.forEach(function(o){
+      var s=o.status;
+      if(s==='matching') cnt.matching++;
+      else if(s==='accepted' || s==='active') cnt.active++;
+      else if(s==='await_confirm') cnt.await++;
+      else if(s==='done') cnt.done++;
+    });
+    // 上方數據卡:媒合中 / 進行中(含待確認的合計,給總覽用) / 已完成
     $('stat-matching').textContent = cnt.matching;
-    $('stat-active').textContent = cnt.active;
+    $('stat-active').textContent = cnt.active + cnt.await;
     $('stat-done').textContent = cnt.done;
-    $('cnt-all').textContent = orders.length;
-    $('cnt-matching').textContent = cnt.matching;
-    $('cnt-active').textContent = cnt.active;
-    $('cnt-done').textContent = cnt.done;
 
     // 取消率:分子=待服務後自己取消的次數(取消紀錄表),分母=分子+目前已被接走的單(待服務/服務中/已完成)
     var cancRes = await sb.from('order_cancellations').select('id').eq('client_id', user.id).eq('canceller_role', 'client');
@@ -959,8 +964,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       $('empty-matching').style.display = '';
     }
 
-    // 進行中:順咖已接單之後的單(待服務/服務中/等待確認),媒合成功才會進這區
-    var activeOrders = orders.filter(function(o){ return (STATUS[o.status]||{}).group === 'active'; });
+    // 進行中:順咖已接單、服務還沒結束(待服務 / 服務中)
+    var activeOrders = orders.filter(function(o){ return o.status==='accepted' || o.status==='active'; });
     if(activeOrders.length){
       $('active-list').innerHTML = activeOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id], noById[o.suncar_id]); }).join('');
       $('empty-active').style.display = 'none';
@@ -969,19 +974,32 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       $('empty-active').style.display = '';
     }
 
-    var listEl = $('history-list');
-    if(orders.length){
-      listEl.innerHTML = orders.map(function(o){ return buildCard(o, nameById[o.suncar_id], noById[o.suncar_id]); }).join('');
+    // 待確認:順咖已標記完成,等你按確認
+    var awaitOrders = orders.filter(function(o){ return o.status==='await_confirm'; });
+    if(awaitOrders.length){
+      $('await-list').innerHTML = awaitOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id], noById[o.suncar_id]); }).join('');
+      $('empty-await').style.display = 'none';
+    } else {
+      $('await-list').innerHTML = '';
+      $('empty-await').style.display = '';
+    }
+
+    // 待評價:已完成的單,還沒評價的排前面(去評價鈕優先看到),其餘維持原順序
+    var doneOrders = orders.filter(function(o){ return o.status==='done'; });
+    doneOrders.sort(function(a,b){ return (myReviewedSuncarOrders[a.id]?1:0) - (myReviewedSuncarOrders[b.id]?1:0); });
+    if(doneOrders.length){
+      $('review-list').innerHTML = doneOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id], noById[o.suncar_id]); }).join('');
       $('empty-state').style.display = 'none';
     } else {
-      listEl.innerHTML = '';
+      $('review-list').innerHTML = '';
       $('empty-state').style.display = '';
     }
 
-    // 三頁籤上的數字徽章(媒合中/進行中/所有訂單)
+    // 頁籤數字徽章。待評價徽章=還沒評價的已完成單數(真正待辦的數)
     $('tcnt-matching').textContent = cnt.matching;
     $('tcnt-active').textContent = cnt.active;
-    $('tcnt-all').textContent = orders.length;
+    $('tcnt-await').textContent = cnt.await;
+    $('tcnt-review').textContent = doneOrders.filter(function(o){ return !myReviewedSuncarOrders[o.id]; }).length;
   }
 
   document.addEventListener('DOMContentLoaded', function(){ qyxGuard(init, { color: '#EF9F27' }); }); /* 載入逾時保護:8 秒沒載完或載入出錯就顯示重試 */
@@ -1018,26 +1036,7 @@ function renderCrown(count) {
     : '已推薦 ' + count + ' 人 · 點看等級';
 }
 
-/* === 訂單篩選 === */
-function filterToggle(el) {
-  el.closest('.filter-bar').querySelectorAll('.filter-tag').forEach(function(t){ t.classList.remove('on'); });
-  el.classList.add('on');
-
-  var filter = el.getAttribute('data-filter');
-  var list = document.getElementById('history-list');
-  var cards = list.querySelectorAll('.order-card');
-
-  cards.forEach(function(c){
-    if (filter === 'all') {
-      c.style.display = '';
-    } else {
-      var status = c.getAttribute('data-status');
-      c.style.display = (status === filter) ? '' : 'none';
-    }
-  });
-}
-
-/* 訂單頁籤切換:媒合中/進行中/所有訂單 同一排,點哪個顯示哪個面板 */
+/* 訂單頁籤切換:媒合中/進行中/待確認/待評價 同一排,點哪個顯示哪個面板 */
 function orderTab(tab) {
   document.querySelectorAll('.order-tab').forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-tab') === tab); });
   document.querySelectorAll('.order-panel').forEach(function(p){ p.style.display = 'none'; });
@@ -1045,15 +1044,10 @@ function orderTab(tab) {
   if (panel) panel.style.display = '';
 }
 
-/* 上方數據卡點擊:媒合中/進行中切到對應頁籤;已完成切到「所有訂單」並套用已完成篩選 */
+/* 上方數據卡點擊:媒合中→媒合中頁籤、進行中→進行中頁籤、已完成→待評價頁籤 */
 function filterTo(status) {
-  if (status === 'done') {
-    orderTab('all');
-    var btn = document.querySelector('.filter-tag[data-filter="done"]');
-    if (btn) btn.click();
-  } else {
-    orderTab(status);
-  }
+  var map = { matching:'matching', active:'active', done:'review' };
+  orderTab(map[status] || status);
   document.querySelector('.order-tabs').scrollIntoView({behavior:'smooth', block:'start'});
 }
 </script>
