@@ -434,7 +434,7 @@ function renderControls(w){
   var blessed = w.blessed === true;
   box.innerHTML =
     '<div class="tag-actions">' +
-      '<button class="bless-btn'+(blessed?' done':'')+'" id="mc-bless" '+(blessed?'disabled':'')+'>🙏 祝福 <b>'+(w.blessings||0)+'</b></button>' +
+      '<button class="bless-btn'+(blessed?' done':'')+'" id="mc-bless" '+(blessed?'disabled':'')+'>🙏 '+(blessed?'今天已祝福':'祝福')+' <b>'+(w.blessings||0)+'</b></button>' +
       '<button class="share-btn" id="mc-share">📤 分享打氣</button>' +
     '</div>' +
     (demo ? '' : '<button class="report-link" id="mc-report">檢舉這則心願</button>');
@@ -458,9 +458,11 @@ async function doBless(w, btn){
   var r = await sb.rpc('bless_wish', { p_wish_id: w.id });
   var d = r && r.data ? r.data : {};
   if(d.ok){
-    w.blessings = d.blessings; if(!d.already){ w.blessed = true; bumpBlessStat(); }
+    w.blessings = d.blessings;
+    if(!d.already) bumpBlessStat();   // 真的新增才累加總統計
+    w.blessed = true;                 // 今天已祝福,按鈕反灰到隔天台灣 00:00 才恢復
     renderControls(w);
-  }
+  } else if(d.reason === 'not_logged_in'){ location.href = '13_login.html'; }
 }
 function bumpBlessStat(){
   var el = document.getElementById('stat-bless');
