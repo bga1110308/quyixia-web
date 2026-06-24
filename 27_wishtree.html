@@ -146,7 +146,7 @@ body.suncar .text-input:focus,body.suncar .text-area:focus{border-color:var(--mi
 
   <!-- 今日精選(聚光卡片):每天台灣 00:00 換一張 -->
   <div class="feat" id="feat-card" style="display:none;">
-    <div class="feat-ribbon">🌟 今日精選心願</div>
+    <div class="feat-ribbon">🌟 今日幸運心願</div>
     <div class="feat-wish hand" id="feat-wish"></div>
     <div class="feat-by hand" id="feat-by"></div>
     <button class="feat-btn" id="feat-btn">🙏 為它打氣</button>
@@ -230,13 +230,22 @@ var TAGS = [
 ];
 /* 每則心願隨機分到一款木牌(全部 9 款都會用到),用 id 決定所以同一則固定同款 */
 var MODAL_SHAPES = ['heart','star','scallop','square','circle','house','cloud','hexagon','rounded'];
-/* 每款木牌的「文字位置」可分開調(避開各自的表情/裝飾):[上%,下%]。
-   小吊牌(滑過預覽)用這個;數字越大越往下。要調哪一款只改這一行對應值。 */
-var SHAPE_BAND = {
-  heart:[50,21], star:[61,17], scallop:[50,22], square:[50,22], circle:[51,21],
-  house:[51,21], cloud:[47,23], hexagon:[57,18], rounded:[50,22]
+/* 每款木牌的「文字＋名字位置」。為什麼分兩張表:預覽小吊牌與彈窗大圖比例不同,
+   同一組數字會有的對有的歪,所以拆開各自調(MINI_BAND=滑過預覽、CARD_BAND=點開大圖)。
+   每款 = [文字上%, 文字下%, 名字下%, 名字右%]。
+   文字:上%越大越往下、下%越大越往上(兩個一起加減=整塊平移)。
+   名字:下%越大=越高、右%越大=越靠左。要調哪一款只改對應那一行。 */
+var MINI_BAND = {
+  heart:[50,21, 9,20], star:[61,17, 9,20], scallop:[50,22, 9,20],
+  square:[50,22, 16,20], circle:[51,21, 16,20], house:[57,15, 9,28],
+  cloud:[47,23, 16,20], hexagon:[48,27, 17,20], rounded:[50,22, 9,20]
 };
-function shapeBand(shape){ return SHAPE_BAND[shape] || [53,20]; }
+var CARD_BAND = {
+  heart:[50,21, 14,20], star:[61,17, 14,20], scallop:[50,22, 14,20],
+  square:[50,22, 14,20], circle:[51,21, 21,20], house:[57,15, 14,28],
+  cloud:[53,17, 21,20], hexagon:[48,27, 22,20], rounded:[50,22, 14,20]
+};
+function bandOf(table, shape){ return table[shape] || [53,20, 12,20]; }
 
 var DEMO = [
   {id:-1,nickname:'阿美',content:'希望媽媽的膝蓋早日康復，能再一起去散步。',blessings:12,blessed:false},
@@ -283,12 +292,12 @@ function renderTree(){
     var mstyle = (below ? 'top:96%;bottom:auto;transform-origin:top center;'
                         : 'bottom:96%;top:auto;transform-origin:bottom center;')
                + 'left:calc(50% + ' + dx + 'px);';
-    var shp = modalShape(w,i), bd = shapeBand(shp);
+    var shp = modalShape(w,i), bd = bandOf(MINI_BAND, shp);
     el.innerHTML =
       '<div class="pv hand">'+esc((w.content||'').slice(0,4))+'</div>' +
       '<div class="mini" style="'+mstyle+'"><img src="wish/tag_'+shp+'.webp" alt="">' +
         '<div class="mtxt hand" style="top:'+bd[0]+'%;bottom:'+bd[1]+'%;">'+esc(mwish)+'</div>' +
-        '<div class="mby hand">'+esc(displayName(w.nickname))+'</div></div>';
+        '<div class="mby hand" style="bottom:'+bd[2]+'%;right:'+bd[3]+'%;">'+esc(displayName(w.nickname))+'</div></div>';
     (function(idx){ el.addEventListener('click', function(){ openTag(idx); }); })(i);
     scene.appendChild(el);
   }
@@ -404,13 +413,15 @@ function openWishObj(w, idx){
   if(!w) return;
   _openWish = w; _openShape = modalShape(w, idx||0);
   document.getElementById('mc-img').src = 'wish/tag_' + _openShape + '.webp';
-  var bd = shapeBand(_openShape);
+  var bd = bandOf(CARD_BAND, _openShape);
   var txtBox = document.querySelector('.tagcard .txt');
   if(txtBox){ txtBox.style.top = bd[0] + '%'; txtBox.style.bottom = bd[1] + '%'; }
   var wishEl = document.getElementById('mc-wish');
   wishEl.textContent = w.content || '';
   wishEl.style.fontSize = wishFontSize(w.content);
-  document.getElementById('mc-by').textContent = displayName(w.nickname);
+  var byEl = document.getElementById('mc-by');
+  byEl.textContent = displayName(w.nickname);
+  byEl.style.bottom = bd[2] + '%'; byEl.style.right = bd[3] + '%';
   renderControls(w);
   document.getElementById('tag-modal').classList.add('show');
 }
