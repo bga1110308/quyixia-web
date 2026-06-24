@@ -247,6 +247,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .filter-tag.on{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(47,96,72,0.3);}
 .filter-tag .cnt{font-size:0.66rem;background:rgba(255,255,255,0.35);padding:1px 7px;border-radius:99px;margin-left:5px;font-weight:600;}
 .filter-tag:not(.on) .cnt{background:var(--mint-pale);color:var(--forest);}
+/* 訂單四頁籤(可接任務/待服務/進行中/接案歷史):同一排點選切換,避免首頁過長 */
+.order-tabs{display:flex;gap:6px;margin:1.5rem 0 0.95rem;background:var(--mint-pale);padding:5px;border-radius:14px;}
+.order-tab{flex:1;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:9px 4px;border-radius:10px;font-size:0.82rem;color:var(--ink-soft);cursor:pointer;font-weight:600;transition:all 0.2s;white-space:nowrap;}
+.order-tab.on{background:#fff;color:var(--forest);box-shadow:0 2px 8px rgba(47,96,72,0.1);}
+.order-tab .cnt{font-size:0.64rem;background:rgba(0,0,0,0.06);padding:1px 6px;border-radius:99px;font-weight:700;}
+.order-tab.on .cnt{background:linear-gradient(135deg,var(--mint),var(--forest));color:#fff;}
+.panel-empty{text-align:center;padding:2.2rem 1rem;color:var(--ink-soft);font-size:0.86rem;}
 
 /* 快速動作 */
 .quick-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
@@ -489,56 +496,48 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
   <div id="directed-list"></div>
   </div>
 
-  <!-- 待服務(已接單、約定時間還沒開始) -->
-  <div id="pending-section" style="display:none;">
-  <div class="sec-h">
-    <div class="sec-title">待服務</div>
-  </div>
-  <div id="pending-list"></div>
-  </div>
-
-  <!-- 進行中 -->
-  <div id="active-section" style="display:none;">
-  <div class="sec-h">
-    <div class="sec-title">進行中的服務</div>
-  </div>
-  <div id="active-list"></div>
+  <!-- ============ 訂單四頁籤:可接任務/待服務/進行中/接案歷史,同一排點選切換(避免首頁過長);未到回報、指定你的單固定在頁籤上方 ============ -->
+  <div class="order-tabs">
+    <span class="order-tab on" data-tab="open" onclick="orderTab('open')">可接任務<span class="cnt" id="tcnt-open">0</span></span>
+    <span class="order-tab" data-tab="pending" onclick="orderTab('pending')">待服務<span class="cnt" id="tcnt-pending">0</span></span>
+    <span class="order-tab" data-tab="active" onclick="orderTab('active')">進行中<span class="cnt" id="tcnt-active">0</span></span>
+    <span class="order-tab" data-tab="history" onclick="orderTab('history')">接案歷史<span class="cnt" id="tcnt-history">0</span></span>
   </div>
 
-  <!-- 等待案家確認(順咖已標記完成,等案家按確認完成才算 done) -->
-  <div id="await-section" style="display:none;">
-  <div class="sec-h">
-    <div class="sec-title">等待案家確認</div>
-  </div>
-  <div id="await-list"></div>
-  </div>
-
-  <!-- 等你幫忙的人 入口 -->
-  <a href="22_help_wall.html" class="help-wall-entry">
-    <div class="hwe-icon">🤝</div>
-    <div class="hwe-text"><div class="hwe-title">等你幫忙的人</div><div class="hwe-sub">看看哪些案家正在找順咖</div></div>
-    <div class="hwe-arrow">›</div>
-  </a>
-
-  <!-- 可接任務 -->
-  <div class="sec-h">
-    <div class="sec-title">可接任務<span class="badge" id="open-badge">0 筆</span></div>
-  </div>
-  <div id="open-list"></div>
-  <div id="open-empty" class="income-hint" style="display:none;padding:1rem;text-align:center;">目前沒有符合你的可接任務</div>
-
-  <!-- 接案歷史 -->
-  <div class="sec-h">
-    <div class="sec-title">接案歷史</div>
+  <!-- 可接任務:媒合中且尚無人接的單;附「等你幫忙的人」入口 -->
+  <div class="order-panel" id="panel-open">
+    <a href="22_help_wall.html" class="help-wall-entry">
+      <div class="hwe-icon">🤝</div>
+      <div class="hwe-text"><div class="hwe-title">等你幫忙的人</div><div class="hwe-sub">看看哪些案家正在找順咖</div></div>
+      <div class="hwe-arrow">›</div>
+    </a>
+    <div id="open-list"></div>
+    <div id="open-empty" class="income-hint" style="display:none;padding:1rem;text-align:center;">目前沒有符合你的可接任務</div>
   </div>
 
-  <div class="filter-bar">
-    <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt" id="hcnt-all">0</span></span>
-    <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt" id="hcnt-done">0</span></span>
+  <!-- 待服務:已接單、約定時間還沒開始 -->
+  <div class="order-panel" id="panel-pending" style="display:none;">
+    <div id="pending-list"></div>
+    <div class="panel-empty" id="empty-pending" style="display:none;">目前沒有待服務的訂單</div>
   </div>
 
-  <div id="history-list"></div>
-  <div id="history-empty" class="income-hint" style="display:none;padding:1rem;text-align:center;">還沒有接案紀錄</div>
+  <!-- 進行中:服務進行中 + 等待案家確認(順咖已標記完成,等案家按確認) -->
+  <div class="order-panel" id="panel-active" style="display:none;">
+    <div id="active-list"></div>
+    <div id="await-label" style="display:none;font-size:0.82rem;font-weight:600;color:var(--ink-soft);margin:0.8rem 0 0.4rem;">等待案家確認</div>
+    <div id="await-list"></div>
+    <div class="panel-empty" id="empty-active" style="display:none;">目前沒有進行中的訂單</div>
+  </div>
+
+  <!-- 接案歷史:已完成 -->
+  <div class="order-panel" id="panel-history" style="display:none;">
+    <div class="filter-bar">
+      <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt" id="hcnt-all">0</span></span>
+      <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt" id="hcnt-done">0</span></span>
+    </div>
+    <div id="history-list"></div>
+    <div id="history-empty" class="income-hint" style="display:none;padding:1rem;text-align:center;">還沒有接案紀錄</div>
+  </div>
 
   <!-- 其他 -->
   <div class="sec-h">
@@ -1085,25 +1084,35 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       (cres.data||[]).forEach(function(c){ clientById[c.id]=c; });
     }
 
+    // 待服務頁籤
     if(pendingOrders.length){
       $('pending-list').innerHTML = pendingOrders.map(function(o){ var c=clientById[o.client_id]||{}; return pendingCard(o, c.display_name, c.phone, c.member_no); }).join('');
-      $('pending-section').style.display = '';
+      $('empty-pending').style.display = 'none';
+    } else {
+      $('pending-list').innerHTML = '';
+      $('empty-pending').style.display = '';
     }
 
-    if(activeOrders.length){
-      $('active-list').innerHTML = activeOrders.map(function(o){ var c=clientById[o.client_id]||{}; return activeCard(o, c.display_name, c.phone, c.member_no); }).join('');
-      $('active-section').style.display = '';
-    }
-
+    // 進行中頁籤:服務中 + 等待案家確認 併在同一頁籤
+    $('active-list').innerHTML = activeOrders.length ? activeOrders.map(function(o){ var c=clientById[o.client_id]||{}; return activeCard(o, c.display_name, c.phone, c.member_no); }).join('') : '';
     if(awaitOrders.length){
       $('await-list').innerHTML = awaitOrders.map(awaitCard).join('');
-      $('await-section').style.display = '';
+      $('await-label').style.display = '';
+    } else {
+      $('await-list').innerHTML = '';
+      $('await-label').style.display = 'none';
     }
+    $('empty-active').style.display = (activeOrders.length || awaitOrders.length) ? 'none' : '';
 
+    // 未到回報:急件提醒,固定在頁籤上方
     if(noShowOrders.length){
       $('noshow-list').innerHTML = noShowOrders.map(function(o){ return noShowCard(o); }).join('');
       $('noshow-section').style.display = '';
     }
+
+    // 頁籤數字徽章(待服務 / 進行中=服務中+等待確認)
+    $('tcnt-pending').textContent = pendingOrders.length;
+    $('tcnt-active').textContent = activeOrders.length + awaitOrders.length;
 
     /* 查我(順咖)已評價過哪些訂單:只認自己寫的 suncar_reviews_client(RLS 只放行讀自己寫的),用來在已完成卡標評了沒 */
     myReviewedClientOrders = {};
@@ -1121,6 +1130,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
     }
     $('hcnt-all').textContent = doneOrders.length;
     $('hcnt-done').textContent = doneOrders.length;
+    $('tcnt-history').textContent = doneOrders.length;
 
     /* 本月統計 */
     var monthDone = doneOrders.filter(function(o){ return sameMonth(o.service_time); });
@@ -1163,7 +1173,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
         return pa - pb;
       });
       $('stat-open').textContent = openOrders.length;
-      $('open-badge').textContent = openOrders.length + ' 筆';
+      $('tcnt-open').textContent = openOrders.length;
       if(openOrders.length){
         $('open-list').innerHTML = openOrders.map(function(o){ return openCard(o, orderPerks[o.id]); }).join('');
       } else {
@@ -1171,7 +1181,7 @@ var canAcceptJobs = false; /* 順咖通過審核(active)才可上線接單 */
       }
     } else {
       $('stat-open').textContent = 0;
-      $('open-badge').textContent = '0 筆';
+      $('tcnt-open').textContent = 0;
       $('open-empty').textContent = '審核通過後才會看到可接任務';
       $('open-empty').style.display = '';
     }
@@ -1272,6 +1282,14 @@ async function doRedeem(kind) {
   }
   alert(kind === 'month' ? '已開通月票,30 天內可看全部案家資訊' : '已解鎖這位案家的資訊');
   location.reload(); // 重整讓鎖頭變成已解鎖的內容,單一來源不另外手動改畫面
+}
+
+/* 訂單頁籤切換:可接任務/待服務/進行中/接案歷史 同一排,點哪個顯示哪個面板 */
+function orderTab(tab) {
+  document.querySelectorAll('.order-tab').forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-tab') === tab); });
+  document.querySelectorAll('.order-panel').forEach(function(p){ p.style.display = 'none'; });
+  var panel = document.getElementById('panel-' + tab);
+  if (panel) panel.style.display = '';
 }
 
 /* 篩選 */
