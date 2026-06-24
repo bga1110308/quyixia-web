@@ -201,6 +201,13 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .filter-tag.on{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(239,159,39,0.3);}
 .filter-tag .cnt{font-size:0.66rem;background:rgba(255,255,255,0.4);padding:1px 6px;border-radius:99px;font-weight:600;}
 .filter-tag:not(.on) .cnt{background:var(--champagne);color:var(--amber-deep);}
+/* 訂單三頁籤(媒合中/進行中/所有訂單):同一排點選切換,避免首頁過長 */
+.order-tabs{display:flex;gap:6px;margin:1.5rem 0 0.95rem;background:var(--champagne);padding:5px;border-radius:14px;}
+.order-tab{flex:1;text-align:center;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 6px;border-radius:10px;font-size:0.86rem;color:var(--ink-soft);cursor:pointer;font-weight:600;transition:all 0.2s;white-space:nowrap;}
+.order-tab.on{background:#fff;color:var(--amber-deep);box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.order-tab .cnt{font-size:0.66rem;background:rgba(0,0,0,0.06);padding:1px 6px;border-radius:99px;font-weight:700;}
+.order-tab.on .cnt{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;}
+.panel-empty{text-align:center;padding:2.2rem 1rem;color:var(--ink-soft);font-size:0.86rem;}
 
 /* === 空狀態 === */
 .empty{text-align:center;padding:3rem 1rem;}
@@ -367,45 +374,41 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     我的取消率:<b id="cancel-rate" style="color:var(--ink);">0%</b> <span style="color:var(--ink-light);">(待服務後取消 <span id="cancel-cnt">0</span> 次)</span>
   </div>
 
-  <!-- ============ 媒合中:還沒被順咖接的單,等待接單 ============ -->
-  <div id="matching-section" style="display:none;">
-  <div class="sec-h">
-    <div class="sec-title">媒合中</div>
-    <a class="sec-action" onclick="document.querySelector('.filter-bar').scrollIntoView({behavior:'smooth'})">看全部<svg><use href="#i-arrow-right"/></svg></a>
-  </div>
-  <div id="matching-list"></div>
+  <!-- ============ 訂單三頁籤:媒合中/進行中/所有訂單,同一排點選切換(避免首頁過長) ============ -->
+  <div class="order-tabs">
+    <span class="order-tab on" data-tab="matching" onclick="orderTab('matching')">媒合中<span class="cnt" id="tcnt-matching">0</span></span>
+    <span class="order-tab" data-tab="active" onclick="orderTab('active')">進行中<span class="cnt" id="tcnt-active">0</span></span>
+    <span class="order-tab" data-tab="all" onclick="orderTab('all')">所有訂單<span class="cnt" id="tcnt-all">0</span></span>
   </div>
 
-  <!-- ============ 進行中:順咖已接單(待服務/服務中/等待確認) ============ -->
-  <div id="active-section" style="display:none;">
-  <div class="sec-h">
-    <div class="sec-title">進行中</div>
-    <a class="sec-action" onclick="document.querySelector('.filter-bar').scrollIntoView({behavior:'smooth'})">看全部<svg><use href="#i-arrow-right"/></svg></a>
-  </div>
-  <div id="active-list"></div>
+  <!-- 媒合中:還沒被順咖接的單,等待接單 -->
+  <div class="order-panel" id="panel-matching">
+    <div id="matching-list"></div>
+    <div class="panel-empty" id="empty-matching" style="display:none;">目前沒有媒合中的訂單</div>
   </div>
 
-  <!-- ============ 歷史紀錄 ============ -->
-  <div class="sec-h">
-    <div class="sec-title">所有訂單</div>
+  <!-- 進行中:順咖已接單(待服務/服務中/等待確認) -->
+  <div class="order-panel" id="panel-active" style="display:none;">
+    <div id="active-list"></div>
+    <div class="panel-empty" id="empty-active" style="display:none;">目前沒有進行中的訂單</div>
   </div>
 
-  <div class="filter-bar">
-    <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt" id="cnt-all">0</span></span>
-    <span class="filter-tag" data-filter="matching" onclick="filterToggle(this)">媒合中<span class="cnt" id="cnt-matching">0</span></span>
-    <span class="filter-tag" data-filter="active" onclick="filterToggle(this)">進行中<span class="cnt" id="cnt-active">0</span></span>
-    <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt" id="cnt-done">0</span></span>
-  </div>
-
-  <div id="history-list">
-  </div>
-
-  <!-- 空狀態 -->
-  <div class="empty" id="empty-state" style="display:none;">
-    <div class="empty-ico"><svg><use href="#i-empty-box"/></svg></div>
-    <div class="empty-title">這邊還沒有訂單</div>
-    <div class="empty-desc">下單後可以在這邊追蹤訂單狀態</div>
-    <a class="empty-cta" href="04_order_form.html">立刻下單</a>
+  <!-- 所有訂單:含已完成,保留內層篩選(全部/媒合中/進行中/已完成) -->
+  <div class="order-panel" id="panel-all" style="display:none;">
+    <div class="filter-bar">
+      <span class="filter-tag on" data-filter="all" onclick="filterToggle(this)">全部<span class="cnt" id="cnt-all">0</span></span>
+      <span class="filter-tag" data-filter="matching" onclick="filterToggle(this)">媒合中<span class="cnt" id="cnt-matching">0</span></span>
+      <span class="filter-tag" data-filter="active" onclick="filterToggle(this)">進行中<span class="cnt" id="cnt-active">0</span></span>
+      <span class="filter-tag" data-filter="done" onclick="filterToggle(this)">已完成<span class="cnt" id="cnt-done">0</span></span>
+    </div>
+    <div id="history-list"></div>
+    <!-- 空狀態 -->
+    <div class="empty" id="empty-state" style="display:none;">
+      <div class="empty-ico"><svg><use href="#i-empty-box"/></svg></div>
+      <div class="empty-title">這邊還沒有訂單</div>
+      <div class="empty-desc">下單後可以在這邊追蹤訂單狀態</div>
+      <a class="empty-cta" href="04_order_form.html">立刻下單</a>
+    </div>
   </div>
 
   <!-- ============ 快速動作 ============ -->
@@ -950,14 +953,20 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     }
     if(matchingOrders.length){
       $('matching-list').innerHTML = matchingOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id], noById[o.suncar_id]); }).join('');
-      $('matching-section').style.display = '';
+      $('empty-matching').style.display = 'none';
+    } else {
+      $('matching-list').innerHTML = '';
+      $('empty-matching').style.display = '';
     }
 
     // 進行中:順咖已接單之後的單(待服務/服務中/等待確認),媒合成功才會進這區
     var activeOrders = orders.filter(function(o){ return (STATUS[o.status]||{}).group === 'active'; });
     if(activeOrders.length){
       $('active-list').innerHTML = activeOrders.map(function(o){ return buildCard(o, nameById[o.suncar_id], noById[o.suncar_id]); }).join('');
-      $('active-section').style.display = '';
+      $('empty-active').style.display = 'none';
+    } else {
+      $('active-list').innerHTML = '';
+      $('empty-active').style.display = '';
     }
 
     var listEl = $('history-list');
@@ -968,6 +977,11 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
       listEl.innerHTML = '';
       $('empty-state').style.display = '';
     }
+
+    // 三頁籤上的數字徽章(媒合中/進行中/所有訂單)
+    $('tcnt-matching').textContent = cnt.matching;
+    $('tcnt-active').textContent = cnt.active;
+    $('tcnt-all').textContent = orders.length;
   }
 
   document.addEventListener('DOMContentLoaded', function(){ qyxGuard(init, { color: '#EF9F27' }); }); /* 載入逾時保護:8 秒沒載完或載入出錯就顯示重試 */
@@ -1023,12 +1037,24 @@ function filterToggle(el) {
   });
 }
 
+/* 訂單頁籤切換:媒合中/進行中/所有訂單 同一排,點哪個顯示哪個面板 */
+function orderTab(tab) {
+  document.querySelectorAll('.order-tab').forEach(function(t){ t.classList.toggle('on', t.getAttribute('data-tab') === tab); });
+  document.querySelectorAll('.order-panel').forEach(function(p){ p.style.display = 'none'; });
+  var panel = document.getElementById('panel-' + tab);
+  if (panel) panel.style.display = '';
+}
+
+/* 上方數據卡點擊:媒合中/進行中切到對應頁籤;已完成切到「所有訂單」並套用已完成篩選 */
 function filterTo(status) {
-  var btn = document.querySelector('.filter-tag[data-filter="'+status+'"]');
-  if (btn) {
-    btn.click();
-    btn.scrollIntoView({behavior:'smooth', block:'start'});
+  if (status === 'done') {
+    orderTab('all');
+    var btn = document.querySelector('.filter-tag[data-filter="done"]');
+    if (btn) btn.click();
+  } else {
+    orderTab(status);
   }
+  document.querySelector('.order-tabs').scrollIntoView({behavior:'smooth', block:'start'});
 }
 </script>
 </body>
