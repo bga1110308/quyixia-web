@@ -218,6 +218,11 @@ body.staff-view .role-strip{background:linear-gradient(90deg,var(--mint) 0%,var(
   .sb-title{font-size:1.2rem;}
   .topbar-title{font-size:0.92rem;}
 }
+/* 評價留言分頁:每頁 10 筆,數字頁碼 */
+.pub-pager{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.pub-page-btn{min-width:32px;height:32px;padding:0 9px;border:1.5px solid var(--border-soft);background:#fff;border-radius:9px;font-size:0.84rem;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;transition:all 0.15s;}
+.pub-page-btn:hover:not(.on){background:var(--champagne-soft);}
+.pub-page-btn.on{background:var(--amber-deep);color:#fff;border-color:var(--amber-deep);}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-init.js"></script>
@@ -535,9 +540,23 @@ async function renderPublicReviews(revieweeId, mode){
     anchor.parentNode.insertBefore(box, anchor.nextSibling);
   }
   var r = await sb.rpc('get_public_reviews', { p_reviewee: revieweeId, p_mode: mode });
-  if(r.error || !r.data || !r.data.length){ box.innerHTML = ''; return; }
-  var html = '<div style="font-size:0.92rem;font-weight:600;color:var(--ink);margin-bottom:8px;">評價留言（匿名）</div>';
-  r.data.forEach(function(rv){
+  if(r.error || !r.data || !r.data.length){ box.innerHTML = ''; _pubReviews = []; return; }
+  _pubReviews = r.data;          // 後台已依時間新到舊排序,第 1 頁即最新
+  renderPubReviewPage(1, false); // 初次載入不捲動
+}
+
+/* 評價留言分頁:每頁 10 筆,數字頁碼。點頁碼只換這頁的留言內容,不重打後台。 */
+var PUB_PAGE_SIZE = 10;
+var _pubReviews = [];
+function renderPubReviewPage(page, doScroll){
+  var box = document.getElementById('public-reviews');
+  if(!box) return;
+  var total = _pubReviews.length;
+  var pages = Math.max(1, Math.ceil(total / PUB_PAGE_SIZE));
+  page = Math.min(Math.max(1, page), pages);
+  var slice = _pubReviews.slice((page-1)*PUB_PAGE_SIZE, (page-1)*PUB_PAGE_SIZE + PUB_PAGE_SIZE);
+  var html = '<div style="font-size:0.92rem;font-weight:600;color:var(--ink);margin-bottom:8px;">評價留言（匿名）<span style="color:var(--ink-light);font-weight:400;font-size:0.78rem;">　共 ' + total + ' 則</span></div>';
+  slice.forEach(function(rv){
     var avg = avgOfRatings(rv.ratings);
     var d = rv.created_at ? String(rv.created_at).slice(0,10) : '';
     html += '<div style="background:var(--champagne-soft);border:1px solid var(--border-soft);border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
@@ -545,7 +564,15 @@ async function renderPublicReviews(revieweeId, mode){
       (rv.comment ? '<div style="font-size:0.88rem;color:var(--ink);line-height:1.7;margin-top:4px;">' + esc(rv.comment) + (rv.truncated ? ' <span onclick="openReviewUnlock()" style="color:var(--amber-deep);font-size:0.78rem;font-weight:600;cursor:pointer;text-decoration:underline;">（付費解鎖看完整）</span>' : '') + '</div>' : '') +
       '</div>';
   });
+  if(pages > 1){
+    html += '<div class="pub-pager">';
+    for(var p = 1; p <= pages; p++){
+      html += '<button type="button" class="pub-page-btn' + (p === page ? ' on' : '') + '" onclick="renderPubReviewPage(' + p + ', true)">' + p + '</button>';
+    }
+    html += '</div>';
+  }
   box.innerHTML = html;
+  if(doScroll){ box.scrollIntoView({ behavior:'smooth', block:'start' }); }
 }
 
 /* 評價解鎖視窗:點「付費解鎖」開,選單次/月票,走後台 redeem_info 扣對的池(看順咖扣 client 點、看案家扣 suncar 點)。
