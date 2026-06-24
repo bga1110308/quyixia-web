@@ -44,12 +44,29 @@ function safeText(s, n) {
   return s.length > n ? s.slice(0, n) : s;
 }
 
-// 種子卡：品牌字 + 圓盤上放種子名 + 一句邀請。配色依池別（順咖綠／案家金）。
-function seedCard(name, pool, champ) {
+// 種子卡：品牌字 + 圓盤上放種子圖(沒圖就放名字) + 名字 + 一句邀請。配色依池別（順咖綠／案家金）。
+function seedCard(name, pool, champ, img) {
   const suncar = pool === 'suncar';
   const accent = suncar ? '#3E9D72' : '#BA7517';
   const plate = suncar ? '#E9F6EF' : '#FBEFD7';
   const lead = champ ? '集滿種子庫拿到徽章' : '我抽到一顆種子';
+
+  // 圓盤內容：有種子圖→放圖;沒圖→放名字當主視覺。
+  const diskInner = img
+    ? { type: 'img', props: { src: img, width: 240, height: 240 } }
+    : el('div', { display: 'flex', fontSize: '80px', color: '#3D2914' }, name);
+
+  const rows = [
+    el('div', { display: 'flex', fontSize: '40px', color: accent, marginBottom: '6px' }, '去一下 種子收集'),
+    el('div', { display: 'flex', fontSize: '26px', color: '#7A6A52', marginBottom: '24px' }, lead),
+    el('div', {
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      width: '300px', height: '300px', borderRadius: '150px', backgroundColor: plate, marginBottom: '18px',
+    }, [diskInner]),
+  ];
+  // 有放圖時,名字另外列在圖下面;沒放圖時名字已是主視覺,不重複。
+  if (img) rows.push(el('div', { display: 'flex', fontSize: '50px', color: '#3D2914', marginBottom: '16px' }, name));
+  rows.push(el('div', { display: 'flex', fontSize: '30px', color: '#3E9D72' }, '一起來收集種子 支持平台'));
 
   return el('div', {
     width: '1200px', height: '630px', display: 'flex', flexDirection: 'column',
@@ -59,17 +76,7 @@ function seedCard(name, pool, champ) {
       width: '1100px', height: '540px', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', backgroundColor: CARD,
       border: '6px solid ' + accent, borderRadius: '36px',
-    }, [
-      el('div', { display: 'flex', fontSize: '40px', color: accent, marginBottom: '6px' }, '去一下 種子收集'),
-      el('div', { display: 'flex', fontSize: '26px', color: '#7A6A52', marginBottom: '28px' }, lead),
-      el('div', {
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        width: '320px', height: '320px', borderRadius: '160px', backgroundColor: plate, marginBottom: '24px',
-      }, [
-        el('div', { display: 'flex', fontSize: '80px', color: '#3D2914' }, name),
-      ]),
-      el('div', { display: 'flex', fontSize: '30px', color: '#3E9D72' }, '一起來收集種子 支持平台'),
-    ]),
+    }, rows),
   ]);
 }
 
@@ -112,7 +119,11 @@ export default async function handler(req) {
     const name = safeText(q.get('name'), 12) || '我的種子';
     const pool = q.get('pool') === 'suncar' ? 'suncar' : 'client';
     const champ = q.get('champ') === '1';
-    tree = seedCard(name, pool, champ);
+    // img 只收站內相對路徑(如 seeds/seed_001.webp),用本站網址組成絕對網址,
+    // 不接受外部網址,避免被拿去當圖片代理。
+    const imgPath = (q.get('img') || '').replace(/^\/+/, '');
+    const img = /^seeds\/[\w.-]+$/.test(imgPath) ? (new URL(req.url).origin + '/' + imgPath) : '';
+    tree = seedCard(name, pool, champ, img);
     fontText = name + '去一下 種子收集集滿庫拿到徽章我抽一顆一起來支持平台';
   }
 
