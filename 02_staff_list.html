@@ -538,16 +538,13 @@ function renderStaff() {
     var creditHtml = (cscore != null)
       ? '<div class="staff-done">信用分 '+cscore+'（'+creditBand(cscore)+'）</div>'
       : '<div class="staff-done">信用分 🔒 <button type="button" class="trust-unlock" onclick="event.stopPropagation(); openUnlockModal(\''+esc(s.id)+'\')">解鎖可看</button></div>';
-    /* 自己的卡片:不能指定自己下單。點了只提醒,不跳轉(送出端 04 也有第二道防線) */
     var isMe = (s.id === myId);
-    /* 點卡片本體=看介紹頁;按鈕才是指定下單(兩個動作拆開,2026/06/18) */
-    var cardClick = isMe
-      ? "alert('這是你自己的順咖名片，不能指定自己下單')"
-      : "window.location.href='20_suncar_profile.html?id=" + encodeURIComponent(s.id) + "'";
+    /* 點卡片本體=看介紹頁(自己的也能看);只有按「指定下單」按鈕才擋自己(送出端 04 也有第二道防線) */
+    var cardClick = "window.location.href='20_suncar_profile.html?id=" + encodeURIComponent(s.id) + "'";
     var ctaLabel = isMe ? '這是你的名片' : '指定他下單';
-    /* 按鈕 stopPropagation 不觸發卡片跳轉,自己走指定下單 */
+    /* 按鈕 stopPropagation 不觸發卡片跳轉;自己按→提醒不能指定自己,別人→進指定下單 */
     var ctaClick = isMe
-      ? "event.stopPropagation();"
+      ? "event.stopPropagation(); alert('這是你自己的順咖名片，不能指定自己下單')"
       : "event.stopPropagation(); window.location.href='04_order_form.html?staff=" + encodeURIComponent(s.id) + "'";
     return '<div class="staff-card" onclick="'+cardClick+'">' +
       onlineMark +
@@ -559,7 +556,7 @@ function renderStaff() {
       '<div class="staff-rate" title="順咖填的期望時薪,實際金額由案家出價">'+rateHtml+'</div>' +
       '<div class="badge-row">'+badges+'</div>' +
       '<div class="mini-tags">'+tags+'</div>' +
-      (isMe ? '' : '<div class="card-hint"><svg><use href="#i-star"/></svg>點名片看完整介紹</div>') +
+      '<div class="card-hint"><svg><use href="#i-star"/></svg>點名片看完整介紹</div>' +
       '<button class="card-cta" onclick="'+ctaClick+'">'+ctaLabel+'</button>' +
     '</div>';
   }).join('');
