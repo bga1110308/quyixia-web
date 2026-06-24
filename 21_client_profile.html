@@ -18,17 +18,17 @@
 body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--champagne-soft);color:var(--ink);line-height:1.55;padding-bottom:40px;}
 .icon{width:1em;height:1em;display:inline-block;vertical-align:-0.15em;fill:currentColor;}
 
-.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--forest);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(47,96,72,0.15);transition:all 0.2s;text-decoration:none;}
-.home-fab:hover{background:var(--mint-pale);transform:scale(1.05);border-color:var(--mint);}
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--border);color:var(--amber-deep);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
 .home-fab svg{width:18px;height:18px;fill:currentColor;}
 
 .wrap{max-width:480px;margin:0 auto;padding:0 1.1rem;}
 
-/* 頁頭(案家=綠色系) */
-.profile-head{position:relative;text-align:center;padding:3.2rem 1.25rem 1.6rem;background:linear-gradient(135deg,var(--mint-pale) 0%,var(--champagne-soft) 60%,var(--champagne) 100%);overflow:hidden;}
-.profile-head::before{content:'';position:absolute;top:-80px;right:-90px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(95,181,142,0.18) 0%,transparent 70%);}
+/* 頁頭(案家=橘色系) */
+.profile-head{position:relative;text-align:center;padding:3.2rem 1.25rem 1.6rem;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 60%,var(--cream) 100%);overflow:hidden;}
+.profile-head::before{content:'';position:absolute;top:-80px;right:-90px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.16) 0%,transparent 70%);}
 .profile-head > *{position:relative;z-index:1;}
-.pf-avatar{position:relative;width:84px;height:84px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:2.1rem;color:var(--forest);box-shadow:0 4px 14px rgba(47,96,72,0.2),inset 0 0 0 1.5px var(--border-mint);overflow:hidden;}
+.pf-avatar{position:relative;width:84px;height:84px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:600;font-size:2.1rem;color:var(--amber-deep);box-shadow:0 4px 14px rgba(186,117,23,0.2),inset 0 0 0 1.5px var(--border);overflow:hidden;}
 .pf-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .pf-name{font-size:1.5rem;font-weight:600;color:var(--ink);margin-top:0.7rem;letter-spacing:-0.3px;}
 .pf-member{font-size:0.72rem;color:var(--ink-light);margin-top:2px;letter-spacing:0.3px;}
@@ -45,8 +45,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 /* 區塊卡 */
 .section-card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.2rem;margin-top:1rem;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
 .sec-title{font-size:0.92rem;font-weight:600;color:var(--ink);margin-bottom:0.9rem;display:flex;align-items:center;gap:8px;}
-.sec-title::before{content:'';display:block;width:4px;height:17px;background:linear-gradient(180deg,var(--mint),var(--forest));border-radius:2px;}
-.sec-title svg{width:15px;height:15px;fill:var(--forest);}
+.sec-title::before{content:'';display:block;width:4px;height:17px;background:linear-gradient(180deg,var(--honey),var(--amber));border-radius:2px;}
+.sec-title svg{width:15px;height:15px;fill:var(--amber);}
 
 /* 開放中的訂單 */
 .oo-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0.75rem 0;border-bottom:1px solid var(--border-soft);text-decoration:none;color:var(--ink);}
@@ -64,15 +64,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .dex-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px 8px;}
 .cell{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;}
 .seedwrap{position:relative;display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;}
-.seedshape{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(45deg);background:linear-gradient(150deg,#FFF7E4,#FFE3AC);border:1.6px solid var(--gold);box-shadow:inset 0 -2px 6px rgba(186,117,23,0.12),0 3px 8px rgba(186,117,23,0.12);}
-.seedshape .emj{transform:rotate(-45deg);line-height:1;font-size:1.35rem;}
-.seedshape.locked{background:linear-gradient(150deg,#F2ECDD,#E6DCC6);border-color:#D8CBAE;box-shadow:inset 0 -2px 6px rgba(0,0,0,0.04);}
-.seedshape.locked .emj{color:var(--ink-light);opacity:0.55;}
-.seedshape.fine{border-color:#7FB0D8;background:linear-gradient(150deg,#EAF3FB,#CFE4F5);}
-.seedshape.rare{border-color:#B79AD8;background:linear-gradient(150deg,#F3ECFB,#E0CFF3);}
-.seedshape.gold{border-color:var(--gold);background:linear-gradient(150deg,#FFF3CF,#FFD980);}
-.sprout{position:absolute;left:50%;top:-6px;transform:translateX(-50%);z-index:2;color:var(--mint);pointer-events:none;}
-.sprout svg{width:14px;height:14px;fill:currentColor;display:block;}
+/* 種子畫面:與順咖自己的種子庫(19)同一套畫法,圖一律來自 seed_catalog.art.img。
+   已收集→顯真圖;未收集→同張圖轉灰剪影＋?(不洩漏圖案,也不會被當壞圖) */
+.seed-img{width:100%;height:100%;object-fit:contain;display:block;}
+.seed-sil{position:relative;display:block;width:100%;height:100%;}
+.seed-sil .seed-img{filter:brightness(0) saturate(0) invert(0.72);opacity:0.92;}
+.seed-sil .q{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:1.25rem;text-shadow:0 1px 2px rgba(0,0,0,0.4);pointer-events:none;}
+.emj-fallback{font-size:1.5rem;line-height:1;}
+.q-fallback{font-size:1.35rem;font-weight:700;color:var(--ink-light);}
 .cell .nm{font-size:0.6rem;color:var(--ink-soft);line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .cell .xn{font-size:0.6rem;color:var(--amber-deep);font-weight:700;}
 
@@ -90,15 +89,15 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 /* 解鎖視窗(沿用 redeem_info 流程,順咖付費看完整評價) */
 .modal-overlay{position:fixed;inset:0;background:rgba(61,41,20,0.5);z-index:9999;display:none;align-items:center;justify-content:center;padding:1.5rem;}
 .modal-overlay.show{display:flex;}
-.modal-box{background:#fff;border-radius:22px;padding:1.6rem 1.4rem;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(47,96,72,0.25);}
+.modal-box{background:#fff;border-radius:22px;padding:1.6rem 1.4rem;max-width:340px;width:100%;box-shadow:0 20px 60px rgba(186,117,23,0.3);}
 .modal-box h3{font-size:1.1rem;color:var(--ink);text-align:center;margin-bottom:0.4rem;}
 .modal-box .ul-bal{font-size:0.8rem;color:var(--ink-soft);text-align:center;margin-bottom:1.1rem;}
 .modal-box .ul-bal b{color:var(--amber-darker);}
 .ul-opt{display:flex;justify-content:space-between;align-items:center;width:100%;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:0.9rem 1.1rem;margin-bottom:0.7rem;font-size:0.92rem;font-weight:600;color:var(--ink);cursor:pointer;font-family:inherit;transition:all 0.2s;}
-.ul-opt:hover{border-color:var(--mint);background:var(--mint-pale);}
-.ul-opt-month{border-color:var(--mint);background:var(--mint-pale);}
-.ul-opt .cost{color:var(--forest);}
-.ul-topup{display:block;text-align:center;font-size:0.78rem;color:var(--forest);margin:0.3rem 0 0.8rem;cursor:pointer;text-decoration:underline;}
+.ul-opt:hover{border-color:var(--amber);background:var(--champagne);}
+.ul-opt-month{border-color:var(--amber);background:var(--champagne);}
+.ul-opt .cost{color:var(--amber-deep);}
+.ul-topup{display:block;text-align:center;font-size:0.78rem;color:var(--amber-deep);margin:0.3rem 0 0.8rem;cursor:pointer;text-decoration:underline;}
 .cm-cancel{width:100%;background:none;border:none;color:var(--ink-soft);font-size:0.85rem;cursor:pointer;font-family:inherit;padding:0.4rem;}
 </style>
 </head>
@@ -144,7 +143,6 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 var TARGET = new URLSearchParams(location.search).get('id') || '';
 
-var RARITY = { normal:{label:'普通',cls:''}, fine:{label:'高級',cls:'fine'}, rare:{label:'稀有',cls:'rare'}, gold:{label:'金',cls:'gold'} };
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function firstChar(name){ var n=(name||'').trim(); return n ? n.charAt(0) : '案'; }
@@ -179,15 +177,21 @@ async function init(){
     sb.from('orders').select('id,order_no,service_type,pool,service_district,service_time,duration_minutes,amount').eq('client_id', TARGET).eq('status','matching').is('suncar_id', null).order('service_time',{ascending:true}),
     sb.rpc('get_review_stats_batch', { p_targets: ids, p_mode: 'suncar_reviews_client' }),
     sb.rpc('get_public_reviews', { p_reviewee: TARGET, p_mode: 'suncar_reviews_client' }),
-    sb.rpc('get_user_seeds', { p_target: TARGET, p_pool: 'client' })
+    sb.rpc('get_user_seeds', { p_target: TARGET, p_pool: 'client' }),
+    /* 種子真圖一律從 seed_catalog 取(與 19 圖鑑同一個來源,日後換圖兩邊一起變,不會不同步) */
+    sb.from('seed_catalog').select('id,art').eq('pool', 'client')
   ]);
+
+  /* 把 seed_catalog 的 art 依 seed_id 併進 get_user_seeds 的收集結果 */
+  var artById = {};
+  ((results[4] && results[4].data) ? results[4].data : []).forEach(function(c){ artById[c.id] = c.art; });
 
   var data = {
     prof: prof,
     openOrders: (results[0] && results[0].data) ? results[0].data : [],
     review: (results[1] && results[1].data && results[1].data.length) ? results[1].data[0] : null,
     publicReviews: (results[2] && results[2].data) ? results[2].data : [],
-    seeds: (results[3] && results[3].data) ? results[3].data : []
+    seeds: ((results[3] && results[3].data) ? results[3].data : []).map(function(s){ s.art = artById[s.seed_id]; return s; })
   };
   render(data);
 }
@@ -262,22 +266,32 @@ function renderOpenOrders(rows){
 function renderSeedbox(seeds){
   var got=0, total=seeds.length, cells='';
   seeds.forEach(function(s){
-    var r = RARITY[s.rarity] ? s.rarity : 'normal';
-    var cls = RARITY[r].cls;
     var have = s.cnt || 0;
     var hasIt = have > 0;
     if(hasIt) got++;
-    var shapeCls = 'seedshape'+(cls?' '+cls:'')+(hasIt?'':' locked');
-    var emj = hasIt ? esc(s.emoji) : '?';
     var nm = hasIt ? esc(s.name) : '？？？';
-    var sprout = hasIt ? '<span class="sprout"><svg><use href="#i-sprout"/></svg></span>' : '';
-    var xn = (have>1) ? '<span class="xn">×'+have+'</span>' : '';
-    cells += '<div class="cell">'
-           +   '<div class="seedwrap">'+sprout+'<div class="'+shapeCls+'"><span class="emj">'+emj+'</span></div></div>'
-           +   '<div class="nm">'+nm+' '+xn+'</div>'
+    var xn = (have>1) ? ' <span class="xn">×'+have+'</span>' : '';
+    cells += '<div class="cell'+(hasIt?' got':'')+'">'
+           +   '<div class="seedwrap">'+seedCellArt(s, hasIt)+'</div>'
+           +   '<div class="nm">'+nm+xn+'</div>'
            + '</div>';
   });
   return '<div class="seed-prog">已收集 <b>'+got+'</b> / '+total+' 種</div><div class="dex-grid">'+cells+'</div>';
+}
+
+/* 一顆種子的畫面:與順咖自己的種子庫(19 的 seedMarkup)同一套規則,圖來自 seed_catalog.art.img。
+   已收集→顯真圖;未收集→同張圖轉灰剪影＋?;沒圖才退回表情符號 */
+function seedCellArt(s, got){
+  var art = s.art || {};
+  if(typeof art === 'string'){ try{ art = JSON.parse(art); }catch(e){ art = {}; } }
+  if(got){
+    if(art && art.img){ return '<img class="seed-img" loading="lazy" decoding="async" src="'+esc(art.img)+'" alt="">'; }
+    return '<span class="emj-fallback">'+esc(s.emoji||'🌱')+'</span>';
+  }
+  if(art && art.img){
+    return '<span class="seed-sil"><img class="seed-img" loading="lazy" decoding="async" src="'+esc(art.img)+'" alt=""><span class="q">?</span></span>';
+  }
+  return '<span class="q-fallback">?</span>';
 }
 
 function renderPublicReviews(rows){
