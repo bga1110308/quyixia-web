@@ -234,16 +234,17 @@ var MODAL_SHAPES = ['heart','star','scallop','square','circle','house','cloud','
    同一組數字會有的對有的歪,所以拆開各自調(MINI_BAND=滑過預覽、CARD_BAND=點開大圖)。
    每款 = [文字上%, 文字下%, 名字下%, 名字右%]。
    文字:上%越大越往下、下%越大越往上(兩個一起加減=整塊平移)。
-   名字:下%越大=越高、右%越大=越靠左。要調哪一款只改對應那一行。 */
+   名字:下%越大=越高、右%越大=越靠左。要調哪一款只改對應那一行。
+   CARD_BAND 可加第 5 個數字=彈窗字級縮放(預設 1;雲朵中間窄,字放小一點才不擠成兩行)。 */
 var MINI_BAND = {
-  heart:[50,21, 9,20], star:[61,17, 9,20], scallop:[50,22, 9,20],
-  square:[50,22, 16,20], circle:[51,21, 16,20], house:[57,15, 9,28],
+  heart:[50,21, 9,20], star:[61,17, 12,20], scallop:[50,22, 9,30],
+  square:[50,22, 16,20], circle:[51,21, 16,20], house:[57,15, 13,28],
   cloud:[47,23, 16,20], hexagon:[48,27, 17,20], rounded:[50,22, 9,20]
 };
 var CARD_BAND = {
-  heart:[50,21, 14,20], star:[61,17, 14,20], scallop:[50,22, 14,20],
+  heart:[50,21, 14,20], star:[56,22, 14,20], scallop:[50,22, 14,30],
   square:[50,22, 14,20], circle:[51,21, 21,20], house:[57,15, 14,28],
-  cloud:[53,17, 21,20], hexagon:[48,27, 22,20], rounded:[50,22, 14,20]
+  cloud:[53,17, 21,20, 0.8], hexagon:[48,27, 22,20], rounded:[50,22, 14,20]
 };
 function bandOf(table, shape){ return table[shape] || [53,20, 12,20]; }
 
@@ -418,7 +419,8 @@ function openWishObj(w, idx){
   if(txtBox){ txtBox.style.top = bd[0] + '%'; txtBox.style.bottom = bd[1] + '%'; }
   var wishEl = document.getElementById('mc-wish');
   wishEl.textContent = w.content || '';
-  wishEl.style.fontSize = wishFontSize(w.content);
+  var fs = parseFloat(wishFontSize(w.content)) * (bd[4] || 1);  // bd[4]=該款彈窗字級縮放(雲朵窄,字要小一點)
+  wishEl.style.fontSize = fs.toFixed(2) + 'rem';
   var byEl = document.getElementById('mc-by');
   byEl.textContent = displayName(w.nickname);
   byEl.style.bottom = bd[2] + '%'; byEl.style.right = bd[3] + '%';
