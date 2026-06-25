@@ -531,6 +531,43 @@ async function buildWishCardBlob(w, shape){
   ctx.fillText('quyixia-web.vercel.app', Wd/2, ty+th+172);
   return await new Promise(function(res){ cv.toBlob(function(b){ res(b); }, 'image/png'); });
 }
+/* 畫一張 1200x630 橫式心願卡:專給 FB／LINE 連結預覽用。
+   為什麼要橫式:直式卡(720x1040)貼成連結時,FB／LINE 預覽框是橫的,會把上下裁掉一截。
+   這張只給連結預覽(og:image);真正分享出去的圖片檔仍用上面那張直式卡。
+   左邊木牌(願望＋名字),右邊邀請語與連結。 */
+async function buildWishCardBlobWide(w, shape){
+  var Wd=1200, Hd=630, cv=document.createElement('canvas');
+  cv.width=Wd; cv.height=Hd;
+  var ctx=cv.getContext('2d');
+  ctx.fillStyle='#FBF3E3'; ctx.fillRect(0,0,Wd,Hd);
+  try{ await document.fonts.load('700 48px "LXGW WenKai TC"'); await document.fonts.ready; }catch(e){}
+  var img=await loadImg('wish/tag_'+shape+'.webp');
+  // 木牌靠左,等比縮放塞進卡片高度(太寬的款式再夾住寬度)
+  var ratio=img.width/img.height, th=540, tw=th*ratio;
+  if(tw>520){ tw=520; th=tw/ratio; }
+  var tx=70, ty=(Hd-th)/2;
+  ctx.drawImage(img, tx, ty, tw, th);
+  // 願望:畫在木牌下半(避開表情),與直式卡同一套位置比例
+  var wish=w.content||'';
+  var fs = wish.length<=10?46 : wish.length<=24?36 : wish.length<=48?28 : 23;
+  ctx.fillStyle='#6B4A22'; ctx.textAlign='center';
+  ctx.font='700 '+fs+'px "LXGW WenKai TC","Noto Serif CJK TC",serif';
+  var lines=wrapLines(ctx, wish, tw*0.62), lh=fs*1.4;
+  var aTop=ty+th*0.52, aBot=ty+th*0.84, startY=(aTop+aBot)/2 - lh*(lines.length-1)/2;
+  for(var i=0;i<lines.length;i++) ctx.fillText(lines[i], tx+tw/2, startY+i*lh);
+  ctx.font='400 22px "LXGW WenKai TC","Noto Serif CJK TC",serif'; ctx.fillStyle='#8A6233'; ctx.textAlign='right';
+  ctx.fillText(displayName(w.nickname), tx+tw*0.80, ty+th*0.905);
+  // 右半:邀請語＋連結(置中於木牌右側到卡片右緣之間)
+  var rcx=(tx+tw+Wd)/2;
+  ctx.textAlign='center';
+  ctx.fillStyle='#2F6048'; ctx.font='700 46px "Noto Sans TC",sans-serif';
+  ctx.fillText('《去一下》心願樹', rcx, 250);
+  ctx.fillStyle='#8B7355'; ctx.font='400 28px "Noto Sans TC",sans-serif';
+  ctx.fillText('來幫我的心願打氣，也許下你的願 🌿', rcx, 312);
+  ctx.fillStyle='#BA7517'; ctx.font='400 24px "Noto Sans TC",sans-serif';
+  ctx.fillText('quyixia-web.vercel.app', rcx, 366);
+  return await new Promise(function(res){ cv.toBlob(function(b){ res(b); }, 'image/png'); });
+}
 /* 把畫好的心願卡上傳 Supabase(share-cards 桶),回傳路徑當連結預覽圖。
    為什麼:伺服器產圖器解不了 webp,改用瀏覽器畫好的真卡。失敗不影響原本的圖片分享。 */
 async function uploadWishCard(blob){
@@ -545,9 +582,11 @@ async function uploadWishCard(blob){
 async function shareWish(w, btn){
   var txt='我在《去一下》心願樹許了一個願，來幫我打氣 🌿';
   var old=btn.textContent; btn.disabled=true; btn.textContent='製作中…';
-  var blob=null;
+  var blob=null;   // 直式卡:當真正分享出去的圖片檔(IG/LINE 當照片貼,直式比較好看)
   try{ blob=await buildWishCardBlob(w, _openShape); }catch(e){ blob=null; }
-  var path = blob ? await uploadWishCard(blob) : null;  // 上傳卡片,當連結預覽圖
+  var wide=null;   // 橫式卡:只給連結預覽用(FB/LINE 抓 og:image,直式貼連結會被裁上下)
+  try{ wide=await buildWishCardBlobWide(w, _openShape); }catch(e){ wide=null; }
+  var path = (wide||blob) ? await uploadWishCard(wide||blob) : null;  // 上傳當連結預覽圖,優先橫式
   var url = wishShareUrl(w, path);
   btn.disabled=false; btn.textContent=old;
   // 手機:系統分享面板帶圖(可選 LINE/IG/FB)

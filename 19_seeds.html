@@ -1048,12 +1048,13 @@ function openShare(seed){
   if(hasSeed) uploadShareCard();
 }
 /* 把畫好的種子卡上傳 Supabase(share-cards 桶),回傳路徑;只做一次,結果記在 _shareCardPath。
-   為什麼要上傳:伺服器產圖器解不了 webp 種子圖,改用瀏覽器畫好的真卡當連結預覽圖。 */
+   為什麼要上傳:伺服器產圖器解不了 webp 種子圖,改用瀏覽器畫好的真卡當連結預覽圖。
+   這裡上傳的是「橫式」卡,因為它只給 FB／LINE 連結預覽用(直式貼連結會被裁上下)。 */
 async function uploadShareCard(){
   if(_shareCardPath) return _shareCardPath;
   if(typeof window.sb === 'undefined') return null;
   try{
-    var blob = await buildShareCardBlob();
+    var blob = await buildShareCardBlobWide();
     if(!blob) return null;
     var path = 'seed/' + Date.now() + '-' + Math.random().toString(36).slice(2,8) + '.png';
     var up = await sb.storage.from('share-cards').upload(path, blob, { contentType:'image/png', upsert:false });
@@ -1191,6 +1192,57 @@ function buildShareCardBlob(){
     if(_refCode){
       c.fillStyle = accent2; c.font = '700 28px sans-serif';
       c.fillText('推薦碼 ' + _refCode, W / 2, 944);
+    }
+    return new Promise(function(res){ cv.toBlob(res, 'image/png', 0.95); });
+  });
+}
+
+/* 畫一張 1200x630 橫式分享圖卡:專給 FB／LINE 連結預覽用。
+   為什麼要橫式:直式卡(800x1000)貼成連結時,FB／LINE 預覽框是橫的,會把上下裁掉一截。
+   這張只給連結預覽(og:image)用;真正分享出去的圖片檔仍用上面那張直式卡(當照片貼比較好看)。
+   內容與直式卡相同,改成左圖右字的橫式排版。 */
+function buildShareCardBlobWide(){
+  var seed = _shareSeed || {};
+  var suncar = (POOL === 'suncar');
+  var accent  = suncar ? '#3E9D72' : '#BA7517';
+  var accent2 = suncar ? '#5FB58E' : '#EF9F27';
+  var plate   = suncar ? '#E9F6EF' : '#FBEFD7';
+  return seedArtToImage(seed.artHtml).then(function(artImg){
+    var W = 1200, H = 630;
+    var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var c = cv.getContext('2d');
+    c.fillStyle = '#F3E7CE'; c.fillRect(0, 0, W, H);                 // 外底
+    roundRect(c, 30, 30, W - 60, H - 60, 32);
+    c.fillStyle = '#FFFCF5'; c.fill();
+    c.lineWidth = 3; c.strokeStyle = accent2; c.stroke();           // 內卡
+    // 左半:種子底圓盤 + 種子大圖
+    var cx = 340, cy = 315;
+    c.beginPath(); c.arc(cx, cy, 210, 0, Math.PI * 2);
+    c.fillStyle = plate; c.fill();
+    c.textAlign = 'center';
+    if(artImg){
+      var s = 320; c.drawImage(artImg, cx - s / 2, cy - s / 2, s, s);
+    } else {
+      c.font = '160px sans-serif'; c.fillStyle = accent;
+      c.fillText(seed.emoji || '🌱', cx, cy + 55);
+    }
+    // 右半:品牌 + 名稱 + 稀有度 + 連結與推薦碼(靠左對齊)
+    c.textAlign = 'left';
+    var x = 660;
+    c.fillStyle = accent; c.font = '700 52px sans-serif';
+    c.fillText('🌱 去一下', x, 196);                                // 品牌字
+    c.fillStyle = '#7A6A52'; c.font = '500 28px sans-serif';
+    c.fillText('打賞平台 · 種子收集', x, 244);
+    c.fillStyle = '#3D2914'; c.font = '700 60px sans-serif';
+    c.fillText(seed.name || '我的種子', x, 360);                     // 名稱
+    var rl = seed.champ ? '🏆 制霸徽章' : (RARITY[seed.rarity] ? RARITY[seed.rarity].label + '種子' : '收集到一顆');
+    c.fillStyle = accent; c.font = '600 32px sans-serif';
+    c.fillText(rl, x, 414);                                         // 稀有度
+    c.fillStyle = '#9A8A70'; c.font = '500 26px sans-serif';
+    c.fillText('一起來收集 · quyixia-web.vercel.app', x, 486);
+    if(_refCode){
+      c.fillStyle = accent2; c.font = '700 30px sans-serif';
+      c.fillText('推薦碼 ' + _refCode, x, 532);
     }
     return new Promise(function(res){ cv.toBlob(res, 'image/png', 0.95); });
   });
