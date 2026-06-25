@@ -54,8 +54,11 @@ export default function handler(req) {
   }
 
   // 有卡片圖才放 og:image;沒有就只給標題敘述(連結照樣能用,只是沒專屬預覽圖)。
+  // 預覽卡已改成 1200×630 橫式;附上寬高 meta,FB／LINE 才會用「大圖橫式」框渲染、不裁切。
   const ogImageTags = ogImg
     ? ('<meta property="og:image" content="' + esc(ogImg) + '">' +
+       '<meta property="og:image:width" content="1200">' +
+       '<meta property="og:image:height" content="630">' +
        '<meta name="twitter:image" content="' + esc(ogImg) + '">' +
        '<meta name="twitter:card" content="summary_large_image">')
     : '<meta name="twitter:card" content="summary">';
