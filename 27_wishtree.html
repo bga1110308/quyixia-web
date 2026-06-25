@@ -511,16 +511,17 @@ async function buildWishCardBlob(w, shape){
   var img=await loadImg('wish/tag_'+shape+'.webp');
   var tw=540, th=tw*img.height/img.width, tx=(Wd-tw)/2, ty=40;
   ctx.drawImage(img, tx, ty, tw, th);
-  // 願望:畫在木牌下半(避開表情)
+  // 願望＋名字位置照每款木牌的 CARD_BAND(與點開大圖同一套),才不會壓到吊牌上的星星/表情圖案
+  var bd=bandOf(CARD_BAND, shape);
   var wish=w.content||'';
-  var fs = wish.length<=10?54 : wish.length<=24?42 : wish.length<=48?33 : 26;
+  var fs=(wish.length<=10?54 : wish.length<=24?42 : wish.length<=48?33 : 26)*(bd[4]||1);  // bd[4]=該款字級縮放
   ctx.fillStyle='#6B4A22'; ctx.textAlign='center';
   ctx.font='700 '+fs+'px "LXGW WenKai TC","Noto Serif CJK TC",serif';
   var lines=wrapLines(ctx, wish, tw*0.62), lh=fs*1.4;
-  var aTop=ty+th*0.52, aBot=ty+th*0.84, startY=(aTop+aBot)/2 - lh*(lines.length-1)/2;
+  var aTop=ty+th*(bd[0]/100), aBot=ty+th*(1-bd[1]/100), startY=(aTop+aBot)/2 - lh*(lines.length-1)/2;
   for(var i=0;i<lines.length;i++) ctx.fillText(lines[i], Wd/2, startY+i*lh);
   ctx.font='400 26px "LXGW WenKai TC","Noto Serif CJK TC",serif'; ctx.fillStyle='#8A6233'; ctx.textAlign='right';
-  ctx.fillText(displayName(w.nickname), tx+tw*0.80, ty+th*0.905);
+  ctx.fillText(displayName(w.nickname), tx+tw*(1-bd[3]/100), ty+th*(1-bd[2]/100));
   // 邀請語＋連結
   ctx.textAlign='center';
   ctx.fillStyle='#2F6048'; ctx.font='700 42px "Noto Sans TC",sans-serif';
@@ -547,16 +548,17 @@ async function buildWishCardBlobWide(w, shape){
   if(tw>520){ tw=520; th=tw/ratio; }
   var tx=70, ty=(Hd-th)/2;
   ctx.drawImage(img, tx, ty, tw, th);
-  // 願望:畫在木牌下半(避開表情),與直式卡同一套位置比例
+  // 願望＋名字位置照每款木牌的 CARD_BAND(與點開大圖同一套),才不會壓到吊牌上的星星/表情圖案
+  var bd=bandOf(CARD_BAND, shape);
   var wish=w.content||'';
-  var fs = wish.length<=10?46 : wish.length<=24?36 : wish.length<=48?28 : 23;
+  var fs=(wish.length<=10?46 : wish.length<=24?36 : wish.length<=48?28 : 23)*(bd[4]||1);  // bd[4]=該款字級縮放
   ctx.fillStyle='#6B4A22'; ctx.textAlign='center';
   ctx.font='700 '+fs+'px "LXGW WenKai TC","Noto Serif CJK TC",serif';
   var lines=wrapLines(ctx, wish, tw*0.62), lh=fs*1.4;
-  var aTop=ty+th*0.52, aBot=ty+th*0.84, startY=(aTop+aBot)/2 - lh*(lines.length-1)/2;
+  var aTop=ty+th*(bd[0]/100), aBot=ty+th*(1-bd[1]/100), startY=(aTop+aBot)/2 - lh*(lines.length-1)/2;
   for(var i=0;i<lines.length;i++) ctx.fillText(lines[i], tx+tw/2, startY+i*lh);
   ctx.font='400 22px "LXGW WenKai TC","Noto Serif CJK TC",serif'; ctx.fillStyle='#8A6233'; ctx.textAlign='right';
-  ctx.fillText(displayName(w.nickname), tx+tw*0.80, ty+th*0.905);
+  ctx.fillText(displayName(w.nickname), tx+tw*(1-bd[3]/100), ty+th*(1-bd[2]/100));
   // 右半:邀請語＋連結(置中於木牌右側到卡片右緣之間)
   var rcx=(tx+tw+Wd)/2;
   ctx.textAlign='center';
