@@ -520,9 +520,11 @@ function drawTagText(ctx, tx, ty, tw, th, shape, w){
     ctx.fillText(lines[i], tx + tw / 2, cyMid + (i - (lines.length - 1) / 2) * lh);
   }
   // 署名:右下,照 bd[2](距底%)/bd[3](距右%);字級不套 bd[4] 縮放(與大圖一致)
+  // NAME_LEFT_NUDGE=分享卡署名再往左挪一點(她要的,大圖不動只動分享卡);要更左把 0.05 調大
+  var NAME_LEFT_NUDGE = tw * 0.05;
   ctx.fillStyle = '#8A6233'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
   ctx.font = '400 ' + (0.92 * rem * k).toFixed(1) + 'px "LXGW WenKai TC","Noto Serif CJK TC",serif';
-  ctx.fillText(displayName(w.nickname), tx + tw * (1 - bd[3] / 100), ty + th * (1 - bd[2] / 100));
+  ctx.fillText(displayName(w.nickname), tx + tw * (1 - bd[3] / 100) - NAME_LEFT_NUDGE, ty + th * (1 - bd[2] / 100));
 }
 /* 把木牌＋願望＋名字＋邀請語畫成一張 PNG */
 async function buildWishCardBlob(w, shape){
