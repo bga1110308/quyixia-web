@@ -501,6 +501,29 @@ function wrapLines(ctx, text, maxw){
   if(cur) lines.push(cur);
   return lines;
 }
+/* 在木牌上畫願望文字＋署名,完全照「點開大圖」彈窗那套算法(同一份 CARD_BAND、同一個 wishFontSize),
+   只是把彈窗木牌固定的 300px 等比放大到卡片上的木牌寬度。
+   為什麼這樣做:之前分享卡用自己估算的位置/字級,跟大圖對不準才會壓到吊牌的星星表情;
+   直接照大圖算,分享卡就會跟你看到的大圖長一樣、一樣不壓圖案。
+   tx,ty,tw,th=木牌在畫布上的位置與大小;shape=款式;w=心願物件。 */
+function drawTagText(ctx, tx, ty, tw, th, shape, w){
+  var bd = bandOf(CARD_BAND, shape);
+  var k = tw / 300;            // 彈窗木牌固定 300px,等比放大到這張卡的木牌寬
+  var rem = 16;                // 1rem=16px(與網頁一致)
+  // 願望:文字框=木牌寬 18%~82%、高 bd[0]%~(100-bd[1])%,框內上下左右置中
+  var fs = parseFloat(wishFontSize(w.content)) * (bd[4] || 1) * rem * k;
+  ctx.fillStyle = '#6B4A22'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '700 ' + fs.toFixed(1) + 'px "LXGW WenKai TC","Noto Serif CJK TC",serif';
+  var lines = wrapLines(ctx, w.content || '', tw * 0.64), lh = fs * 1.5;
+  var cyMid = (ty + th * (bd[0] / 100) + (ty + th * (1 - bd[1] / 100))) / 2;
+  for(var i = 0; i < lines.length; i++){
+    ctx.fillText(lines[i], tx + tw / 2, cyMid + (i - (lines.length - 1) / 2) * lh);
+  }
+  // 署名:右下,照 bd[2](距底%)/bd[3](距右%);字級不套 bd[4] 縮放(與大圖一致)
+  ctx.fillStyle = '#8A6233'; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.font = '400 ' + (0.92 * rem * k).toFixed(1) + 'px "LXGW WenKai TC","Noto Serif CJK TC",serif';
+  ctx.fillText(displayName(w.nickname), tx + tw * (1 - bd[3] / 100), ty + th * (1 - bd[2] / 100));
+}
 /* 把木牌＋願望＋名字＋邀請語畫成一張 PNG */
 async function buildWishCardBlob(w, shape){
   var Wd=720, Hd=1040, cv=document.createElement('canvas');
@@ -511,19 +534,9 @@ async function buildWishCardBlob(w, shape){
   var img=await loadImg('wish/tag_'+shape+'.webp');
   var tw=540, th=tw*img.height/img.width, tx=(Wd-tw)/2, ty=40;
   ctx.drawImage(img, tx, ty, tw, th);
-  // 願望＋名字位置照每款木牌的 CARD_BAND(與點開大圖同一套),才不會壓到吊牌上的星星/表情圖案
-  var bd=bandOf(CARD_BAND, shape);
-  var wish=w.content||'';
-  var fs=(wish.length<=10?54 : wish.length<=24?42 : wish.length<=48?33 : 26)*(bd[4]||1);  // bd[4]=該款字級縮放
-  ctx.fillStyle='#6B4A22'; ctx.textAlign='center';
-  ctx.font='700 '+fs+'px "LXGW WenKai TC","Noto Serif CJK TC",serif';
-  var lines=wrapLines(ctx, wish, tw*0.62), lh=fs*1.4;
-  var aTop=ty+th*(bd[0]/100), aBot=ty+th*(1-bd[1]/100), startY=(aTop+aBot)/2 - lh*(lines.length-1)/2;
-  for(var i=0;i<lines.length;i++) ctx.fillText(lines[i], Wd/2, startY+i*lh);
-  ctx.font='400 26px "LXGW WenKai TC","Noto Serif CJK TC",serif'; ctx.fillStyle='#8A6233'; ctx.textAlign='right';
-  ctx.fillText(displayName(w.nickname), tx+tw*(1-bd[3]/100), ty+th*(1-bd[2]/100));
+  drawTagText(ctx, tx, ty, tw, th, shape, w);   // 願望＋署名:照大圖同一套算法,不壓到圖案
   // 邀請語＋連結
-  ctx.textAlign='center';
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   ctx.fillStyle='#2F6048'; ctx.font='700 42px "Noto Sans TC",sans-serif';
   ctx.fillText('《去一下》心願樹', Wd/2, ty+th+78);
   ctx.fillStyle='#8B7355'; ctx.font='400 30px "Noto Sans TC",sans-serif';
@@ -548,20 +561,10 @@ async function buildWishCardBlobWide(w, shape){
   if(tw>520){ tw=520; th=tw/ratio; }
   var tx=70, ty=(Hd-th)/2;
   ctx.drawImage(img, tx, ty, tw, th);
-  // 願望＋名字位置照每款木牌的 CARD_BAND(與點開大圖同一套),才不會壓到吊牌上的星星/表情圖案
-  var bd=bandOf(CARD_BAND, shape);
-  var wish=w.content||'';
-  var fs=(wish.length<=10?46 : wish.length<=24?36 : wish.length<=48?28 : 23)*(bd[4]||1);  // bd[4]=該款字級縮放
-  ctx.fillStyle='#6B4A22'; ctx.textAlign='center';
-  ctx.font='700 '+fs+'px "LXGW WenKai TC","Noto Serif CJK TC",serif';
-  var lines=wrapLines(ctx, wish, tw*0.62), lh=fs*1.4;
-  var aTop=ty+th*(bd[0]/100), aBot=ty+th*(1-bd[1]/100), startY=(aTop+aBot)/2 - lh*(lines.length-1)/2;
-  for(var i=0;i<lines.length;i++) ctx.fillText(lines[i], tx+tw/2, startY+i*lh);
-  ctx.font='400 22px "LXGW WenKai TC","Noto Serif CJK TC",serif'; ctx.fillStyle='#8A6233'; ctx.textAlign='right';
-  ctx.fillText(displayName(w.nickname), tx+tw*(1-bd[3]/100), ty+th*(1-bd[2]/100));
+  drawTagText(ctx, tx, ty, tw, th, shape, w);   // 願望＋署名:照大圖同一套算法,不壓到圖案
   // 右半:邀請語＋連結(置中於木牌右側到卡片右緣之間)
   var rcx=(tx+tw+Wd)/2;
-  ctx.textAlign='center';
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   ctx.fillStyle='#2F6048'; ctx.font='700 46px "Noto Sans TC",sans-serif';
   ctx.fillText('《去一下》心願樹', rcx, 250);
   ctx.fillStyle='#8B7355'; ctx.font='400 28px "Noto Sans TC",sans-serif';
