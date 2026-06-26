@@ -63,6 +63,28 @@
     chip.appendChild(avatar);
     chip.appendChild(text);
     (document.body || document.documentElement).appendChild(chip);
+
+    // 管理員專屬:只有 is_admin 的帳號(也就是負責人本人)登入才出現「管理後台」按鈕,
+    // 放在身分膠囊正上方,點下去跳管理頁。非管理員看不到;就算有人硬連 08_admin.html,
+    // 該頁自己也會再驗一次 is_admin 並擋掉,這顆只是方便入口、不是權限關卡。
+    if (isAdmin) renderAdminBtn();
+  }
+
+  function renderAdminBtn() {
+    if (document.getElementById('qyx-admin-btn')) return;   // 防重複
+    var btn = document.createElement('a');
+    btn.id = 'qyx-admin-btn';
+    btn.href = '08_admin.html';
+    btn.textContent = '🛠 管理後台';
+    btn.title = '進入後台管理頁';
+    btn.style.cssText =
+      'position:fixed;right:12px;bottom:50px;z-index:61;' +   // bottom:50 = 疊在膠囊(bottom:12)上方
+      'display:inline-flex;align-items:center;gap:6px;' +
+      'padding:7px 14px;border-radius:99px;text-decoration:none;' +
+      'background:var(--amber-deep,#BA7517);color:#fff;' +
+      'font-family:inherit;font-size:0.74rem;font-weight:700;line-height:1;' +
+      'box-shadow:0 4px 14px rgba(186,117,23,0.30);';
+    (document.body || document.documentElement).appendChild(btn);
   }
 
   if (document.readyState === 'loading') {
