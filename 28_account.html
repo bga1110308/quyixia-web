@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 帳號中心：順咖與案家共用一頁，依身分顯示對應錢包與功能。
+     四個區塊：①會員與開通狀態 ②錢包餘額 ③已解鎖/已購買 ④加值與消費紀錄。
+     資料全部即時讀 DB（users / user_roles / custom_certs / line_relay_unlocks / point_transactions / app_config），
+     不寫死、不另存一份，狀態永遠跟後台一致。 -->
+<title>我的帳號 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;--amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;--champagne-soft:#FFFCF5;--cream:#FAEEDA;
+  --forest:#2F6048;--forest-deep:#1F4A36;--mint:#5FB58E;--mint-pale:#E8F5EE;--border-mint:rgba(95,181,142,0.3);
+  --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+  --border:#FFE9B8;--border-soft:#F5EBD8;
+  --warn:#E89544;--warn-pale:#FFF1E0;--danger:#D9534F;--danger-pale:#FCE8E7;--info:#3A7CB8;--info-pale:#E8F1F8;
+  --ok:#3C9A6A;--ok-pale:#E8F5EE;
+  --bg:var(--champagne-soft);--surface:#fff;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;
+  background:var(--champagne-soft);color:var(--ink);min-height:100vh;line-height:1.7;}
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;
+  background:#fff;border:1px solid var(--border);color:var(--amber-deep);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;
+  box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.wrap{max-width:680px;margin:0 auto;padding:4.5rem 1.1rem 5rem;}
+
+.page-head{text-align:center;margin-bottom:1.4rem;}
+.page-head h1{font-size:1.7rem;font-weight:600;letter-spacing:-0.5px;margin-bottom:0.3rem;}
+.id-line{font-size:0.82rem;color:var(--ink-soft);}
+.id-line b{color:var(--ink);font-weight:600;}
+.roles{display:flex;gap:6px;justify-content:center;margin-top:0.6rem;flex-wrap:wrap;}
+.role-tag{font-size:0.72rem;font-weight:600;padding:3px 11px;border-radius:99px;border:1.5px solid var(--border);background:#fff;color:var(--ink-soft);}
+.role-tag.suncar{border-color:var(--border-mint);color:var(--forest);background:var(--mint-pale);}
+.role-tag.client{border-color:var(--amber);color:var(--amber-darker);background:var(--gold-soft,#FBF0D2);}
+
+.card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.2rem 1.3rem;margin-bottom:1rem;
+  box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.card-title{font-size:1.02rem;font-weight:600;color:var(--ink);margin-bottom:0.9rem;display:flex;align-items:center;gap:9px;}
+.card-title svg{width:20px;height:20px;flex-shrink:0;fill:var(--amber);}
+
+/* 一行一個項目：左標題、右值 */
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0.55rem 0;border-bottom:1px dashed var(--border-soft);font-size:0.92rem;}
+.row:last-child{border-bottom:0;}
+.row .k{color:var(--ink-soft);}
+.row .v{font-weight:600;text-align:right;}
+.v.big{font-size:1.15rem;color:var(--amber-darker);}
+
+.pill{display:inline-block;font-size:0.74rem;font-weight:700;padding:3px 10px;border-radius:99px;}
+.pill.ok{background:var(--ok-pale);color:var(--ok);}
+.pill.free{background:var(--info-pale);color:var(--info);}
+.pill.off{background:var(--champagne);color:var(--ink-soft);}
+.pill.warn{background:var(--warn-pale);color:#9A5B16;}
+
+/* 錢包小區 */
+.wallet{border:1.5px solid var(--border);border-radius:14px;padding:0.9rem 1rem;margin-bottom:0.7rem;background:var(--champagne-soft);}
+.wallet:last-child{margin-bottom:0;}
+.wallet .wt{font-size:0.86rem;font-weight:700;margin-bottom:0.5rem;}
+.wallet.suncar .wt{color:var(--forest);}
+.wallet.client .wt{color:var(--amber-darker);}
+.wallet .nums{display:flex;gap:18px;}
+.wallet .num{flex:1;}
+.wallet .num .n{font-size:1.35rem;font-weight:700;color:var(--ink);}
+.wallet .num .lbl{font-size:0.74rem;color:var(--ink-soft);}
+
+/* 已解鎖列表 */
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0.5rem 0;border-bottom:1px dashed var(--border-soft);font-size:0.9rem;}
+.item:last-child{border-bottom:0;}
+.item .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.empty{font-size:0.85rem;color:var(--ink-light);padding:0.4rem 0;}
+
+/* 消費紀錄 */
+.tx{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:0.55rem 0;border-bottom:1px dashed var(--border-soft);font-size:0.88rem;}
+.tx:last-child{border-bottom:0;}
+.tx .tl{min-width:0;}
+.tx .tl .rs{font-weight:600;}
+.tx .tl .dt{font-size:0.74rem;color:var(--ink-light);}
+.tx .tl .po{font-size:0.7rem;color:var(--ink-soft);border:1px solid var(--border);border-radius:6px;padding:0 5px;margin-left:6px;}
+.tx .amt{font-weight:700;white-space:nowrap;}
+.tx .amt.plus{color:var(--ok);}
+.tx .amt.minus{color:var(--danger);}
+
+.note{display:flex;gap:9px;align-items:flex-start;border-radius:12px;padding:0.75rem 0.95rem;font-size:0.84rem;line-height:1.6;margin-top:0.3rem;}
+.note svg{width:17px;height:17px;flex-shrink:0;margin-top:2px;}
+.note.info{background:var(--info-pale);color:#2C6A9E;}
+.note.info svg{fill:var(--info);}
+
+.cta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:0.4rem;}
+.cta{flex:1;min-width:130px;display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;
+  font-weight:600;font-size:0.9rem;padding:0.75rem 1rem;border-radius:12px;transition:all 0.2s;border:1.5px solid var(--border);
+  color:var(--amber-darker);background:#fff;}
+.cta:hover{background:var(--champagne);border-color:var(--amber);}
+.cta.solid{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:var(--amber);}
+
+.state{text-align:center;color:var(--ink-soft);padding:3rem 1rem;font-size:0.95rem;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6z"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M21 7H5a1 1 0 0 1 0-2h15V3H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm-3 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><path d="M12.65 10A6 6 0 1 0 7 16a6 6 0 0 0 5.65-4H17v4h2v-4h2v-2H12.65zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M3 5h18v2H3V5zm0 6h18v2H3v-2zm0 6h18v2H3v-2z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div id="app" class="wrap">
+  <div class="state" id="loading">讀取你的帳號資料中…</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
+<script src="qyx-whoami.js"></script>
+<script>
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function ymd(s){ return s ? String(s).slice(0,10) : ''; }
+
+// 取目前登入者；沒登入就導去登入頁
+async function getMe(){
+  var r = await sb.auth.getSession();
+  if(!(r.data && r.data.session)){ location.replace('13_login.html'); return null; }
+  return r.data.session.user.id;
+}
+
+// 一次把帳號頁要用的資料全撈回來（各自獨立、互不依賴）
+async function loadAll(uid){
+  var q = await Promise.all([
+    sb.from('users').select('display_name,member_no,info_member_until,suncar_points,client_points,suncar_coins,client_coins,love_coins,is_realname,has_good_conduct,has_cpr,has_caregiver_cert,credit_score').eq('id',uid).maybeSingle(),
+    sb.from('user_roles').select('role,status').eq('user_id',uid),
+    sb.from('custom_certs').select('name,status,paid').eq('user_id',uid).order('created_at',{ascending:false}),
+    sb.from('line_relay_unlocks').select('id',{count:'exact',head:true}).eq('user_id',uid),
+    sb.from('point_transactions').select('created_at,pool,change,reason').eq('user_id',uid).order('created_at',{ascending:false}).limit(50),
+    sb.from('app_config').select('promo_free_info').eq('id',1).maybeSingle()
+  ]);
+  return {
+    user: q[0].data || {},
+    roles: (q[1].data || []),
+    certs: (q[2].data || []),
+    relayCount: (q[3].count || 0),
+    txs: (q[4].data || []),
+    promoFree: !!(q[5].data && q[5].data.promo_free_info)
+  };
+}
+
+// 會員狀態文字：付費未過期 > 推廣期免費 > 一般會員
+function memberInfo(user, promoFree){
+  var until = user.info_member_until ? new Date(user.info_member_until).getTime() : 0;
+  if(until > Date.now()) return { pill:'<span class="pill ok">付費會員</span>', sub:'有效期限至 ' + ymd(user.info_member_until) };
+  if(promoFree) return { pill:'<span class="pill free">推廣期免費中</span>', sub:'目前所有資訊功能對你免費，無需付費' };
+  return { pill:'<span class="pill off">一般會員</span>', sub:'部分資訊功能需付費或單篇解鎖' };
+}
+
+function roleFlags(roles){
+  var has = { suncar:false, client:false };
+  roles.forEach(function(r){
+    var active = (r.status === 'approved' || r.status === 'active' || r.status == null);
+    if(active && r.role === 'suncar') has.suncar = true;
+    if(active && r.role === 'client') has.client = true;
+  });
+  // 保底：完全沒角色資料也至少顯示案家錢包，不留白頁
+  if(!has.suncar && !has.client) has.client = true;
+  return has;
+}
+
+function certStatusPill(c){
+  if(c.status === 'approved') return '<span class="pill ok">已通過</span>';
+  if(c.status === 'rejected') return '<span class="pill warn">未通過</span>';
+  return '<span class="pill off">審核中</span>';
+}
+
+function render(d){
+  var u = d.user, has = roleFlags(d.roles), m = memberInfo(u, d.promoFree);
+
+  // 已驗證徽章
+  var badges = [];
+  if(u.is_realname) badges.push('實名');
+  if(u.has_good_conduct) badges.push('良民證');
+  if(u.has_cpr) badges.push('CPR');
+  if(u.has_caregiver_cert) badges.push('照服員證');
+
+  // 錢包區（依身分顯示）
+  var walletHtml = '';
+  if(has.suncar){
+    walletHtml += '<div class="wallet suncar"><div class="wt">順咖錢包</div><div class="nums">'
+      + '<div class="num"><div class="n">' + (u.suncar_points||0) + '</div><div class="lbl">點數</div></div>'
+      + '<div class="num"><div class="n">' + (u.suncar_coins||0) + '</div><div class="lbl">金幣</div></div></div></div>';
+  }
+  if(has.client){
+    walletHtml += '<div class="wallet client"><div class="wt">案家錢包</div><div class="nums">'
+      + '<div class="num"><div class="n">' + (u.client_points||0) + '</div><div class="lbl">點數</div></div>'
+      + '<div class="num"><div class="n">' + (u.client_coins||0) + '</div><div class="lbl">金幣</div></div></div></div>';
+  }
+
+  // 已解鎖/已購買
+  var unlockRows = '';
+  unlockRows += '<div class="item"><span class="nm">LINE 中轉解鎖</span><span>' + (d.relayCount>0 ? ('<span class="pill ok">已解鎖 ' + d.relayCount + ' 筆</span>') : '<span class="pill off">尚未解鎖</span>') + '</span></div>';
+  if(d.certs.length){
+    d.certs.forEach(function(c){
+      unlockRows += '<div class="item"><span class="nm">自訂證件：' + esc(c.name||'未命名') + '</span><span>'
+        + certStatusPill(c) + ' ' + (c.paid ? '<span class="pill ok">已付費</span>' : '<span class="pill off">免費</span>') + '</span></div>';
+    });
+  } else {
+    unlockRows += '<div class="empty">尚未申請自訂證件</div>';
+  }
+
+  // 消費/加值紀錄
+  var txRows = '';
+  if(d.txs.length){
+    d.txs.forEach(function(t){
+      var plus = Number(t.change) >= 0;
+      var poolLabel = t.pool === 'suncar' ? '順咖' : (t.pool === 'client' ? '案家' : t.pool);
+      txRows += '<div class="tx"><div class="tl"><span class="rs">' + esc(t.reason||'異動') + '</span><span class="po">' + esc(poolLabel) + '</span>'
+        + '<div class="dt">' + ymd(t.created_at) + '</div></div>'
+        + '<div class="amt ' + (plus?'plus':'minus') + '">' + (plus?'+':'') + Number(t.change) + ' 點</div></div>';
+    });
+  } else {
+    txRows = '<div class="empty">目前沒有任何加值或消費紀錄</div>';
+  }
+
+  document.getElementById('app').innerHTML =
+    '<div class="page-head">'
+    + '<h1>我的帳號</h1>'
+    + '<div class="id-line"><b>' + esc(u.display_name||'未命名') + '</b>　會員編號 ' + esc(u.member_no||'未發編號') + '</div>'
+    + '<div class="roles">'
+      + (has.suncar ? '<span class="role-tag suncar">順咖</span>' : '')
+      + (has.client ? '<span class="role-tag client">案家</span>' : '')
+    + '</div></div>'
+
+    // ① 會員與開通狀態
+    + '<div class="card"><div class="card-title"><svg><use href="#i-user"/></svg>會員與開通狀態</div>'
+      + '<div class="row"><span class="k">資訊會員</span><span class="v">' + m.pill + '</span></div>'
+      + '<div class="row"><span class="k" style="font-size:0.8rem;color:var(--ink-light)">' + m.sub + '</span><span class="v"></span></div>'
+      + '<div class="row"><span class="k">信用分</span><span class="v">' + (u.credit_score==null?'—':u.credit_score) + ' / 100</span></div>'
+      + '<div class="row"><span class="k">已驗證項目</span><span class="v">' + (badges.length ? badges.join('、') : '<span style="color:var(--ink-light);font-weight:400">尚無</span>') + '</span></div>'
+    + '</div>'
+
+    // ② 錢包餘額
+    + '<div class="card"><div class="card-title"><svg><use href="#i-wallet"/></svg>錢包餘額</div>'
+      + walletHtml
+      + '<div class="row" style="margin-top:0.6rem"><span class="k">愛心幣</span><span class="v">' + (u.love_coins||0) + '</span></div>'
+      + '<div class="cta-row"><a class="cta solid" href="16_buy_credits.html">點數加值</a><a class="cta" href="19_seeds.html">我的種子庫</a></div>'
+      + '<div class="note info"><svg><use href="#i-info"/></svg><span>順咖與案家的點數、金幣完全分開，互不流通。服務報酬由案家直接支付給順咖，平台不經手。</span></div>'
+    + '</div>'
+
+    // ③ 已解鎖/已購買
+    + '<div class="card"><div class="card-title"><svg><use href="#i-key"/></svg>已解鎖／已購買</div>'
+      + unlockRows
+    + '</div>'
+
+    // ④ 加值與消費紀錄
+    + '<div class="card"><div class="card-title"><svg><use href="#i-list"/></svg>加值與消費紀錄</div>'
+      + txRows
+      + (d.txs.length>=50 ? '<div class="empty" style="text-align:center;margin-top:0.5rem">僅顯示最近 50 筆</div>' : '')
+    + '</div>';
+}
+
+(async function(){
+  try{
+    var uid = await getMe();
+    if(!uid) return;
+    var d = await loadAll(uid);
+    render(d);
+  }catch(e){
+    if(window.console) console.error('[account] 載入失敗', e);
+    document.getElementById('app').innerHTML =
+      '<div class="state">資料暫時讀取不到，請稍後重新整理。<br>若持續發生，請來信 bga1110308@gmail.com。</div>';
+  }
+})();
+</script>
+</body>
+</html>

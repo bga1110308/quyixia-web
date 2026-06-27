@@ -454,6 +454,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
     <div class="sec-title">我的帳戶</div>
     <a class="sec-action" onclick="try{sessionStorage.setItem('credits_pool','suncar');sessionStorage.setItem('credits_returnTo','12_staff_home.html');}catch(e){}window.location.href='16_buy_credits.html'">儲值<svg><use href="#i-arrow-right"/></svg></a>
   </div>
+  <!-- 帳號中心入口：會員/錢包/已購買/消費紀錄一頁看清 -->
+  <a href="28_account.html" style="display:flex;align-items:center;justify-content:space-between;gap:8px;text-decoration:none;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:14px;color:var(--ink);font-size:0.9rem;font-weight:600;">我的帳號 · 會員與消費明細<span style="color:var(--ink-light);font-weight:400;">查看 ›</span></a>
   <div class="income-detail">
     <div class="income-row" onclick="goBuyForUnlock()" style="cursor:pointer;">
       <span>點數餘額 <span style="font-size:0.62rem;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--mint),var(--forest));padding:1px 7px;border-radius:99px;vertical-align:1px;">去儲值 ›</span></span>

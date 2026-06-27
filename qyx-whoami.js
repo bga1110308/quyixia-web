@@ -62,6 +62,9 @@
 
     chip.appendChild(avatar);
     chip.appendChild(text);
+    // 點膠囊進「我的帳號」頁(會員/錢包/已購買/消費紀錄)。這是使用者點進帳號中心的共用入口。
+    chip.style.cursor = 'pointer';
+    chip.addEventListener('click', function () { location.href = '28_account.html'; });
     (document.body || document.documentElement).appendChild(chip);
 
     // 管理員專屬:只有 is_admin 的帳號(也就是負責人本人)登入才出現「管理後台」按鈕,
