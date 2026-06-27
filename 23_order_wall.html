@@ -26,13 +26,22 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .head::before{content:'';position:absolute;top:-80px;right:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.16) 0%,transparent 70%);}
 .head > *{position:relative;z-index:1;}
 .head .logo{width:300px;max-width:74%;height:auto;margin-bottom:1rem;}
-.head .pill{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);padding:6px 13px;border-radius:99px;font-size:0.74rem;color:var(--ink-soft);margin-bottom:0.7rem;box-shadow:0 2px 8px rgba(186,117,23,0.05);}
-.head .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px rgba(95,181,142,0.2);animation:blink 1.5s infinite;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.35;}}
-.head h1{font-size:1.7rem;font-weight:700;color:var(--ink);letter-spacing:-0.5px;}
-.head p{font-size:0.85rem;color:var(--ink-soft);margin-top:0.5rem;}
+/* 標語(照圖2) */
+.head .slogan{margin-top:0.9rem;font-size:1.05rem;color:var(--amber-deep);font-weight:600;letter-spacing:0.04em;}
+.head .slogan b{color:var(--forest);}
 
-.wrap{max-width:880px;margin:0 auto;padding:1.4rem 1.1rem;}
+/* 說明框(照圖2,綠色左邊條) */
+.note{max-width:880px;margin:1.4rem auto 0;padding:1rem 1.3rem;background:#fff;border:1px solid var(--border);border-left:5px solid var(--mint);border-radius:12px;font-size:0.92rem;color:var(--ink-soft);box-shadow:var(--shadow-sm);line-height:1.7;}
+.note b{color:var(--forest);}
+.note .price{color:var(--amber-deep);font-weight:700;}
+
+/* 即時膠囊放這(原登入需求的位子) */
+.status-bar{max-width:880px;margin:1.1rem auto 0;padding:0 1.1rem;display:flex;justify-content:flex-end;}
+.pill{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);padding:6px 13px;border-radius:99px;font-size:0.74rem;color:var(--ink-soft);box-shadow:0 2px 8px rgba(186,117,23,0.05);}
+.pill .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px rgba(95,181,142,0.2);animation:blink 1.5s infinite;}
+
+.wrap{max-width:880px;margin:1rem auto 0;padding:0.4rem 1.1rem 1.4rem;}
 
 /* 表頭(桌機才顯示) */
 .thead{display:grid;grid-template-columns:180px 1fr 150px;gap:0;padding:0.6rem 1rem;font-size:0.78rem;font-weight:700;color:var(--ink-light);letter-spacing:0.06em;}
@@ -93,11 +102,16 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
 
 <header class="head">
-  <img src="logo_hero.svg" alt="去一下 QU YI XIA" class="logo">
-  <div class="pill"><span class="dot"></span>全站即時服務單</div>
-  <h1>服務牆</h1>
-  <p>大家正在找順咖幫忙的單，解鎖後可看到完整時間、地點與細節</p>
+  <img src="logo_hero.svg" alt="去一下 QU YI XIA 生活支援媒合平台" class="logo">
+  <div class="slogan">自費 · <b>資訊媒合</b>平台　|　看需求資訊，一筆 10 元</div>
 </header>
+
+<div class="note">
+  <b>這是資訊媒合，不是仲介或派遣。</b>平台只彙整生活服務的「需求資訊」，每一筆內容預設隱藏，
+  解鎖後即可看到完整時間、地點與細節，<span class="price">一筆資訊 10 元</span>，由有意願的服務者自行接洽，平台不抽成、不介入交易。
+</div>
+
+<div class="status-bar"><span class="pill"><span class="dot"></span>全站即時服務單</span></div>
 
 <div class="wrap">
   <div class="thead"><div>服務項目</div><div>內容</div><div>解鎖</div></div>
