@@ -13,6 +13,7 @@
   --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
   --border:#FFE9B8;--border-soft:#F5EBD8;
   --warn:#E89544;--warn-pale:#FFF1E0;--info:#3A7CB8;--info-pale:#E8F1F8;
+  --radius:16px;--shadow-sm:0 2px 8px rgba(186,117,23,0.06);--shadow:0 8px 22px rgba(239,159,39,0.13);
 }
 body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;background:var(--champagne-soft);color:var(--ink);line-height:1.55;padding-bottom:40px;}
 
@@ -20,40 +21,60 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
 .home-fab svg{width:18px;height:18px;fill:currentColor;}
 
-.head{text-align:center;padding:3rem 1.25rem 1.6rem;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 55%,var(--mint-pale) 100%);position:relative;overflow:hidden;}
+/* 標題：LOGO + 服務牆 */
+.head{text-align:center;padding:2.6rem 1.25rem 1.6rem;background:linear-gradient(135deg,var(--champagne) 0%,var(--champagne-soft) 55%,var(--mint-pale) 100%);position:relative;overflow:hidden;}
 .head::before{content:'';position:absolute;top:-80px;right:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(239,159,39,0.16) 0%,transparent 70%);}
 .head > *{position:relative;z-index:1;}
-.head .pill{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);padding:6px 13px;border-radius:99px;font-size:0.74rem;color:var(--ink-soft);margin-bottom:0.9rem;box-shadow:0 2px 8px rgba(186,117,23,0.05);}
+.head .logo{width:300px;max-width:74%;height:auto;margin-bottom:1rem;}
+.head .pill{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--border);padding:6px 13px;border-radius:99px;font-size:0.74rem;color:var(--ink-soft);margin-bottom:0.7rem;box-shadow:0 2px 8px rgba(186,117,23,0.05);}
 .head .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px rgba(95,181,142,0.2);animation:blink 1.5s infinite;}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.35;}}
 .head h1{font-size:1.7rem;font-weight:700;color:var(--ink);letter-spacing:-0.5px;}
 .head p{font-size:0.85rem;color:var(--ink-soft);margin-top:0.5rem;}
 
-.wrap{max-width:760px;margin:0 auto;padding:1.2rem 1.1rem;}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.wrap{max-width:880px;margin:0 auto;padding:1.4rem 1.1rem;}
 
-.ord-card{position:relative;background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:16px 16px 14px;text-decoration:none;color:var(--ink);transition:all 0.22s;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 8px rgba(186,117,23,0.04);}
-.ord-card:hover{transform:translateY(-3px);border-color:var(--amber);box-shadow:0 12px 26px rgba(239,159,39,0.15);}
-.oc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
-.oc-title{font-size:1.02rem;font-weight:700;color:var(--ink);line-height:1.35;}
-.st{font-size:0.66rem;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}
+/* 表頭(桌機才顯示) */
+.thead{display:grid;grid-template-columns:180px 1fr 150px;gap:0;padding:0.6rem 1rem;font-size:0.78rem;font-weight:700;color:var(--ink-light);letter-spacing:0.06em;}
+.thead div:last-child{text-align:center;}
+
+/* 一列服務單 */
+.row{display:grid;grid-template-columns:180px 1fr 150px;gap:0;align-items:center;background:#fff;border:1.5px solid var(--border);border-radius:var(--radius);padding:1rem 1rem;margin-bottom:0.8rem;box-shadow:var(--shadow-sm);transition:box-shadow .2s,transform .2s;}
+.row:hover{box-shadow:var(--shadow);transform:translateY(-2px);}
+
+.col-name{display:flex;flex-direction:column;gap:6px;padding-right:0.9rem;}
+.tag{align-self:flex-start;font-size:0.64rem;font-weight:700;padding:2px 9px;border-radius:99px;}
+.tag.a{background:var(--mint-pale);color:var(--forest);}
+.tag.b{background:var(--warn-pale);color:var(--warn);}
+.name{font-size:1.05rem;font-weight:700;color:var(--ink);line-height:1.3;}
+.row-meta{display:flex;flex-wrap:wrap;gap:5px 10px;font-size:0.74rem;color:var(--ink-soft);}
+.row-meta svg{width:11px;height:11px;fill:currentColor;vertical-align:-1px;}
+.amt{color:var(--amber-deep);font-weight:700;}
+.st{font-size:0.66rem;font-weight:700;padding:2px 8px;border-radius:99px;display:inline-flex;align-items:center;gap:4px;align-self:flex-start;}
 .st .d{width:6px;height:6px;border-radius:50%;background:currentColor;}
 .st.matching{background:var(--warn-pale);color:var(--warn);}
 .st.matching .d{animation:blink 1.5s infinite;}
 .st.accepted{background:var(--mint-pale);color:var(--forest);}
 .st.active{background:#E3F2EA;color:var(--forest);}
 .st.await{background:var(--info-pale);color:var(--info);}
-.oc-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:0.74rem;color:var(--ink-soft);}
-.pool-chip{font-size:0.62rem;font-weight:700;padding:1px 7px;border-radius:99px;}
-.pool-chip.a{background:var(--mint-pale);color:var(--forest);}
-.pool-chip.b{background:var(--warn-pale);color:var(--warn);}
-.oc-bottom{display:flex;justify-content:space-between;align-items:flex-end;margin-top:2px;}
-.oc-amount{font-size:1.05rem;font-weight:700;color:var(--amber-deep);}
-.oc-amount span{font-size:0.7rem;color:var(--ink-light);font-weight:500;}
-.oc-lock{font-size:0.66rem;color:var(--ink-light);display:inline-flex;align-items:center;gap:3px;}
 
-.empty-note{text-align:center;color:var(--ink-light);padding:3rem 1rem;font-size:0.9rem;}
-.load-note{text-align:center;color:var(--ink-soft);padding:3rem 1rem;font-size:0.9rem;}
+.col-content{padding:0 1rem;border-left:1px dashed var(--border-soft);border-right:1px dashed var(--border-soft);min-height:46px;display:flex;align-items:center;}
+/* 鎖住示意：不洩漏真資料,只放遮罩文字模糊呈現,點解鎖進詳情頁才看得到真內容 */
+.content{font-size:0.88rem;color:var(--ink-light);filter:blur(4px);user-select:none;pointer-events:none;line-height:1.6;}
+
+.col-action{display:flex;justify-content:center;padding-left:0.9rem;}
+.unlock-btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;text-decoration:none;padding:0.6rem 1rem;border-radius:99px;font-size:0.84rem;font-weight:700;white-space:nowrap;box-shadow:0 4px 14px rgba(239,159,39,0.3);transition:all .2s;}
+.unlock-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(239,159,39,0.4);}
+.unlock-btn svg{width:14px;height:14px;fill:currentColor;}
+
+@media(max-width:680px){
+  .thead{display:none;}
+  .row{grid-template-columns:1fr;gap:0.7rem;}
+  .col-content{border:none;border-top:1px dashed var(--border-soft);border-bottom:1px dashed var(--border-soft);padding:0.6rem 0;}
+  .col-action{justify-content:flex-start;padding-left:0;}
+}
+
+.empty-note,.load-note{text-align:center;color:var(--ink-light);padding:3rem 1rem;font-size:0.9rem;}
 .foot-hint{text-align:center;font-size:0.76rem;color:var(--ink-soft);margin-top:1.4rem;line-height:1.7;}
 .foot-hint a{color:var(--amber-deep);font-weight:600;text-decoration:none;}
 </style>
@@ -71,13 +92,15 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
 <a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
 
-<div class="head">
+<header class="head">
+  <img src="logo_hero.svg" alt="去一下 QU YI XIA" class="logo">
   <div class="pill"><span class="dot"></span>全站即時服務單</div>
   <h1>服務牆</h1>
-  <p>大家正在找順咖幫忙的單，看看有哪些任務正在進行</p>
-</div>
+  <p>大家正在找順咖幫忙的單，解鎖後可看到完整時間、地點與細節</p>
+</header>
 
 <div class="wrap">
+  <div class="thead"><div>服務項目</div><div>內容</div><div>解鎖</div></div>
   <div id="list"><div class="load-note">載入中…</div></div>
   <div class="foot-hint" id="foot-hint"></div>
 </div>
@@ -88,13 +111,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <script>
 /* 服務牆(公開,不用登入)。資料走 get_order_wall(security definer,grant anon):
    只吐安全欄位(標題/狀態/有沒有人接/行政區/池別/報酬/時間),不吐下單人/接單人名字、不吐門牌、不吐聯絡方式。
-   要看完整資料(含名字)點卡片進訂單詳情,那頁本來就依登入者購買/解鎖情形把關;未登入導去登入。 */
+   內容欄是「鎖住示意」(模糊遮罩,非真資料);要看真內容點解鎖進訂單詳情,那頁依登入者購買/解鎖情形伺服器端把關,
+   未登入導去登入。為什麼這樣:解鎖屬金流,一定在詳情頁伺服器端處理,服務牆不做前端假解鎖。 */
 
 var STATUS = {
-  matching:    { cls:'matching', label:'找順咖中' },
-  accepted:    { cls:'accepted', label:'已有順咖接' },
-  active:      { cls:'active',   label:'服務進行中' },
-  await_confirm:{ cls:'await',   label:'待確認完成' }
+  matching:     { cls:'matching', label:'找順咖中' },
+  accepted:     { cls:'accepted', label:'已有順咖接' },
+  active:       { cls:'active',   label:'服務進行中' },
+  await_confirm:{ cls:'await',    label:'待確認完成' }
 };
 
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -102,6 +126,30 @@ function fmtDateTime(s){
   try{ var d=new Date(s); var mm=('0'+(d.getMonth()+1)).slice(-2); var dd=('0'+d.getDate()).slice(-2);
        var hh=('0'+d.getHours()).slice(-2); var mi=('0'+d.getMinutes()).slice(-2);
        return mm+'/'+dd+' '+hh+':'+mi; }catch(e){ return ''; }
+}
+
+// 一列服務單。左:項目與基本資訊;中:鎖住示意(模糊);右:解鎖鈕(進詳情頁真解鎖)
+function rowHtml(o, loggedIn){
+  var st = STATUS[o.status] || { cls:'matching', label:'進行中' };
+  var isB = (o.pool === 'B');
+  var when = o.service_time ? fmtDateTime(o.service_time) : '';
+  var href = loggedIn ? ('10_order_detail.html?id='+encodeURIComponent(o.id)) : '13_login.html';
+  var btnText = loggedIn ? '解鎖看完整' : '登入看完整';
+
+  var meta = '<span class="st '+st.cls+'"><span class="d"></span>'+st.label+'</span>';
+  if(o.service_district) meta += '<span><svg><use href="#i-map"/></svg>'+esc(o.service_district)+'</span>';
+  if(when) meta += '<span><svg><use href="#i-clock"/></svg>'+esc(when)+'</span>';
+  meta += '<span class="amt">$ '+esc(o.amount==null?'-':o.amount)+' 報酬</span>';
+
+  return '<div class="row">'
+    + '<div class="col-name">'
+    +   '<span class="tag '+(isB?'b':'a')+'">'+(isB?'照服員':'一般')+'</span>'
+    +   '<span class="name">'+esc(o.service_type||'服務')+'</span>'
+    +   '<div class="row-meta">'+meta+'</div>'
+    + '</div>'
+    + '<div class="col-content"><span class="content">服務時間 00:00　地點 ○○區○○路　聯絡人 ○○○　0900-000-000　詳細說明……</span></div>'
+    + '<div class="col-action"><a class="unlock-btn" href="'+href+'"><svg><use href="#i-lock"/></svg>'+btnText+'</a></div>'
+    + '</div>';
 }
 
 async function init(){
@@ -113,29 +161,10 @@ async function init(){
   var rows = res.data || [];
   if(!rows.length){ document.getElementById('list').innerHTML='<div class="empty-note">目前沒有進行中的服務單。</div>'; return; }
 
-  var cards = rows.map(function(o){
-    var st = STATUS[o.status] || { cls:'matching', label:'進行中' };
-    var isB = (o.pool === 'B');
-    var when = o.service_time ? fmtDateTime(o.service_time) : '';
-    var href = loggedIn ? ('10_order_detail.html?id='+encodeURIComponent(o.id)) : '13_login.html';
-    var bottomRight = loggedIn
-      ? '<span class="oc-lock"><svg width="11" height="11" style="fill:currentColor;"><use href="#i-map"/></svg>點看詳情</span>'
-      : '<span class="oc-lock"><svg width="11" height="11" style="fill:currentColor;"><use href="#i-lock"/></svg>登入看完整</span>';
-    return '<a class="ord-card" href="'+href+'">'
-      + '<div class="oc-top"><div class="oc-title">'+esc(o.service_type||'服務')+'</div>'
-      +   '<span class="st '+st.cls+'"><span class="d"></span>'+st.label+'</span></div>'
-      + '<div class="oc-meta">'
-      +   '<span class="pool-chip '+(isB?'b':'a')+'">'+(isB?'照服員':'一般')+'</span>'
-      +   (o.service_district?'<span><svg width="11" height="11" style="fill:currentColor;vertical-align:-1px;"><use href="#i-map"/></svg> '+esc(o.service_district)+'</span>':'')
-      +   (when?'<span><svg width="11" height="11" style="fill:currentColor;vertical-align:-1px;"><use href="#i-clock"/></svg> '+esc(when)+'</span>':'')
-      + '</div>'
-      + '<div class="oc-bottom"><div class="oc-amount">$ '+esc(o.amount==null?'-':o.amount)+' <span>報酬</span></div>'+bottomRight+'</div>'
-      + '</a>';
-  }).join('');
-  document.getElementById('list').innerHTML = '<div class="grid">'+cards+'</div>';
+  document.getElementById('list').innerHTML = rows.map(function(o){ return rowHtml(o, loggedIn); }).join('');
 
   document.getElementById('foot-hint').innerHTML = loggedIn
-    ? '點任一張單看完整內容(依你的解鎖情形顯示)。想下單請到 <a href="04_order_form.html">我要預約服務</a>。'
+    ? '為保護個資,內容預設隱藏,點「解鎖看完整」進該單看完整時間、地點與聯絡方式(依你的解鎖情形顯示)。想下單請到 <a href="04_order_form.html">我要預約服務</a>。'
     : '為保護個資,下單人與接單人的名字不公開。<a href="13_login.html">登入</a>後可依你的會員與解鎖情形看完整內容。';
 }
 
