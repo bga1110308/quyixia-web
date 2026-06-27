@@ -49,6 +49,8 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 /* 頁面識別條 */
 .role-strip{display:flex;align-items:center;gap:8px;padding:10px 1.25rem 10px 4rem;background:#fff;border-bottom:1px solid var(--border-soft);font-size:0.82rem;color:var(--ink-soft);}
 .role-strip svg{width:16px;height:16px;fill:var(--forest);}
+/* 身分列圖示改用綠底方形品牌 LOGO;白底列上綠 LOGO 清楚 */
+.role-strip-logo{width:24px;height:24px;display:block;flex-shrink:0;}
 .role-label{font-weight:500;color:var(--ink);}
 .role-switch-link{margin-left:auto;font-size:0.74rem;color:var(--amber-deep);text-decoration:none;background:var(--champagne);padding:4px 10px;border-radius:99px;border:1px solid var(--border);font-weight:500;transition:all 0.2s;}
 .role-switch-link:hover{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:transparent;}
@@ -341,7 +343,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 <a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
 <!-- 身份識別條 -->
 <div class="role-strip">
-  <svg><use href="#i-staff"/></svg>
+  <img src="logo_sq_green.svg" alt="去一下" class="role-strip-logo">
   <span class="role-label">順咖工作台 · 接案賺錢中</span>
   <span id="role-status" style="font-size:0.7rem;color:var(--amber-deep);background:var(--warn-pale);padding:3px 9px;border-radius:99px;font-weight:500;"></span>
   <span class="strip-actions">

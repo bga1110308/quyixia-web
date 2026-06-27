@@ -127,8 +127,10 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .find-staff-cta::before{content:'';position:absolute;top:-50px;right:-50px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.15);transition:all 0.3s;}
 .find-staff-cta:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(239,159,39,0.45);}
 .find-staff-cta:hover::before{width:220px;height:220px;}
-.fs-cta-icon{position:relative;width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);flex-shrink:0;}
+.fs-cta-icon{position:relative;width:48px;height:48px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .fs-cta-icon svg{width:26px;height:26px;fill:#fff;}
+/* 改放黃底方形品牌 LOGO;容器白底讓 LOGO 挖空處透白,在橘色按鈕上清楚 */
+.fs-cta-logo{width:40px;height:40px;display:block;}
 .fs-cta-text{position:relative;flex:1;}
 .fs-cta-title{font-size:1.15rem;font-weight:700;letter-spacing:-0.3px;}
 .fs-cta-sub{font-size:0.78rem;opacity:0.9;margin-top:3px;}
@@ -327,7 +329,7 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 
   <!-- ============ 主要動作:我要找順咖 ============ -->
   <a href="04_order_form.html" class="find-staff-cta">
-    <div class="fs-cta-icon"><svg><use href="#i-staff"/></svg></div>
+    <div class="fs-cta-icon"><img src="logo_sq_yellow.svg" alt="去一下" class="fs-cta-logo"></div>
     <div class="fs-cta-text">
       <div class="fs-cta-title">我要找順咖</div>
       <div class="fs-cta-sub">代排、遛狗、陪看醫生、備餐都可以下單</div>
