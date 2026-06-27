@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 通用法律頁：內容即時讀後台 legal_documents，全站同一份。
+     用 ?doc=<doc_key> 切換要看哪一份。例：legal.html?doc=privacy
+     為什麼這樣做：服務條款、隱私權等註冊同意書本來就存在 DB（使用者讀到的＝送出記錄的），
+     這頁直接讀同一張表，不另外抄一份貼在 HTML，避免兩邊內容對不上。 -->
+<title>法律與政策 · 去一下</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --honey:#FFB84D;--amber:#EF9F27;--amber-deep:#BA7517;--amber-darker:#8B5A0F;
+  --champagne:#FFF4DD;--champagne-soft:#FFFCF5;--cream:#FAEEDA;
+  --forest:#2F6048;--forest-deep:#1F4A36;--mint:#5FB58E;--mint-pale:#E8F5EE;
+  --ink:#3D2914;--ink-soft:#8B7355;--ink-light:#B8A485;
+  --border:#FFE9B8;--border-soft:#F5EBD8;
+  --warn:#E89544;--warn-pale:#FFF1E0;--danger:#D9534F;--danger-pale:#FCE8E7;--info:#3A7CB8;--info-pale:#E8F1F8;
+  --bg:var(--champagne-soft);--surface:#fff;
+}
+body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSystemFont,'PingFang TC','Segoe UI',sans-serif;
+  background:var(--champagne-soft);color:var(--ink);min-height:100vh;line-height:1.7;}
+.brand{font-weight:500;line-height:1;display:inline-flex;align-items:baseline;letter-spacing:-0.02em;}
+.brand .qu,.brand .xia{color:var(--amber-darker);}
+.brand .yi{color:var(--forest);}
+
+.home-fab{position:fixed;top:14px;left:14px;width:44px;height:44px;border-radius:50%;
+  background:#fff;border:1px solid var(--border);color:var(--amber-deep);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:50;
+  box-shadow:0 4px 14px rgba(186,117,23,0.15);transition:all 0.2s;text-decoration:none;}
+.home-fab:hover{background:var(--champagne);transform:scale(1.05);border-color:var(--amber);}
+.home-fab svg{width:18px;height:18px;fill:currentColor;}
+
+.wrap{max-width:760px;margin:0 auto;padding:5rem 1.25rem 4rem;}
+
+.page-head{text-align:center;margin-bottom:1.6rem;}
+.page-head h1{font-size:1.85rem;font-weight:600;letter-spacing:-0.5px;margin-bottom:0.5rem;}
+.page-head p{font-size:0.92rem;color:var(--ink-soft);}
+
+.toc{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:1.8rem;}
+.toc a{font-size:0.8rem;font-weight:600;color:var(--ink-soft);background:#fff;border:1.5px solid var(--border);
+  padding:6px 13px;border-radius:99px;text-decoration:none;transition:all 0.2s;cursor:pointer;}
+.toc a:hover{background:var(--champagne);color:var(--amber-deep);border-color:var(--amber);}
+.toc a.on{background:linear-gradient(135deg,var(--honey),var(--amber));color:#fff;border-color:var(--amber);}
+
+.card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:1.5rem 1.6rem;margin-bottom:1.1rem;
+  box-shadow:0 2px 8px rgba(186,117,23,0.04);}
+.doc-body{font-size:0.92rem;color:var(--ink);white-space:pre-wrap;line-height:1.85;word-break:break-word;}
+.doc-meta{font-size:0.8rem;color:var(--ink-light);margin-top:1.2rem;padding-top:1rem;border-top:1px dashed var(--border);}
+
+.note{display:flex;gap:9px;align-items:flex-start;border-radius:12px;padding:0.8rem 1rem;font-size:0.86rem;line-height:1.6;}
+.note svg{width:18px;height:18px;flex-shrink:0;margin-top:2px;}
+.note.info{background:var(--info-pale);color:#2C6A9E;}
+.note.info svg{fill:var(--info);}
+.note.warn{background:var(--warn-pale);color:#9A5B16;}
+.note.warn svg{fill:var(--warn);}
+
+.foot{text-align:center;color:var(--ink-light);font-size:0.82rem;margin-top:2rem;line-height:1.7;}
+.foot a{color:var(--ink-soft);text-decoration:none;}
+.foot a:hover{color:var(--amber-deep);}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></symbol>
+</defs>
+</svg>
+
+<a href="index.html" class="home-fab" title="回首頁"><svg><use href="#i-home"/></svg></a>
+
+<div class="wrap">
+
+  <div class="page-head">
+    <h1 id="doc-title">法律與政策</h1>
+    <p><span class="brand"><span class="qu">去</span><span class="yi">一</span><span class="xia">下</span></span> QU YI XIA · 條款與消費者權益</p>
+  </div>
+
+  <div class="toc" id="toc"></div>
+
+  <div class="card">
+    <div class="doc-body" id="doc-body">內容讀取中…</div>
+    <div class="doc-meta" id="doc-meta"></div>
+  </div>
+
+  <div class="note info" id="contact-note" style="margin-bottom:1.1rem">
+    <svg><use href="#i-info"/></svg>
+    <span>對條款或交易有疑問，請來信客服信箱
+      <a href="mailto:bga1110308@gmail.com" style="color:inherit;font-weight:600;">bga1110308@gmail.com</a>，我們會儘速回覆。</span>
+  </div>
+
+  <div class="foot">
+    本平台為資訊媒合服務，順咖與案家自行約定服務內容，平台不介入。<br>
+    <a href="index.html">回首頁</a>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-init.js"></script>
+<script>
+/* 這頁要顯示的文件清單與導覽列文字。
+   key 對應 legal_documents.doc_key；nav 是導覽列上顯示的短名。
+   把清單寫死在這裡（不從 DB 撈清單），是為了：就算某一份暫時讀不到，
+   導覽列照樣畫得出來、其他份還能點。內容本身才即時讀 DB。 */
+var DOCS = [
+  { key:'terms_client', nav:'服務條款（案家）' },
+  { key:'terms_suncar', nav:'服務條款（順咖）' },
+  { key:'privacy',      nav:'隱私權政策' },
+  { key:'data_notice',  nav:'個資蒐集告知' },
+  { key:'refund',       nav:'退款政策' },
+  { key:'consumer',     nav:'消費者權益' }
+];
+var DEFAULT_KEY = 'terms_client';
+
+function currentKey(){
+  var k = new URLSearchParams(location.search).get('doc') || '';
+  for (var i=0;i<DOCS.length;i++){ if (DOCS[i].key === k) return k; }
+  return DEFAULT_KEY;
+}
+
+// 畫導覽列：目前這份高亮，其它份用 ?doc= 連過去（同一頁切換）
+function renderToc(activeKey){
+  var box = document.getElementById('toc');
+  box.innerHTML = DOCS.map(function(d){
+    var on = d.key === activeKey ? ' class="on"' : '';
+    return '<a href="legal.html?doc=' + d.key + '"' + on + '>' + d.nav + '</a>';
+  }).join('');
+}
+
+// 讀單一份文件並顯示。讀不到就給清楚訊息＋客服信箱，不留空白頁。
+async function loadDoc(key){
+  var titleEl = document.getElementById('doc-title');
+  var bodyEl  = document.getElementById('doc-body');
+  var metaEl  = document.getElementById('doc-meta');
+  try{
+    var res = await sb.from('legal_documents').select('title,content,version,updated_at').eq('doc_key', key).maybeSingle();
+    if (res.error) throw res.error;
+    if (!res.data){
+      titleEl.textContent = '這份文件尚未建立';
+      bodyEl.textContent = '此政策內容尚在準備中，造成不便敬請見諒。如有需要請來信客服信箱 bga1110308@gmail.com。';
+      metaEl.textContent = '';
+      document.title = '法律與政策 · 去一下';
+      return;
+    }
+    var d = res.data;
+    titleEl.textContent = d.title;
+    document.title = d.title + ' · 去一下';
+    bodyEl.textContent = d.content || '';
+    var bits = [];
+    if (d.version != null) bits.push('版本 v' + d.version);
+    if (d.updated_at) bits.push('最後更新 ' + String(d.updated_at).slice(0,10));
+    metaEl.textContent = bits.join('　·　');
+  }catch(e){
+    if (window.console) console.error('[legal] 讀取失敗', e);
+    titleEl.textContent = '內容暫時讀取不到';
+    bodyEl.textContent = '系統忙碌或連線異常，請稍後重新整理。若持續發生，請來信客服信箱 bga1110308@gmail.com。';
+    metaEl.textContent = '';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  var key = currentKey();
+  renderToc(key);
+  loadDoc(key);
+});
+</script>
+</body>
+</html>
