@@ -82,6 +82,14 @@ body{font-family:'Noto Sans TC','Source Han Sans TC',-apple-system,BlinkMacSyste
 .chip.area{border-color:var(--border-mint);background:var(--mint-pale);color:var(--forest);}
 .sub-label{font-size:0.72rem;color:var(--ink-light);font-weight:600;margin:0.2rem 0 0.5rem;letter-spacing:0.5px;}
 .sub-label:not(:first-child){margin-top:1rem;}
+/* 服務類型收合:預設收起,點標題才展開(避免一進來就攤開一長串) */
+.svc-collapse{margin-top:1rem;}
+.svc-toggle{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:7px;font-size:0.78rem;font-weight:600;color:var(--forest);background:var(--mint-pale);border:1.5px solid var(--border-mint);border-radius:99px;padding:6px 14px;user-select:none;}
+.svc-toggle::-webkit-details-marker{display:none;}
+.svc-toggle::after{content:'\25BE';font-size:0.7rem;transition:transform 0.2s;}
+details[open] .svc-toggle::after{transform:rotate(180deg);}
+.svc-toggle:hover{background:#fff;border-color:var(--mint);}
+.svc-body{margin-top:10px;}
 
 /* 種子庫 */
 .seed-prog{font-size:0.78rem;color:var(--ink-soft);font-weight:600;margin-bottom:0.8rem;}
@@ -339,7 +347,7 @@ function render(d){
       body += '<div class="sub-label">服務區域</div><div class="chip-wrap">'+areas.map(function(a){ return '<span class="chip area">'+esc(a)+'</span>'; }).join('')+'</div>';
     }
     if(svcs.length){
-      body += '<div class="sub-label">服務類型</div><div class="chip-wrap">'+svcs.map(function(k){ return '<span class="chip">'+esc(SVC_LABEL[k]||k)+'</span>'; }).join('')+'</div>';
+      body += '<details class="svc-collapse"><summary class="svc-toggle">服務類型（點開查看 '+svcs.length+' 項）</summary><div class="chip-wrap svc-body">'+svcs.map(function(k){ return '<span class="chip">'+esc(SVC_LABEL[k]||k)+'</span>'; }).join('')+'</div></details>';
     }
     if(transport.length){
       body += '<div class="sub-label">交通方式</div><div class="chip-wrap">'+transport.map(function(t){ return '<span class="chip">'+esc(t)+'</span>'; }).join('')+'</div>';
