@@ -342,7 +342,9 @@ async function handleTextMessage(ev) {
   if (!result) {
     await lineReply(ev.replyToken, '系統忙線，請稍後再傳一次。');
   } else if (result.action === 'reply') {
-    await lineReply(ev.replyToken, result.text);
+    // 中轉找不到對象時會回引導訊息(action='reply')；順便教客服用法，
+    // 因為很多人不知道要在問題前面加「客服」，會誤把平台問題當中轉訊息傳進來。
+    await lineReply(ev.replyToken, result.text + '\n\n想問平台問題嗎？在問題前面加上「客服」兩個字就好，例如：\n客服 怎麼儲值點數');
   } else if (result.action === 'push') {
     await linePush(result.to, result.text);
   } else if (result.action === 'pick') {
