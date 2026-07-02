@@ -1186,7 +1186,7 @@ window.confirmComplete = async function(){
    這筆仍留在 await_confirm,不會被改動、不會自動結案,協調好再回這頁按「確認完成」。 */
 window.reportIssue = function(){
   var no = window._orderNo || '';
-  var ok = confirm('這筆會先保留在「等待確認」,不會結案、也不會自動完成。\n要開啟 LINE 客服詢問這張訂單嗎?\n(若情況緊急或涉及人身安全,請直接撥打 110)');
+  var ok = confirm('平台只負責資訊媒合,不介入服務糾紛。\n物品損壞或服務爭議,請直接與順咖協調;涉及財損或人身安全,請報警(110)。\n\n若是帳號、扣款,或想查這張單的狀態,要開啟 LINE 客服嗎?\n(這筆仍會保留在「等待確認」,不會結案)');
   if(!ok) return;
   var msg = '客服 訂單 ' + no;
   location.href = 'https://line.me/R/oaMessage/@303hceml/?' + encodeURIComponent(msg);
