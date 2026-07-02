@@ -1181,10 +1181,15 @@ window.confirmComplete = async function(){
   box.scrollIntoView({ behavior:'smooth', block:'center' });
 };
 
-/* 回報問題:最小可用版,先不寫資料庫(避免要你多跑 SQL),只擋住「按了出錯」並給處理指引。
-   這筆會留在 await_confirm,不會被改動、不會自動結案,協調好再回來按「確認完成」。詳細爭議流程列待辦。 */
+/* 回報問題:按了先確認,再開官方帳號並帶入「客服 訂單 <編號>」。
+   送出後由 LINE AI 客服查這張單的狀態;涉及糾紛/退費/安全會導去人工信箱與 110。
+   這筆仍留在 await_confirm,不會被改動、不會自動結案,協調好再回這頁按「確認完成」。 */
 window.reportIssue = function(){
-  alert('服務有問題嗎?\n這筆會先保留在「等待確認」,不會結案、也不會自動完成。\n請先聯絡順咖或客服協調,處理好後再回到這頁按「確認完成」結案。\n若情況緊急或涉及人身安全,請直接撥打客服或報警 110。');
+  var no = window._orderNo || '';
+  var ok = confirm('這筆會先保留在「等待確認」,不會結案、也不會自動完成。\n要開啟 LINE 客服詢問這張訂單嗎?\n(若情況緊急或涉及人身安全,請直接撥打 110)');
+  if(!ok) return;
+  var msg = '客服 訂單 ' + no;
+  location.href = 'https://line.me/R/oaMessage/@303hceml/?' + encodeURIComponent(msg);
 };
 
 /* 用共用小工具包一層載入逾時保護:8 秒沒載完或出錯就顯示重試。案家端用金色重試鈕。 */
