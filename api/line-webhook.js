@@ -35,7 +35,8 @@ const WELCOME =
   '同時接多張單時，打字後我會請你點一下這句要傳給哪張單，避免傳錯。\n' +
   '雙方都看不到彼此的私人 LINE，對話也會留存在平台，保障你我。\n' +
   '\n' +
-  '有平台使用問題？直接打「客服」再加上你的問題，例如：客服 怎麼儲值點數。';
+  '有平台使用問題？直接打「客服」再加上你的問題，例如：客服 怎麼儲值點數。\n' +
+  '想查訂單進度，就打「客服 訂單」再加上你的訂單編號，例如：客服 訂單 20260701-0001。';
 
 // ── AI 客服的背景知識：只教它「去一下平台怎麼用」的正確規則 ──
 // 為什麼寫死在這裡：客服只需回答固定的平台規則，不必每次查資料庫，最省成本也最穩。
@@ -249,6 +250,32 @@ function extractCsQuestion(text) {
   return null;
 }
 
+// 從客服問題裡找出「訂單編號」。抓一串數字(可含連字號)，因為 order_no 尾碼是數字，
+// 使用者可能貼完整編號、也可能只打末幾碼。回傳 { intent, num }：
+//   intent=true＝句子有明講要查單(出現「訂單/進度…」等字)，就算編號打錯也走查單、給明確原因。
+//   num＝抽出的純數字(交給 SQL 比對)。看起來完全不像訂單編號(沒有夠長的數字)就回 null，當一般問題。
+const ORDER_INTENT_RE = /訂單|單號|查單|我的單|接單|進度|到哪|派了嗎|接了嗎|完成了嗎/;
+function detectOrderQuery(q) {
+  const s = String(q || '');
+  const runs = (s.match(/\d[\d-]*\d|\d/g) || []).map((x) => x.replace(/\D/g, '')).filter(Boolean);
+  const num = runs.sort((a, b) => b.length - a.length)[0] || '';
+  if (ORDER_INTENT_RE.test(s)) return { intent: true, num };  // 明講要查單
+  if (num.length >= 6) return { intent: false, num };         // 沒關鍵字但數字長得像完整訂單編號
+  return null;                                                // 當一般問題，交給 AI
+}
+
+// 把查到的訂單狀態排成一則好讀的回覆
+function formatOrderStatus(st) {
+  const who = st.role === 'suncar' ? '（你是這張單的順咖）' : '（你是這張單的案家）';
+  const lines = ['訂單 #' + st.order_no + ' ' + who, '目前狀態：' + st.status_label];
+  if (st.service_type) lines.push('服務：' + st.service_type + (st.service_district ? '・' + st.service_district : ''));
+  if (st.service_time) lines.push('時間：' + st.service_time);
+  lines.push('');
+  lines.push('有其他問題想問？直接打「客服」加上你的問題。');
+  lines.push('涉及糾紛、退費或人身安全，請來信 bga1110308@gmail.com；緊急狀況請撥 110。');
+  return lines.join('\n');
+}
+
 // 收到文字訊息：季節關鍵字 → 客服關鍵字 → 中轉，三層依序判斷
 async function handleTextMessage(ev) {
   const lineUserId = ev.source && ev.source.userId;
@@ -268,9 +295,35 @@ async function handleTextMessage(ev) {
   if (csQuestion !== null) {
     if (!csQuestion) {
       // 只打了關鍵字、沒有實際問題：引導怎麼問
-      await lineReply(ev.replyToken, '請直接打「客服」再加上你的問題，例如：\n客服 怎麼儲值點數\n客服 順咖是什麼');
+      await lineReply(ev.replyToken, '請直接打「客服」再加上你的問題，例如：\n客服 怎麼儲值點數\n客服 順咖是什麼\n客服 訂單 20260701-0001（查訂單進度）');
       return;
     }
+
+    // 2a. 先看是不是要查訂單。有訂單編號就用 line_user_id 綁定、只查「這個人有份」的單，
+    //     狀態直接用 SQL 給精確值、不丟給 AI（長照糾紛/安全紅線＝AI 不判斷、導人工）。
+    const oq = detectOrderQuery(csQuestion);
+    if (oq) {
+      if (!oq.num) {
+        await lineReply(ev.replyToken, '要查訂單進度，請一起打上訂單編號，例如：\n客服 訂單 20260701-0001');
+        return;
+      }
+      const st = await callRpc('line_order_status', { p_line_user_id: lineUserId, p_q: oq.num });
+      if (st && st.found) {
+        await lineReply(ev.replyToken, formatOrderStatus(st));
+        return;
+      }
+      if (oq.intent) {
+        // 明講要查單卻查不到：給明確原因，不往下丟給 AI 亂猜
+        await lineReply(ev.replyToken,
+          (st && st.reason === 'not_bound')
+            ? '找不到你的平台帳號。請確認你是用「註冊平台時的這支 LINE」傳訊息；換手機或換帳號會查不到。'
+            : '查不到這張訂單編號。請確認編號是否正確，或到網站訂單頁查看。');
+        return;
+      }
+      // 沒明講要查單、只是句子裡剛好有一串數字（例如問點數）：往下交給 AI
+    }
+
+    // 2b. 一般問題：交給 AI 客服
     const answer = await askFaqAI(csQuestion);
     if (answer) {
       await lineReply(ev.replyToken, answer + '\n\n（以上為 AI 客服自動回覆。若沒解決，請來信 bga1110308@gmail.com）');
