@@ -250,17 +250,21 @@ function extractCsQuestion(text) {
   return null;
 }
 
-// 從客服問題裡找出「訂單編號」。抓一串數字(可含連字號)，因為 order_no 尾碼是數字，
-// 使用者可能貼完整編號、也可能只打末幾碼。回傳 { intent, num }：
+// 從客服問題裡找出「訂單編號」。order_no 長得像 QYX-20260618-S-A-0008，
+// 中間夾了英文字母與連字號，所以要抓「含數字的一串英數字(可含連字號)」整個 token，
+// 不能只抓數字(會被字母切斷、只拿到中間的日期)。使用者可能貼完整編號、也可能只打末幾碼。
+// 回傳 { intent, num }：
 //   intent=true＝句子有明講要查單(出現「訂單/進度…」等字)，就算編號打錯也走查單、給明確原因。
-//   num＝抽出的純數字(交給 SQL 比對)。看起來完全不像訂單編號(沒有夠長的數字)就回 null，當一般問題。
+//   num＝抽出的編號 token(交給 SQL 正規化後比對)。看起來完全不像訂單編號就回 null，當一般問題。
 const ORDER_INTENT_RE = /訂單|單號|查單|我的單|接單|進度|到哪|派了嗎|接了嗎|完成了嗎/;
 function detectOrderQuery(q) {
   const s = String(q || '');
-  const runs = (s.match(/\d[\d-]*\d|\d/g) || []).map((x) => x.replace(/\D/g, '')).filter(Boolean);
-  const num = runs.sort((a, b) => b.length - a.length)[0] || '';
+  // 抓「含數字的英數/連字號 token」，例如 QYX-20260618-S-A-0008；取最長的一個
+  const tokens = (s.match(/[A-Za-z0-9][A-Za-z0-9-]*/g) || []).filter((t) => /\d/.test(t));
+  const num = tokens.sort((a, b) => b.length - a.length)[0] || '';
+  const key = num.replace(/[^A-Za-z0-9]/g, '');               // 去連字號後的純英數，用來判長度
   if (ORDER_INTENT_RE.test(s)) return { intent: true, num };  // 明講要查單
-  if (num.length >= 6) return { intent: false, num };         // 沒關鍵字但數字長得像完整訂單編號
+  if (key.length >= 6) return { intent: false, num };         // 沒關鍵字但長得像完整訂單編號
   return null;                                                // 當一般問題，交給 AI
 }
 
